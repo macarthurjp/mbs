@@ -37,21 +37,12 @@ function getErrorMessage(error: unknown) {
       objectError.message ||
       objectError.error_description ||
       objectError.error ||
-      objectError.msg ||
-      objectError.details;
+      objectError.msg;
 
-    if (nestedMessage && nestedMessage !== error) {
-      return getErrorMessage(nestedMessage);
-    }
-
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return 'Error desconocido';
-    }
+    if (typeof nestedMessage === 'string' && nestedMessage) return nestedMessage;
   }
 
-  return String(error || 'Error desconocido');
+  return 'Error desconocido';
 }
 
 function normalizeRole(role: unknown) {

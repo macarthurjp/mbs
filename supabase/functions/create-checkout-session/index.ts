@@ -28,10 +28,22 @@ function getRequiredEnv(name: string) {
   return value;
 }
 
+function getAllowedRedirectHosts() {
+  return (Deno.env.get('APP_ALLOWED_HOSTS') || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function isAllowedCheckoutUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' || url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    const hostname = url.hostname.toLowerCase();
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (url.protocol !== 'https:') return false;
+
+    return getAllowedRedirectHosts().includes(hostname);
   } catch {
     return false;
   }
@@ -41,25 +53,10 @@ function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
 
   if (error && typeof error === 'object') {
-    const maybeError = error as {
-      message?: unknown;
-      error_description?: unknown;
-      details?: unknown;
-      hint?: unknown;
-      code?: unknown;
-    };
+    const maybeError = error as { message?: unknown; error_description?: unknown };
+    const message = maybeError.message || maybeError.error_description;
 
-    const parts = [
-      maybeError.message,
-      maybeError.error_description,
-      maybeError.details,
-      maybeError.hint,
-      maybeError.code ? `Código: ${String(maybeError.code)}` : null,
-    ]
-      .filter(Boolean)
-      .map(String);
-
-    if (parts.length > 0) return parts.join(' · ');
+    if (typeof message === 'string' && message) return message;
   }
 
   return 'Error desconocido';

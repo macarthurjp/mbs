@@ -27,6 +27,15 @@ function cleanText(value: unknown) {
   return String(value || '').trim();
 }
 
+function escapeHtml(value: unknown) {
+  return cleanText(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function requirePlatformAdmin(req: Request) {
   const supabaseUrl = getEnv('APP_SUPABASE_URL', 'SUPABASE_URL');
   const serviceRoleKey = getEnv('APP_SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_ROLE_KEY');
@@ -93,9 +102,9 @@ serve(async (req) => {
         html: `
           <div style="font-family: Arial, sans-serif; color: #18181b;">
             <h2>Respuesta de soporte</h2>
-            ${message ? `<p><strong>Mensaje original:</strong></p><p>${message}</p>` : ''}
+            ${message ? `<p><strong>Mensaje original:</strong></p><p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>` : ''}
             <p><strong>Respuesta:</strong></p>
-            <p>${responseText.replace(/\n/g, '<br>')}</p>
+            <p>${escapeHtml(responseText).replace(/\n/g, '<br>')}</p>
           </div>
         `,
       }),

@@ -46,6 +46,15 @@ function escapeHeaderName(value: unknown) {
   return cleanText(value).replace(/[<>\r\n"]/g, '').trim();
 }
 
+function escapeHtml(value: unknown) {
+  return cleanText(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function requireAuthenticatedUser(req: Request) {
   const supabaseUrl = getEnv('APP_SUPABASE_URL', 'SUPABASE_URL');
   const anonKey = getEnv('APP_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY');
@@ -158,12 +167,12 @@ serve(async (req) => {
       from,
       to: [clienteEmail],
       ...(replyTo ? { reply_to: replyTo } : {}),
-      subject: `Cotización ${quoteNumber} - ${businessName}`,
+      subject: `Cotización ${escapeHtml(quoteNumber)} - ${escapeHtml(businessName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #18181b;">
-          <h2>Cotización ${quoteNumber}</h2>
-          <p>Hola ${quote.clientes?.nombre || 'cliente'},</p>
-          <p>Adjuntamos tu cotización de <strong>${businessName}</strong>.</p>
+          <h2>Cotización ${escapeHtml(quoteNumber)}</h2>
+          <p>Hola ${escapeHtml(quote.clientes?.nombre) || 'cliente'},</p>
+          <p>Adjuntamos tu cotización de <strong>${escapeHtml(businessName)}</strong>.</p>
           <p><strong>Total:</strong> ${currencySymbol}${Number.isFinite(total) ? total.toFixed(2) : '0.00'}</p>
           <p>Gracias.</p>
         </div>

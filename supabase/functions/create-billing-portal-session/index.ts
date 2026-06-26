@@ -13,10 +13,22 @@ function getRequiredEnv(name: string) {
   return value;
 }
 
+function getAllowedRedirectHosts() {
+  return (Deno.env.get('APP_ALLOWED_HOSTS') || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function isAllowedReturnUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' || url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    const hostname = url.hostname.toLowerCase();
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (url.protocol !== 'https:') return false;
+
+    return getAllowedRedirectHosts().includes(hostname);
   } catch {
     return false;
   }

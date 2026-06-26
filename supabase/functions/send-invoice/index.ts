@@ -46,6 +46,15 @@ function escapeHeaderName(value: unknown) {
   return cleanText(value).replace(/[<>\r\n"]/g, '').trim();
 }
 
+function escapeHtml(value: unknown) {
+  return cleanText(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function money(value: unknown, currency = '€') {
   const amount = Number(value || 0);
   return `${currency}${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
@@ -162,12 +171,12 @@ serve(async (req) => {
       from,
       to: [clienteEmail],
       ...(replyTo ? { reply_to: replyTo } : {}),
-      subject: `Factura ${invoiceNumber} - ${businessName}`,
+      subject: `Factura ${escapeHtml(invoiceNumber)} - ${escapeHtml(businessName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #18181b;">
-          <h2>Factura ${invoiceNumber}</h2>
-          <p>Hola ${venta.clientes?.nombre || 'cliente'},</p>
-          <p>Adjuntamos tu factura de <strong>${businessName}</strong>.</p>
+          <h2>Factura ${escapeHtml(invoiceNumber)}</h2>
+          <p>Hola ${escapeHtml(venta.clientes?.nombre) || 'cliente'},</p>
+          <p>Adjuntamos tu factura de <strong>${escapeHtml(businessName)}</strong>.</p>
           <p><strong>Total:</strong> ${money(venta.total, currency)}</p>
           <p>Gracias por tu compra.</p>
         </div>

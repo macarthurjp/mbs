@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ArrowLeft, Download, Smartphone } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -39,17 +39,7 @@ export default function MobileCurrentAccountsReport({ onClose }: Props) {
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [selectedClient, setSelectedClient] = useState<AccountData | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedClientId) {
-      loadClientData(selectedClientId);
-    }
-  }, [selectedClientId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_current_accounts_status');
@@ -61,9 +51,9 @@ export default function MobileCurrentAccountsReport({ onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadClientData = async (clientId: string) => {
+  const loadClientData = useCallback(async (clientId: string) => {
     setLoadingMovements(true);
     const clientData = accountsData.find((a) => a.client_id === clientId);
     setSelectedClient(clientData || null);
@@ -101,7 +91,17 @@ export default function MobileCurrentAccountsReport({ onClose }: Props) {
     } finally {
       setLoadingMovements(false);
     }
-  };
+  }, [accountsData]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      loadClientData(selectedClientId);
+    }
+  }, [loadClientData, selectedClientId]);
 
   const handleExportPDF = async () => {
     if (!selectedClient) return;

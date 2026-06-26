@@ -175,7 +175,7 @@ export default function CurrentAccountsReport({ onClose }: Props) {
 
       if (error) throw error;
 
-      const accountsWithAging = await Promise.all((data || []).map(async (account) => {
+      const accountsWithAging = await Promise.all(((data || []) as AccountData[]).map(async (account) => {
         const { data: agingData, error: agingError } = await supabase
           .rpc('get_debt_aging_by_client', { client_uuid: account.client_id });
 
@@ -253,22 +253,22 @@ export default function CurrentAccountsReport({ onClose }: Props) {
     }
 
     return [...accountsData].sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      let aValue: string | number = String(a[sortField] ?? '');
+      let bValue: string | number = String(b[sortField] ?? '');
 
       if (sortField === 'last_payment_date') {
-        aValue = aValue ? new Date(aValue).getTime() : 0;
-        bValue = bValue ? new Date(bValue).getTime() : 0;
+        aValue = a[sortField] ? new Date(String(a[sortField])).getTime() : 0;
+        bValue = b[sortField] ? new Date(String(b[sortField])).getTime() : 0;
       } else if (sortField === 'client_name') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
+        aValue = String(a[sortField]).toLowerCase();
+        bValue = String(b[sortField]).toLowerCase();
       } else if (sortField === 'payment_behavior') {
         const order = ['paid_up', 'current', 'late_30', 'late_60', 'late_90_plus'];
-        aValue = order.indexOf(aValue);
-        bValue = order.indexOf(bValue);
+        aValue = order.indexOf(String(a[sortField]));
+        bValue = order.indexOf(String(b[sortField]));
       } else {
-        aValue = Number(aValue);
-        bValue = Number(bValue);
+        aValue = Number(a[sortField]);
+        bValue = Number(b[sortField]);
       }
 
       if (sortDirection === 'asc') {

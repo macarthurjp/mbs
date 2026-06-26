@@ -35,6 +35,34 @@ export interface LabelContent {
   price: number;
 }
 
+type UsbEndpoint = {
+  direction: 'in' | 'out';
+  endpointNumber: number;
+};
+
+type UsbDevice = {
+  configuration: {
+    interfaces: Array<{
+      interfaceNumber: number;
+      alternate: {
+        endpoints: UsbEndpoint[];
+      };
+    }>;
+  } | null;
+  open: () => Promise<void>;
+  selectConfiguration: (configurationValue: number) => Promise<void>;
+  claimInterface: (interfaceNumber: number) => Promise<void>;
+  transferOut: (endpointNumber: number, data: BufferSource) => Promise<unknown>;
+  releaseInterface: (interfaceNumber: number) => Promise<void>;
+  close: () => Promise<void>;
+};
+
+type UsbNavigator = Navigator & {
+  usb: {
+    requestDevice: (options: { filters: Array<{ vendorId: number }> }) => Promise<UsbDevice>;
+  };
+};
+
 /**
  * Genera comandos ZPL para impresoras Zebra
  * ZPL es el estándar más usado en impresoras térmicas de etiquetas
@@ -148,7 +176,7 @@ export function generateESCPOSCommands(content: LabelContent, config: ThermalPri
  * Envía comandos a la impresora térmica USB vía Web USB API
  * Las impresoras térmicas USB se comunican como dispositivos USB RAW
  */
-export async function printToThermalPrinterUSB(commands: string | Uint8Array, format: 'ZPL' | 'ESCPOS' = 'ZPL'): Promise<void> {
+export async function printToThermalPrinterUSB(commands: string | Uint8Array, _format: 'ZPL' | 'ESCPOS' = 'ZPL'): Promise<void> {
   try {
     // Verificar soporte de Web USB API
     if (!('usb' in navigator)) {
@@ -167,7 +195,7 @@ export async function printToThermalPrinterUSB(commands: string | Uint8Array, fo
     ];
 
     // Solicitar dispositivo USB
-    const device = await (navigator as any).usb.requestDevice({ filters });
+    const device = await (navigator as UsbNavigator).usb.requestDevice({ filters });
 
     // Abrir dispositivo
     await device.open();
@@ -177,13 +205,18 @@ export async function printToThermalPrinterUSB(commands: string | Uint8Array, fo
       await device.selectConfiguration(1);
     }
 
+    const configuration = device.configuration;
+    if (!configuration) {
+      throw new Error('No se pudo seleccionar la configuración USB de la impresora');
+    }
+
     // Reclamar interfaz (normalmente la interfaz 0)
-    const interfaceNumber = device.configuration.interfaces[0].interfaceNumber;
+    const interfaceNumber = configuration.interfaces[0].interfaceNumber;
     await device.claimInterface(interfaceNumber);
 
     // Encontrar endpoint OUT (para enviar datos)
-    const endpoints = device.configuration.interfaces[0].alternate.endpoints;
-    const outEndpoint = endpoints.find((ep: any) => ep.direction === 'out');
+    const endpoints = configuration.interfaces[0].alternate.endpoints;
+    const outEndpoint = endpoints.find((ep) => ep.direction === 'out');
 
     if (!outEndpoint) {
       throw new Error('No se encontró endpoint OUT en la impresora');
@@ -206,16 +239,18 @@ export async function printToThermalPrinterUSB(commands: string | Uint8Array, fo
     await device.close();
 
     console.log('Etiqueta enviada a impresora térmica USB');
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error al imprimir por USB:', error);
+    const errorName = error instanceof Error ? error.name : '';
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Mensajes de error más útiles
-    if (error.name === 'NotFoundError') {
+    if (errorName === 'NotFoundError') {
       throw new Error('No se seleccionó ninguna impresora USB');
-    } else if (error.message.includes('Web USB API')) {
+    } else if (errorMessage.includes('Web USB API')) {
       throw error;
     } else {
-      throw new Error('Error de conexión USB: ' + error.message);
+      throw new Error('Error de conexión USB: ' + errorMessage);
     }
   }
 }

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Calendar, Clock } from 'lucide-react';
+import { useCallback, useState, useEffect } from 'react';
+import { ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -31,11 +31,7 @@ export default function SalesByHourReport({ onClose }: Props) {
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [startDate, endDate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_sales_by_hour', {
@@ -50,7 +46,11 @@ export default function SalesByHourReport({ onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const totals = hourlyData.reduce(
     (acc, row) => ({

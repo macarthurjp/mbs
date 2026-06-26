@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Wallet, Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import React, { useCallback, useState, useEffect } from 'react';
+import { Calendar, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Card, CardContent } from '../ui/Card';
 import { getTodayArgentina } from '../../utils/dateHelpers';
@@ -36,11 +36,7 @@ export function CashboxSummaryReport() {
   const [selectedYear, setSelectedYear] = useState(nowArgentina.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(nowArgentina.getMonth() + 1);
 
-  useEffect(() => {
-    loadCashboxData();
-  }, [viewMode, selectedDate, startDate, endDate, selectedYear, selectedMonth]);
-
-  async function loadCashboxData() {
+  const loadCashboxData = useCallback(async () => {
     setLoading(true);
     try {
       let result;
@@ -82,7 +78,11 @@ export function CashboxSummaryReport() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [endDate, selectedDate, selectedMonth, selectedYear, startDate, viewMode]);
+
+  useEffect(() => {
+    loadCashboxData();
+  }, [loadCashboxData]);
 
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

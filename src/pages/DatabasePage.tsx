@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserRoleFlags } from '../utils/roles';
 
 export function DatabasePage() {
+  const { userProfile } = useAuth();
+  const { isOwner } = getUserRoleFlags(userProfile);
   const [isBlankModalOpen, setIsBlankModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -16,7 +20,7 @@ export function DatabasePage() {
       setMessage(null);
 
       const tables = ['products', 'clients', 'account_movements', 'transactions', 'transaction_items', 'orders'];
-      const backup: Record<string, any[]> = {};
+      const backup: Record<string, Record<string, unknown>[]> = {};
 
       for (const table of tables) {
         const { data, error } = await supabase.from(table).select('*');
@@ -54,11 +58,11 @@ export function DatabasePage() {
       setMessage(null);
 
       const text = await file.text();
-      const backup = JSON.parse(text);
+      const backup = JSON.parse(text) as Record<string, unknown>;
 
       for (const [table, records] of Object.entries(backup)) {
         if (Array.isArray(records) && records.length > 0) {
-          const { error } = await supabase.from(table).upsert(records as any[]);
+          const { error } = await supabase.from(table).upsert(records as Record<string, unknown>[]);
 
           if (error) {
             console.error(`Error restaurando ${table}:`, error);
@@ -99,6 +103,24 @@ export function DatabasePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!isOwner) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card>
+          <CardContent className="py-10 text-center">
+            <Database className="mx-auto mb-4 text-gray-400" size={48} />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Acceso restringido
+            </h2>
+            <p className="text-gray-600">
+              Solo el propietario del negocio puede acceder al módulo de base de datos.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

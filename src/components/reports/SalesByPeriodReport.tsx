@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ArrowLeft, Download, Calendar } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -35,11 +35,7 @@ export default function SalesByPeriodReport({ onClose }: Props) {
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [startDate, endDate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_sales_by_period', {
@@ -54,7 +50,11 @@ export default function SalesByPeriodReport({ onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const totals = salesData.reduce(
     (acc, row) => ({

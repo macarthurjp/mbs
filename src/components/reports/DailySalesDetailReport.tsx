@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ArrowLeft, Download, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -33,6 +33,24 @@ interface DailyData {
   count: number;
 }
 
+type TransactionItemRow = {
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  products:
+    | {
+        name: string | null;
+        category: string | null;
+        size: string | null;
+      }
+    | Array<{
+        name: string | null;
+        category: string | null;
+        size: string | null;
+      }>
+    | null;
+};
+
 interface Props {
   onClose: () => void;
 }
@@ -51,11 +69,7 @@ export default function DailySalesDetailReport({ onClose }: Props) {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [startDate, endDate]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const startUTC = `${startDate}T03:00:00Z`;
@@ -99,21 +113,26 @@ export default function DailySalesDetailReport({ onClose }: Props) {
           .eq('transaction_id', tx.id);
 
         const date = getArgentinaDateString(tx.created_at);
+        const client = Array.isArray(tx.clients) ? tx.clients[0] : tx.clients;
         const sale: DailySale = {
           id: tx.id,
           created_at: tx.created_at,
           description: tx.description || '',
           payment_method: tx.payment_method,
           amount: Number(tx.amount),
-          client_name: tx.clients?.name || null,
-          items: items?.map((item: any) => ({
-            product_name: item.products.name,
-            category: item.products.category,
-            size: item.products.size,
+          client_name: client?.name || null,
+          items: ((items || []) as TransactionItemRow[]).map((item) => {
+            const product = Array.isArray(item.products) ? item.products[0] : item.products;
+
+            return {
+            product_name: product?.name || '',
+            category: product?.category || '',
+            size: product?.size || '',
             quantity: item.quantity,
             unit_price: Number(item.unit_price),
             subtotal: Number(item.subtotal)
-          })) || []
+            };
+          })
         };
 
         if (!dailyMap.has(date)) {
@@ -136,7 +155,11 @@ export default function DailySalesDetailReport({ onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const toggleDay = (date: string) => {
     const newExpanded = new Set(expandedDays);
@@ -261,7 +284,7 @@ export default function DailySalesDetailReport({ onClose }: Props) {
 
                   {expandedDays.has(day.date) && (
                     <div className="bg-white p-4 space-y-4">
-                      {day.transactions.map((sale, idx) => (
+                      {day.transactions.map((sale) => (
                         <div key={sale.id} className="border-l-4 border-pink-500 bg-gray-50 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div>

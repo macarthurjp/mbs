@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, Search, Filter, Calendar, Edit } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
@@ -34,6 +34,15 @@ interface Transaction {
   }[];
 }
 
+type SupabaseTransactionItem = Omit<Transaction['transaction_items'][number], 'products'> & {
+  products: Transaction['transaction_items'][number]['products'] | Transaction['transaction_items'][number]['products'][];
+};
+
+type SupabaseTransaction = Omit<Transaction, 'clients' | 'transaction_items'> & {
+  clients: Transaction['clients'] | Transaction['clients'][];
+  transaction_items: SupabaseTransactionItem[] | null;
+};
+
 interface Props {
   onClose: () => void;
 }
@@ -53,15 +62,7 @@ export default function SalesManagementReport({ onClose }: Props) {
   const [editingSale, setEditingSale] = useState<Transaction | null>(null);
   const { showNotification } = useNotification();
 
-  useEffect(() => {
-    loadSales();
-  }, []);
-
-  useEffect(() => {
-    filterSales();
-  }, [sales, searchTerm, filterMethod, dateFrom, dateTo]);
-
-  const loadSales = async () => {
+  const loadSales = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -94,15 +95,26 @@ export default function SalesManagementReport({ onClose }: Props) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSales(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar ventas: ' + error.message, 'error');
+
+      const normalizedSales = ((data || []) as SupabaseTransaction[]).map((sale) => ({
+        ...sale,
+        clients: Array.isArray(sale.clients) ? sale.clients[0] || null : sale.clients,
+        transaction_items: (sale.transaction_items || []).map((item) => ({
+          ...item,
+          products: Array.isArray(item.products) ? item.products[0] || null : item.products
+        }))
+      }));
+
+      setSales(normalizedSales as Transaction[]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar ventas: ' + message, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
 
-  const filterSales = () => {
+  const filterSales = useCallback(() => {
     let filtered = [...sales];
 
     if (searchTerm) {
@@ -135,7 +147,15 @@ export default function SalesManagementReport({ onClose }: Props) {
     }
 
     setFilteredSales(filtered);
-  };
+  }, [dateFrom, dateTo, filterMethod, sales, searchTerm]);
+
+  useEffect(() => {
+    loadSales();
+  }, [loadSales]);
+
+  useEffect(() => {
+    filterSales();
+  }, [filterSales]);
 
   const handleDeleteClick = (sale: Transaction) => {
     setSelectedSale(sale);
@@ -168,8 +188,9 @@ export default function SalesManagementReport({ onClose }: Props) {
       } else {
         showNotification(data?.message || 'Error al eliminar venta', 'error');
       }
-    } catch (error: any) {
-      showNotification('Error al eliminar venta: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al eliminar venta: ' + message, 'error');
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);

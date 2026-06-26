@@ -98,7 +98,151 @@ const styles = StyleSheet.create({
   },
 });
 
-export async function generateSalesPDF({ startDate, endDate, salesData, totals }: any) {
+type SalesReportRow = {
+  sale_date: string;
+  total_sales: number;
+  total_transactions: number;
+  total_profit: number;
+};
+
+type SalesReportTotals = {
+  total_sales: number;
+  total_transactions: number;
+  average_ticket: number;
+  total_profit: number;
+  cash_sales: number;
+  transfer_sales: number;
+  current_account_sales: number;
+};
+
+type TopProductReportRow = {
+  product_id: string | number;
+  product_name: string;
+  category: string;
+  units_sold: number;
+  revenue: number;
+  profit: number;
+};
+
+type InventoryReportRow = {
+  category: string;
+  total_products: number;
+  total_units: number;
+  total_value: number;
+};
+
+type InventoryReportTotals = {
+  total_products: number;
+  total_units: number;
+  total_value: number;
+  low_stock_products: number;
+};
+
+type DebtAgingTotals = {
+  current_debt: number;
+  debt_30_60: number;
+  debt_60_90: number;
+  debt_over_90: number;
+};
+
+type CurrentAccountReportRow = {
+  client_id: string;
+  client_name: string;
+  total_debt: number;
+  payment_behavior: string;
+  debtAging?: DebtAgingTotals;
+};
+
+type CurrentAccountsReportTotals = {
+  total_debt: number;
+};
+
+type ProfitabilityReportData = {
+  total_revenue: number;
+  total_cost: number;
+  gross_profit: number;
+  gross_margin: number;
+  total_cash_in: number;
+  total_cash_out: number;
+  net_cash_flow: number;
+  inventory_value: number;
+  accounts_receivable: number;
+};
+
+type AccountMovement = {
+  id: string;
+  date: string;
+  type: string;
+  amount: number;
+  description: string;
+  balance: number;
+};
+
+type ClientAccount = {
+  client_name: string;
+  total_debt: number;
+  days_overdue: number;
+  last_payment_date: string | null;
+};
+
+type ClientTransactionItem = {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  products: {
+    name: string;
+    category: string;
+    size: string;
+  };
+};
+
+type ClientTransaction = {
+  id: string;
+  amount: number;
+  payment_method: string;
+  category: string;
+  description?: string | null;
+  created_at: string;
+  items?: ClientTransactionItem[];
+};
+
+type DailySaleItem = {
+  product_name: string;
+  category: string;
+  size: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+};
+
+type DailySale = {
+  id: string;
+  created_at: string;
+  client_name: string | null;
+  payment_method: string;
+  amount: number;
+  items: DailySaleItem[];
+};
+
+type DailySalesData = {
+  date: string;
+  total: number;
+  count: number;
+  transactions: DailySale[];
+};
+
+export async function generateSalesPDF({
+  startDate,
+  endDate,
+  salesData,
+  totals
+}: {
+  startDate: string;
+  endDate: string;
+  salesData: SalesReportRow[];
+  totals: SalesReportTotals;
+}) {
   const SalesDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -171,7 +315,7 @@ export async function generateSalesPDF({ startDate, endDate, salesData, totals }
               <Text style={{ flex: 1, textAlign: 'right' }}>Trans.</Text>
               <Text style={{ flex: 2, textAlign: 'right' }}>Ganancia</Text>
             </View>
-            {salesData.slice(0, 30).map((row: any, idx: number) => (
+            {salesData.slice(0, 30).map((row, idx) => (
               <View key={idx} style={styles.tableRow}>
                 <Text style={{ flex: 2 }}>
                   {formatArgentinaDate(row.sale_date)}
@@ -201,7 +345,15 @@ export async function generateSalesPDF({ startDate, endDate, salesData, totals }
   link.click();
 }
 
-export async function generateTopProductsPDF({ startDate, endDate, products }: any) {
+export async function generateTopProductsPDF({
+  startDate,
+  endDate,
+  products
+}: {
+  startDate?: string;
+  endDate?: string;
+  products: TopProductReportRow[];
+}) {
   const ProductsDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -228,7 +380,7 @@ export async function generateTopProductsPDF({ startDate, endDate, products }: a
               <Text style={{ flex: 2, textAlign: 'right' }}>Ingresos</Text>
               <Text style={{ flex: 2, textAlign: 'right' }}>Ganancia</Text>
             </View>
-            {products.map((product: any, idx: number) => (
+            {products.map((product, idx) => (
               <View key={product.product_id} style={styles.tableRow}>
                 <Text style={{ width: 30 }}>{idx + 1}</Text>
                 <Text style={{ flex: 3, fontSize: 8 }}>{product.product_name}</Text>
@@ -260,7 +412,13 @@ export async function generateTopProductsPDF({ startDate, endDate, products }: a
   link.click();
 }
 
-export async function generateInventoryPDF({ inventoryData, totals }: any) {
+export async function generateInventoryPDF({
+  inventoryData,
+  totals
+}: {
+  inventoryData: InventoryReportRow[];
+  totals: InventoryReportTotals;
+}) {
   const InventoryDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -304,7 +462,7 @@ export async function generateInventoryPDF({ inventoryData, totals }: any) {
               <Text style={{ flex: 1, textAlign: 'right' }}>Unidades</Text>
               <Text style={{ flex: 2, textAlign: 'right' }}>Valor Total</Text>
             </View>
-            {inventoryData.map((row: any) => (
+            {inventoryData.map((row) => (
               <View key={row.category} style={styles.tableRow}>
                 <Text style={{ flex: 2 }}>{row.category}</Text>
                 <Text style={{ flex: 1, textAlign: 'right' }}>{Number(row.total_products)}</Text>
@@ -332,9 +490,15 @@ export async function generateInventoryPDF({ inventoryData, totals }: any) {
   link.click();
 }
 
-export async function generateCurrentAccountsPDF({ accountsData, totals }: any) {
+export async function generateCurrentAccountsPDF({
+  accountsData,
+  totals
+}: {
+  accountsData: CurrentAccountReportRow[];
+  totals: CurrentAccountsReportTotals;
+}) {
   const debtAgingTotals = accountsData.reduce(
-    (acc: any, account: any) => ({
+    (acc, account) => ({
       current_debt: acc.current_debt + (account.debtAging?.current_debt || 0),
       debt_30_60: acc.debt_30_60 + (account.debtAging?.debt_30_60 || 0),
       debt_60_90: acc.debt_60_90 + (account.debtAging?.debt_60_90 || 0),
@@ -404,7 +568,7 @@ export async function generateCurrentAccountsPDF({ accountsData, totals }: any) 
               <Text style={{ flex: 1.5, textAlign: 'right', fontSize: 8 }}>+90 días</Text>
               <Text style={{ flex: 1, textAlign: 'center', fontSize: 8 }}>Estado</Text>
             </View>
-            {accountsData.map((account: any) => (
+            {accountsData.map((account) => (
               <View key={account.client_id} style={styles.tableRow}>
                 <Text style={{ flex: 2.5, fontSize: 7 }}>{account.client_name}</Text>
                 <Text style={{ flex: 1.5, textAlign: 'right', fontSize: 7, fontWeight: 'bold' }}>
@@ -443,7 +607,15 @@ export async function generateCurrentAccountsPDF({ accountsData, totals }: any) 
   link.click();
 }
 
-export async function generateProfitabilityPDF({ startDate, endDate, data }: any) {
+export async function generateProfitabilityPDF({
+  startDate,
+  endDate,
+  data
+}: {
+  startDate: string;
+  endDate: string;
+  data: ProfitabilityReportData;
+}) {
   const ProfitabilityDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -544,7 +716,15 @@ export async function generateProfitabilityPDF({ startDate, endDate, data }: any
   link.click();
 }
 
-export async function generateClientAccountPDF({ client, movements, transactions }: any) {
+export async function generateClientAccountPDF({
+  client,
+  movements,
+  transactions
+}: {
+  client: ClientAccount;
+  movements: AccountMovement[];
+  transactions?: ClientTransaction[];
+}) {
   const ClientDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -585,7 +765,7 @@ export async function generateClientAccountPDF({ client, movements, transactions
         {transactions && transactions.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Historial de Compras</Text>
-            {transactions.map((transaction: any) => (
+            {transactions.map((transaction) => (
               <View key={transaction.id} style={{ marginBottom: 12, padding: 8, backgroundColor: '#f9fafb', borderRadius: 4, border: '1 solid #e5e7eb' }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, paddingBottom: 4, borderBottom: '1 solid #d1d5db' }}>
                   <View>
@@ -606,7 +786,7 @@ export async function generateClientAccountPDF({ client, movements, transactions
                     <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#374151', marginBottom: 4, textTransform: 'uppercase' }}>
                       Productos:
                     </Text>
-                    {transaction.items.map((item: any) => (
+                    {transaction.items.map((item) => (
                       <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#fce7f3', padding: 4, marginBottom: 2, borderRadius: 2 }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#1f2937' }}>{item.products.name}</Text>
@@ -642,7 +822,7 @@ export async function generateClientAccountPDF({ client, movements, transactions
               <Text style={{ flex: 1.5, textAlign: 'right' }}>Monto</Text>
               <Text style={{ flex: 1.5, textAlign: 'right' }}>Saldo</Text>
             </View>
-            {movements.map((movement: any) => (
+            {movements.map((movement) => (
               <View key={movement.id} style={styles.tableRow}>
                 <Text style={{ flex: 2, fontSize: 8 }}>
                   {formatArgentinaDate(movement.date)}
@@ -689,7 +869,20 @@ export async function generateClientAccountPDF({ client, movements, transactions
   link.click();
 }
 
-export async function generateDailySalesDetailPDF({ startDate, endDate, dailyData, totals }: any) {
+export async function generateDailySalesDetailPDF({
+  startDate,
+  endDate,
+  dailyData,
+  totals
+}: {
+  startDate: string;
+  endDate: string;
+  dailyData: DailySalesData[];
+  totals: {
+    grandTotal: number;
+    totalTransactions: number;
+  };
+}) {
   const DailySalesDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -719,7 +912,7 @@ export async function generateDailySalesDetailPDF({ startDate, endDate, dailyDat
           </View>
         </View>
 
-        {dailyData.map((day: any, dayIdx: number) => (
+        {dailyData.map((day, dayIdx) => (
           <View key={day.date} style={{ ...styles.section, marginTop: dayIdx > 0 ? 15 : 0 }}>
             <View style={{
               backgroundColor: '#fce7f3',
@@ -747,7 +940,7 @@ export async function generateDailySalesDetailPDF({ startDate, endDate, dailyDat
               </Text>
             </View>
 
-            {day.transactions.slice(0, 10).map((sale: any, saleIdx: number) => (
+            {day.transactions.slice(0, 10).map((sale) => (
               <View key={sale.id} style={{
                 marginBottom: 10,
                 padding: 8,
@@ -782,7 +975,7 @@ export async function generateDailySalesDetailPDF({ startDate, endDate, dailyDat
                     <Text style={{ fontSize: 7, color: '#6b7280', marginBottom: 3, textTransform: 'uppercase' }}>
                       Productos:
                     </Text>
-                    {sale.items.map((item: any, itemIdx: number) => (
+                    {sale.items.map((item, itemIdx) => (
                       <View key={itemIdx} style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
@@ -840,8 +1033,8 @@ export async function generateMobileClientAccountPDF({
   client,
   movements,
 }: {
-  client: any;
-  movements: any[];
+  client: ClientAccount;
+  movements: AccountMovement[];
 }) {
   const mobileStyles = StyleSheet.create({
     page: {

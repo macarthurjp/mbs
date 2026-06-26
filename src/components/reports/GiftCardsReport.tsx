@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useNotification } from '../../contexts/NotificationContext';
+import { formatPhone } from '../../utils/formatContact';
 import {
   Gift,
   TrendingUp,
@@ -12,8 +13,6 @@ import {
   Download,
   DollarSign,
   Percent,
-  Calendar,
-  Users,
   CreditCard
 } from 'lucide-react';
 
@@ -109,6 +108,72 @@ export function GiftCardsReport() {
   const [daysAhead, setDaysAhead] = useState(30);
   const [searchCode, setSearchCode] = useState('');
 
+  const loadSummary = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_gift_cards_summary');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setSummary(data[0]);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar resumen: ' + message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
+
+  const loadTransactions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_gift_cards_transactions', {
+        p_start_date: new Date(startDate + 'T00:00:00').toISOString(),
+        p_end_date: new Date(endDate + 'T23:59:59').toISOString()
+      });
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar transacciones: ' + message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [endDate, showNotification, startDate]);
+
+  const loadExpiringCards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_gift_cards_expiring', {
+        p_days_ahead: daysAhead
+      });
+      if (error) throw error;
+      setExpiringCards(data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar tarjetas por vencer: ' + message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [daysAhead, showNotification]);
+
+  const loadSalesWithGiftCards = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_sales_with_gift_cards', {
+        p_start_date: new Date(startDate + 'T00:00:00').toISOString(),
+        p_end_date: new Date(endDate + 'T23:59:59').toISOString()
+      });
+      if (error) throw error;
+      setSalesWithGiftCards(data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar ventas: ' + message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [endDate, showNotification, startDate]);
+
   useEffect(() => {
     if (activeTab === 'summary') {
       loadSummary();
@@ -119,69 +184,7 @@ export function GiftCardsReport() {
     } else if (activeTab === 'sales') {
       loadSalesWithGiftCards();
     }
-  }, [activeTab]);
-
-  const loadSummary = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('get_gift_cards_summary');
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setSummary(data[0]);
-      }
-    } catch (error: any) {
-      showNotification('Error al cargar resumen: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadTransactions = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('get_gift_cards_transactions', {
-        p_start_date: new Date(startDate + 'T00:00:00').toISOString(),
-        p_end_date: new Date(endDate + 'T23:59:59').toISOString()
-      });
-      if (error) throw error;
-      setTransactions(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar transacciones: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadExpiringCards = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('get_gift_cards_expiring', {
-        p_days_ahead: daysAhead
-      });
-      if (error) throw error;
-      setExpiringCards(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar tarjetas por vencer: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSalesWithGiftCards = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.rpc('get_sales_with_gift_cards', {
-        p_start_date: new Date(startDate + 'T00:00:00').toISOString(),
-        p_end_date: new Date(endDate + 'T23:59:59').toISOString()
-      });
-      if (error) throw error;
-      setSalesWithGiftCards(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar ventas: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activeTab, loadExpiringCards, loadSalesWithGiftCards, loadSummary, loadTransactions]);
 
   const searchGiftCard = async () => {
     if (!searchCode.trim()) {
@@ -199,8 +202,9 @@ export function GiftCardsReport() {
       if (!data || data.length === 0) {
         showNotification('No se encontró la gift card', 'error');
       }
-    } catch (error: any) {
-      showNotification('Error al buscar gift card: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al buscar gift card: ' + message, 'error');
     } finally {
       setLoading(false);
     }
@@ -579,7 +583,7 @@ export function GiftCardsReport() {
                           {card.recipient_name || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {card.recipient_phone || '-'}
+                          {formatPhone(card.recipient_phone)}
                         </td>
                       </tr>
                     ))}
@@ -772,7 +776,7 @@ export function GiftCardsReport() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Teléfono</p>
-                    <p className="font-semibold">{cardDetails[0].recipient_phone || '-'}</p>
+                    <p className="font-semibold">{formatPhone(cardDetails[0].recipient_phone)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Remitente</p>

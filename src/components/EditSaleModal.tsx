@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Plus, Trash2, Package } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
@@ -73,15 +73,7 @@ export default function EditSaleModal({ isOpen, onClose, sale, onSuccess }: Prop
   const [saving, setSaving] = useState(false);
   const { showNotification } = useNotification();
 
-  useEffect(() => {
-    if (isOpen && sale) {
-      loadProducts();
-      loadClients();
-      initializeForm();
-    }
-  }, [isOpen, sale]);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('products')
@@ -90,12 +82,13 @@ export default function EditSaleModal({ isOpen, onClose, sale, onSuccess }: Prop
 
       if (error) throw error;
       setProducts(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar productos: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar productos: ' + message, 'error');
     }
-  };
+  }, [showNotification]);
 
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('clients')
@@ -104,12 +97,13 @@ export default function EditSaleModal({ isOpen, onClose, sale, onSuccess }: Prop
 
       if (error) throw error;
       setClients(data || []);
-    } catch (error: any) {
-      showNotification('Error al cargar clientes: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al cargar clientes: ' + message, 'error');
     }
-  };
+  }, [showNotification]);
 
-  const initializeForm = () => {
+  const initializeForm = useCallback(() => {
     if (!sale) return;
 
     setClientId(sale.client_id || '');
@@ -129,7 +123,15 @@ export default function EditSaleModal({ isOpen, onClose, sale, onSuccess }: Prop
       }));
 
     setItems(saleItems);
-  };
+  }, [sale]);
+
+  useEffect(() => {
+    if (isOpen && sale) {
+      loadProducts();
+      loadClients();
+      initializeForm();
+    }
+  }, [initializeForm, isOpen, loadClients, loadProducts, sale]);
 
   const addItem = () => {
     if (!selectedProductId) {
@@ -269,8 +271,9 @@ export default function EditSaleModal({ isOpen, onClose, sale, onSuccess }: Prop
       } else {
         showNotification(data?.message || 'Error al actualizar venta', 'error');
       }
-    } catch (error: any) {
-      showNotification('Error al actualizar venta: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showNotification('Error al actualizar venta: ' + message, 'error');
     } finally {
       setSaving(false);
     }

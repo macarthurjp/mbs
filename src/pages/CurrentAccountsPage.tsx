@@ -10,6 +10,8 @@ import { Client, AccountMovement, Transaction, Product } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { formatArgentinaDateTime, formatArgentinaDate } from '../utils/dateHelpers';
+import { getUserRoleFlags } from '../utils/roles';
+import { formatPhone } from '../utils/formatContact';
 
 interface DebtAging {
   current: number;
@@ -38,7 +40,8 @@ interface TransactionWithItems extends Transaction {
 const CLIENTS_PER_PAGE = 10;
 
 export function CurrentAccountsPage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const { isSeller } = getUserRoleFlags(userProfile);
   const { showToast } = useNotification();
   const [clients, setClients] = useState<ClientWithMovements[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientWithMovements | null>(null);
@@ -284,11 +287,23 @@ export function CurrentAccountsPage() {
   }
 
   function handleDeleteMovement(movement: AccountMovement) {
+    if (isSeller) {
+      showToast('No tienes permiso para eliminar movimientos', 'warning');
+      return;
+    }
+
     setMovementToDelete(movement);
     setIsDeleteDialogOpen(true);
   }
 
   async function confirmDeleteMovement() {
+    if (isSeller) {
+      showToast('No tienes permiso para eliminar movimientos', 'warning');
+      setIsDeleteDialogOpen(false);
+      setMovementToDelete(null);
+      return;
+    }
+
     if (!movementToDelete || !selectedClient) return;
 
     try {
@@ -410,7 +425,7 @@ export function CurrentAccountsPage() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{client.name}</h3>
                       {client.phone && (
-                        <p className="text-xs text-gray-500 mt-1">{client.phone}</p>
+                        <p className="text-xs text-gray-500 mt-1">{formatPhone(client.phone)}</p>
                       )}
                     </div>
                     <div className="text-right">
@@ -594,7 +609,7 @@ export function CurrentAccountsPage() {
                               }`}>
                                 ${Math.abs(Number(movement.amount)).toFixed(2)}
                               </p>
-                              {movement.type === 'payment' && (
+                              {!isSeller && movement.type === 'payment' && (
                                 <button
                                   onClick={() => handleDeleteMovement(movement)}
                                   className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

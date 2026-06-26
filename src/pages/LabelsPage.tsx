@@ -66,7 +66,7 @@ export function LabelsPage() {
     }
   }
 
-  async function generateLabelImage(product: Product, index: number = 0): Promise<Blob | null> {
+  async function generateLabelImage(product: Product): Promise<Blob | null> {
     return new Promise((resolve) => {
       try {
         if (!product.barcode) {

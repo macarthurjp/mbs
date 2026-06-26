@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Package, AlertTriangle, CheckCircle, Download, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
@@ -28,15 +28,7 @@ export default function StockReport({ onClose }: StockReportProps) {
   const [filterStatus, setFilterStatus] = useState<'all' | 'low' | 'ok'>('all');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  useEffect(() => {
-    filterProducts();
-  }, [products, searchTerm, filterStatus]);
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('products')
@@ -56,9 +48,9 @@ export default function StockReport({ onClose }: StockReportProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  function filterProducts() {
+  const filterProducts = useCallback(() => {
     let filtered = products;
 
     if (searchTerm) {
@@ -75,7 +67,15 @@ export default function StockReport({ onClose }: StockReportProps) {
     }
 
     setFilteredProducts(filtered);
-  }
+  }, [filterStatus, products, searchTerm]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  useEffect(() => {
+    filterProducts();
+  }, [filterProducts]);
 
   function exportToCSV() {
     const headers = ['Producto', 'Categoría', 'Talle', 'Stock Actual', 'Stock Mínimo', 'Estado', 'Costo Unit.', 'Precio', 'Valor Stock'];

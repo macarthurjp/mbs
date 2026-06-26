@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Gift, Plus, Search, Check, X, Copy, Download, Trash2, Image as ImageIcon } from 'lucide-react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { Gift, Plus, Search, Copy, Download, Trash2, Image as ImageIcon } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -34,10 +34,21 @@ interface GiftCardTransaction {
   created_at: string;
 }
 
+interface GiftCardClient {
+  id: string;
+  name: string;
+}
+
+type GiftCardRpcResult = {
+  success?: boolean;
+  code?: string;
+  message?: string;
+};
+
 export function GiftCardsPage() {
   const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
   const [filteredGiftCards, setFilteredGiftCards] = useState<GiftCard[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<GiftCardClient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -59,16 +70,7 @@ export function GiftCardsPage() {
     notes: ''
   });
 
-  useEffect(() => {
-    loadGiftCards();
-    loadClients();
-  }, []);
-
-  useEffect(() => {
-    filterGiftCards();
-  }, [searchTerm, statusFilter, giftCards]);
-
-  async function loadGiftCards() {
+  const loadGiftCards = useCallback(async () => {
     try {
       setLoading(true);
       const { data: cardsData, error: cardsError } = await supabase
@@ -89,14 +91,15 @@ export function GiftCardsPage() {
       }));
 
       setGiftCards(cards);
-    } catch (error: any) {
-      showToast('Error al cargar gift cards: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showToast('Error al cargar gift cards: ' + message, 'error');
     } finally {
       setLoading(false);
     }
-  }
+  }, [showToast]);
 
-  async function loadClients() {
+  const loadClients = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('clients')
@@ -104,13 +107,13 @@ export function GiftCardsPage() {
         .order('name');
 
       if (error) throw error;
-      setClients(data || []);
-    } catch (error: any) {
+      setClients((data || []) as GiftCardClient[]);
+    } catch (error) {
       console.error('Error loading clients:', error);
     }
-  }
+  }, []);
 
-  function filterGiftCards() {
+  const filterGiftCards = useCallback(() => {
     let filtered = giftCards;
 
     if (searchTerm) {
@@ -125,7 +128,16 @@ export function GiftCardsPage() {
     }
 
     setFilteredGiftCards(filtered);
-  }
+  }, [giftCards, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    loadGiftCards();
+    loadClients();
+  }, [loadClients, loadGiftCards]);
+
+  useEffect(() => {
+    filterGiftCards();
+  }, [filterGiftCards]);
 
   async function handleCreateGiftCard() {
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
@@ -147,7 +159,7 @@ export function GiftCardsPage() {
 
       if (error) throw error;
 
-      const result = data as any;
+      const result = data as GiftCardRpcResult;
 
       if (result.success) {
         showToast(`Gift card ${result.code} creada exitosamente. Ingreso registrado en caja.`, 'success');
@@ -164,8 +176,9 @@ export function GiftCardsPage() {
       } else {
         throw new Error('Error al crear gift card');
       }
-    } catch (error: any) {
-      showToast('Error al crear gift card: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showToast('Error al crear gift card: ' + message, 'error');
     } finally {
       setLoading(false);
     }
@@ -184,8 +197,9 @@ export function GiftCardsPage() {
 
       if (error) throw error;
       setTransactions(data || []);
-    } catch (error: any) {
-      showToast('Error al cargar detalles: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showToast('Error al cargar detalles: ' + message, 'error');
     }
   }
 
@@ -204,6 +218,7 @@ export function GiftCardsPage() {
         showToast('Error al crear el canvas', 'error');
         return;
       }
+      const canvasContext = ctx;
 
       // Canvas size for high quality
       const width = 800;
@@ -212,26 +227,26 @@ export function GiftCardsPage() {
       canvas.height = height;
 
       // Background gradient (dark gray to black)
-      const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+      const bgGradient = canvasContext.createLinearGradient(0, 0, width, height);
       bgGradient.addColorStop(0, '#111827');
       bgGradient.addColorStop(0.5, '#1f2937');
       bgGradient.addColorStop(1, '#000000');
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, 0, width, height);
+      canvasContext.fillStyle = bgGradient;
+      canvasContext.fillRect(0, 0, width, height);
 
       // Rounded rectangle helper
       function roundRect(x: number, y: number, w: number, h: number, r: number) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
+        canvasContext.beginPath();
+        canvasContext.moveTo(x + r, y);
+        canvasContext.lineTo(x + w - r, y);
+        canvasContext.quadraticCurveTo(x + w, y, x + w, y + r);
+        canvasContext.lineTo(x + w, y + h - r);
+        canvasContext.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        canvasContext.lineTo(x + r, y + h);
+        canvasContext.quadraticCurveTo(x, y + h, x, y + h - r);
+        canvasContext.lineTo(x, y + r);
+        canvasContext.quadraticCurveTo(x, y, x + r, y);
+        canvasContext.closePath();
       }
 
       // Main title "GIFT CARD"
@@ -364,7 +379,7 @@ export function GiftCardsPage() {
 
       if (error) throw error;
 
-      const result = data as any;
+      const result = data as GiftCardRpcResult;
 
       if (result.success) {
         showToast('Gift card eliminada correctamente', 'success');
@@ -372,10 +387,11 @@ export function GiftCardsPage() {
         setGiftCardToDelete(null);
         loadGiftCards();
       } else {
-        showToast(result.message, 'error');
+        showToast(result.message || 'Error al eliminar gift card', 'error');
       }
-    } catch (error: any) {
-      showToast('Error al eliminar gift card: ' + error.message, 'error');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      showToast('Error al eliminar gift card: ' + message, 'error');
     } finally {
       setLoading(false);
     }

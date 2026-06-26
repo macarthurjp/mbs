@@ -12,6 +12,11 @@ dist-ssr
 *.local
 supabase/.temp/
 
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 .vscode/*
 !.vscode/extensions.json
 .idea

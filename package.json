@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:e2e": "playwright test",
     "supabase:deploy:functions": "supabase functions deploy create-business create-checkout-session create-billing-portal-session sync-stripe-subscriptions create-user update-user delete-user send-invoice send-quote send-support-response",
     "supabase:deploy:webhook": "supabase functions deploy stripe-webhook --no-verify-jwt",
     "supabase:db:push": "supabase db push",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@playwright/test": "^1.61.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

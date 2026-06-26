@@ -1,14 +1,34 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { UserProfile } from '../types';
+
+type UserProfile = {
+  id: string;
+  negocio_id: string | null;
+  rol: string | null;
+  role?: string | null;
+  email?: string | null;
+  name?: string | null;
+  nombre?: string | null;
+  username?: string | null;
+  full_name?: string | null;
+  fullName?: string | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+};
+
+const USER_PROFILE_BASE_COLUMNS = 'id, negocio_id, rol, email, username, full_name, created_at';
+const USER_PROFILE_FULL_COLUMNS = 'id, negocio_id, rol, email, username, full_name, is_active, created_at';
 
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUserProfile: () => Promise<boolean>;
+  refreshProfile: () => Promise<boolean>;
   isAdmin: () => boolean;
   isSeller: () => boolean;
 }
@@ -25,7 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error
+        } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
@@ -39,13 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           setUser(session.user);
-          const profileLoaded = await loadUserProfile(session.user.id);
-          if (!profileLoaded) {
-            console.warn('Profile not found, signing out...');
-            await supabase.auth.signOut();
-            setUser(null);
-            setUserProfile(null);
-          }
+          await loadUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setUserProfile(null);
         }
       } catch (err) {
         console.error('Init auth error:', err);
@@ -61,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     const {
-      data: { subscription },
+      data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       (async () => {
         if (!mounted) return;
@@ -73,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setUserProfile(null);
         }
+
+        setLoading(false);
       })();
     });
 
@@ -84,54 +106,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUserProfile = async (userId: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
+      const baseResult = await supabase
+        .from('usuarios')
+        .select(USER_PROFILE_BASE_COLUMNS)
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error loading user profile:', error);
+      if (baseResult.error) {
+        console.error('Error loading user profile:', baseResult.error);
+        setUserProfile(null);
         return false;
       }
 
-      if (!data) {
-        console.error('No profile found for user');
-        return false;
+      if (!baseResult.data) {
+        console.warn('No se encontró un registro en usuarios para este auth user:', userId);
+
+        const fallbackProfile: UserProfile = {
+          id: userId,
+          negocio_id: null,
+          rol: null,
+          email: null,
+          username: null,
+          full_name: null,
+          is_active: true,
+          created_at: null
+        };
+
+        setUserProfile(fallbackProfile);
+        return true;
       }
 
-      setUserProfile(data);
+      let data = baseResult.data as UserProfile;
+      const fullResult = await supabase
+        .from('usuarios')
+        .select(USER_PROFILE_FULL_COLUMNS)
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!fullResult.error && fullResult.data) {
+        data = fullResult.data as UserProfile;
+      }
+
+      setUserProfile({
+        ...data,
+        nombre: data.full_name || data.username || data.email || null,
+        name: data.full_name || data.username || data.email || null,
+        fullName: data.full_name || null
+      });
       return true;
     } catch (err) {
       console.error('Exception loading user profile:', err);
+      setUserProfile(null);
       return false;
     }
   };
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      // Get email from username
-      const { data: emailData, error: emailError } = await supabase
-        .rpc('get_email_from_username', { p_username: username });
-
-      if (emailError) {
-        console.error('Error getting email:', emailError);
-        throw new Error('Error al buscar usuario');
-      }
-
-      if (!emailData) {
-        throw new Error('Usuario no encontrado');
-      }
-
-      // Sign in with email and password
-      const { error } = await supabase.auth.signInWithPassword({
-        email: emailData,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
         password
       });
 
       if (error) {
         console.error('Auth error:', error);
         throw new Error('Credenciales inválidas');
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        await loadUserProfile(data.user.id);
       }
     } catch (error) {
       console.error('Sign in error:', error);
@@ -141,23 +185,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+
     if (error) throw error;
+
+    setUser(null);
     setUserProfile(null);
   };
 
-  const isAdmin = () => userProfile?.role === 'admin';
-  const isSeller = () => userProfile?.role === 'seller';
+  const refreshUserProfile = async () => {
+    if (!user?.id) return false;
+    return loadUserProfile(user.id);
+  };
+  const refreshProfile = refreshUserProfile;
+
+  const isAdmin = () => ['super_admin', 'owner', 'admin'].includes(userProfile?.rol || '');
+  const isSeller = () => userProfile?.rol === 'seller' || userProfile?.rol === 'vendedor';
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      userProfile,
-      loading,
-      signIn,
-      signOut,
-      isAdmin,
-      isSeller
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userProfile,
+        loading,
+        signIn,
+        signOut,
+        refreshUserProfile,
+        refreshProfile,
+        isAdmin,
+        isSeller
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -165,8 +222,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
   }
+
   return context;
 }

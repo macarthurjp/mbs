@@ -10,6 +10,8 @@
     - Keeps all existing security checks
 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 CREATE OR REPLACE FUNCTION public.update_user_password(p_user_id uuid, p_new_password text)
 RETURNS void
 LANGUAGE plpgsql
@@ -30,7 +32,7 @@ BEGIN
 
   -- Actualizar contraseña
   UPDATE auth.users
-  SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+  SET encrypted_password = extensions.crypt(p_new_password, extensions.gen_salt('bf')),
       updated_at = now()
   WHERE id = p_user_id;
 END;

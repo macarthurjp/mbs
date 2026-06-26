@@ -13,6 +13,8 @@
     - These are test users for development
 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Insert admin user into auth.users
 DO $$
 DECLARE
@@ -40,7 +42,7 @@ BEGIN
       gen_random_uuid(),
       '00000000-0000-0000-0000-000000000000',
       'admin@boutique.local',
-      crypt('admin123', gen_salt('bf')),
+      extensions.crypt('admin123', extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}',
       '{"username":"admin","full_name":"Administrador"}',
@@ -76,7 +78,7 @@ BEGIN
       gen_random_uuid(),
       '00000000-0000-0000-0000-000000000000',
       'vendedor@boutique.local',
-      crypt('vendedor123', gen_salt('bf')),
+      extensions.crypt('vendedor123', extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}',
       '{"username":"vendedor","full_name":"Vendedor"}',

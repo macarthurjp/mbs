@@ -11,6 +11,8 @@
     - Email confirmed for immediate login
 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Delete existing users if they exist
 DELETE FROM user_profiles WHERE username IN ('admin', 'vendedor');
 DELETE FROM auth.users WHERE email IN ('admin@boutique.local', 'vendedor@boutique.local');
@@ -41,7 +43,7 @@ BEGIN
     admin_user_id,
     '00000000-0000-0000-0000-000000000000',
     'admin@boutique.local',
-    crypt('admin123', gen_salt('bf')),
+    extensions.crypt('admin123', extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
     '{}',
@@ -76,7 +78,7 @@ BEGIN
     seller_user_id,
     '00000000-0000-0000-0000-000000000000',
     'vendedor@boutique.local',
-    crypt('vendedor123', gen_salt('bf')),
+    extensions.crypt('vendedor123', extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
     '{}',

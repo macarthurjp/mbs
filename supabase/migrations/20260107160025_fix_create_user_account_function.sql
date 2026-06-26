@@ -10,6 +10,8 @@
     - Keeps all existing security checks
 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 CREATE OR REPLACE FUNCTION public.create_user_account(
   p_username text, 
   p_full_name text, 
@@ -63,7 +65,7 @@ BEGIN
     gen_random_uuid(),
     '00000000-0000-0000-0000-000000000000',
     v_email,
-    crypt(p_password, gen_salt('bf')),
+    extensions.crypt(p_password, extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
     jsonb_build_object('username', p_username, 'full_name', p_full_name),

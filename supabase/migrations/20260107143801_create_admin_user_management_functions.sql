@@ -26,6 +26,8 @@
     - Solo usuarios con rol 'admin' pueden ejecutarlas
 */
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Función para crear un nuevo usuario (solo admins)
 CREATE OR REPLACE FUNCTION create_user_account(
   p_username text,
@@ -80,7 +82,7 @@ BEGIN
     gen_random_uuid(),
     '00000000-0000-0000-0000-000000000000',
     v_email,
-    crypt(p_password, gen_salt('bf')),
+    extensions.crypt(p_password, extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
     jsonb_build_object('username', p_username, 'full_name', p_full_name),
@@ -192,7 +194,7 @@ BEGIN
 
   -- Actualizar contraseña
   UPDATE auth.users
-  SET encrypted_password = crypt(p_new_password, gen_salt('bf')),
+  SET encrypted_password = extensions.crypt(p_new_password, extensions.gen_salt('bf')),
       updated_at = now()
   WHERE id = p_user_id;
 END;

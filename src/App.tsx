@@ -41,9 +41,17 @@ const SESSION_TIMEOUT_MS = Number.isFinite(configuredSessionTimeoutMinutes) && c
   ? configuredSessionTimeoutMinutes * 60 * 1000
   : 0;
 
+function hasKnownAccount() {
+  return window.localStorage.getItem('matmax_has_account') === 'true';
+}
+
 function shouldShowLandingFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  return window.location.pathname === '/landing' || params.get('landing') === '1';
+
+  if (window.location.pathname === '/landing' || params.get('landing') === '1') return true;
+  if (window.location.pathname === '/' && !hasKnownAccount()) return true;
+
+  return false;
 }
 
 function normalizePlanSlug(value: string | null | undefined): PlanSlug {
@@ -129,7 +137,12 @@ function AppContent() {
     checkoutParams.get('plan') || sessionStorage.getItem('matmax_selected_plan')
   );
 
-  const shouldShowLanding = shouldShowLandingFromUrl();
+  // Frozen at mount: this must reflect the URL/account state at first load
+  // only, otherwise it fights with in-app transitions like clicking "Crear
+  // cuenta" on the landing page (which moves publicStep to 'auth' without a
+  // real navigation, so window.location never changes).
+  const [shouldShowLanding] = useState(() => shouldShowLandingFromUrl());
+  const userLeftLandingRef = useRef(false);
   const [publicStep, setPublicStep] = useState<PublicStep>(shouldShowLanding ? 'landing' : 'auth');
   const [selectedPlan, setSelectedPlan] = useState<PlanSlug>(initialSelectedPlan);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -464,12 +477,17 @@ function AppContent() {
       setCurrentPage('dashboard');
       setSidebarOpen(false);
 
-      if (shouldShowLanding && !cameFromCheckout) {
-        if (!cancelled) {
-          setResolvedNegocioId(null);
-          setPublicStep('landing');
+      // Skip re-asserting landing once the visitor has deliberately clicked
+      // through (e.g. "Crear cuenta"), otherwise this effect re-running on
+      // every publicStep change would undo that in-app transition.
+      if (!userLeftLandingRef.current) {
+        if (shouldShowLanding && !cameFromCheckout) {
+          if (!cancelled) {
+            setResolvedNegocioId(null);
+            setPublicStep('landing');
+          }
+          return;
         }
-        return;
       }
 
       if (cameFromCheckout) {
@@ -662,6 +680,7 @@ function AppContent() {
     nextUrl.searchParams.set('plan', safePlan);
     window.history.replaceState({}, '', nextUrl.toString());
 
+    userLeftLandingRef.current = true;
     setPublicStep('auth');
     setSidebarOpen(false);
   }

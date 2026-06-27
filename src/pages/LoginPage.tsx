@@ -188,6 +188,8 @@ export function LoginPage({ selectedPlan = 'basic' }: LoginPageProps) {
           throw new Error('No se pudo crear el usuario');
         }
 
+        localStorage.setItem('matmax_has_account', 'true');
+
         const { error: profileError } = await supabase
           .from('usuarios')
           .upsert({
@@ -229,6 +231,7 @@ export function LoginPage({ selectedPlan = 'basic' }: LoginPageProps) {
         }
 
         localStorage.setItem('matmax_auth', 'true');
+        localStorage.setItem('matmax_has_account', 'true');
 
         window.location.href = '/dashboard';
 
@@ -251,6 +254,7 @@ export function LoginPage({ selectedPlan = 'basic' }: LoginPageProps) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       localStorage.setItem('matmax_auth', 'true');
+      localStorage.setItem('matmax_has_account', 'true');
 
       window.location.href = '/dashboard';
     } catch (err) {

@@ -112,9 +112,11 @@ function getPlanFromInvoice(invoice) {
   const metadataPlan = normalizeStripePlan(invoice.metadata?.plan, null);
   if (metadataPlan) return metadataPlan;
 
+  const firstLine = invoice.lines?.data?.[0];
   const priceId =
-    invoice.lines?.data?.[0]?.price?.id ||
-    invoice.lines?.data?.[0]?.plan?.id ||
+    firstLine?.price?.id ||
+    firstLine?.plan?.id ||
+    firstLine?.pricing?.price_details?.price ||
     '';
 
   if (priceId && priceId === Deno.env.get('STRIPE_PRICE_BASIC')) return 'basic';
@@ -122,6 +124,13 @@ function getPlanFromInvoice(invoice) {
   if (priceId && priceId === Deno.env.get('STRIPE_PRICE_PREMIUM')) return 'premium';
 
   return null;
+}
+
+// Stripe API versions from 2025+ moved `invoice.subscription` to
+// `invoice.parent.subscription_details.subscription`.
+function getInvoiceSubscriptionId(invoice) {
+  return toStringOrNull(invoice.subscription) ||
+    toStringOrNull(invoice.parent?.subscription_details?.subscription);
 }
 
 function getEstadoFromSubscription(subscription) {
@@ -444,7 +453,7 @@ serve(async (req) => {
           const invoice = event.data.object;
           await setBusinessStatusBySubscription(
             supabase,
-            toStringOrNull(invoice.subscription),
+            getInvoiceSubscriptionId(invoice),
             'activo',
             toStringOrNull(invoice.customer),
             getPlanFromInvoice(invoice),
@@ -457,7 +466,7 @@ serve(async (req) => {
           const invoice = event.data.object;
           await setBusinessStatusBySubscription(
             supabase,
-            toStringOrNull(invoice.subscription),
+            getInvoiceSubscriptionId(invoice),
             'suspendido',
             toStringOrNull(invoice.customer),
             null,

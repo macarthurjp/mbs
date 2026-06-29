@@ -880,7 +880,7 @@ export default function AccountsReceivablePage() {
                       </td>
                       <td className="px-3 py-3 align-middle">
                         <p className="whitespace-nowrap font-semibold text-[#71717a]">{formatPhone(client.telefono)}</p>
-                        <p className="mt-1 max-w-[260px] whitespace-normal break-words text-xs font-semibold leading-snug text-[#71717a]" title={client.email || ''}>
+                        <p className="mt-1 block max-w-full truncate text-xs font-semibold leading-snug text-[#71717a]" title={client.email || ''}>
                           {formatEmail(client.email)}
                         </p>
                       </td>

@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { assertE2ECredentials, goToLoginForm, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD } from './utils/auth';
+import { assertE2ECredentials, goToLoginForm, hasE2ECredentials, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD } from './utils/auth';
 
 test.describe('Login page', () => {
   test('clicking through from the landing page reaches the login form and remembers the account on logout', async ({ page }) => {
+    test.skip(!hasE2ECredentials, 'E2E owner credentials are not configured.');
     assertE2ECredentials();
 
     await page.goto('/');

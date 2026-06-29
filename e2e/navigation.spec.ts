@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestOwner } from './utils/auth';
+import { hasE2ECredentials, loginAsTestOwner } from './utils/auth';
 
 test.describe('Authenticated navigation', () => {
   test('owner can navigate to Sales, Clients and Products', async ({ page }) => {
+    test.skip(!hasE2ECredentials, 'E2E owner credentials are not configured.');
+
     await loginAsTestOwner(page);
 
     await page.getByRole('button', { name: 'Ventas' }).click();

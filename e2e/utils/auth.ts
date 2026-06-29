@@ -4,9 +4,10 @@ import 'dotenv/config';
 export const TEST_OWNER_EMAIL = process.env.E2E_OWNER_EMAIL || '';
 export const TEST_OWNER_PASSWORD = process.env.E2E_OWNER_PASSWORD || '';
 export const TEST_BUSINESS_NAME = 'MatMax E2E Test Business';
+export const hasE2ECredentials = Boolean(TEST_OWNER_EMAIL && TEST_OWNER_PASSWORD);
 
 export function assertE2ECredentials() {
-  if (!TEST_OWNER_EMAIL || !TEST_OWNER_PASSWORD) {
+  if (!hasE2ECredentials) {
     throw new Error('Missing E2E_OWNER_EMAIL or E2E_OWNER_PASSWORD in the local environment.');
   }
 }

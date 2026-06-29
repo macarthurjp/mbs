@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestOwner } from './utils/auth';
+import { hasE2ECredentials, loginAsTestOwner } from './utils/auth';
 
 test.describe('Sales money flow', () => {
   test('owner creates a product and completes a cash sale', async ({ page }) => {
+    test.skip(!hasE2ECredentials, 'E2E owner credentials are not configured.');
+
     await loginAsTestOwner(page);
 
     const productName = `E2E Test Product ${Date.now()}`;

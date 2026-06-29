@@ -370,10 +370,8 @@
     border: none !important;
   }
 
-  body.printing-single-label {
-    @page {
-      size: 58mm auto;
-      margin: 0;
-    }
+  @page {
+    size: 58mm auto;
+    margin: 0;
   }
 }

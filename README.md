@@ -10,9 +10,10 @@ Sistema SaaS de punto de venta para negocios minoristas. Incluye ventas, inventa
 npm run lint
 npm run typecheck
 npm run build
+npm run test:e2e
 ```
 
-Resultado actual: los tres comandos pasan correctamente. El proyecto no tiene suite automatizada de unit tests o e2e configurada todavía.
+Resultado actual: lint, typecheck, build y la suite e2e de Playwright pasan correctamente en local. El proyecto no tiene suite automatizada de unit tests configurada todavía.
 
 ## Stack
 
@@ -65,7 +66,7 @@ La separación por negocio usa `negocio_id` y debe estar reforzada por política
 
 ## Requisitos
 
-- Node.js 18 o superior
+- Node.js 20.19 o superior, o Node.js 22.12 o superior
 - npm
 - Proyecto Supabase configurado
 - Supabase CLI para desplegar migraciones y Edge Functions
@@ -87,9 +88,12 @@ VITE_SAAS_EMAIL_DOMAIN=mbs.app
 VITE_SESSION_TIMEOUT_MINUTES=30
 VITE_DEV_FALLBACK_NEGOCIO_ID=
 VITE_DEV_FALLBACK_USER_ID=
+E2E_OWNER_EMAIL=
+E2E_OWNER_PASSWORD=
 ```
 
 No guardes service role keys, secretos de Stripe ni llaves de Resend en variables `VITE_*`, porque esas variables se exponen al navegador.
+Las variables `E2E_*` son solo para Playwright local/CI y deben apuntar a un usuario de prueba.
 
 ## Desarrollo
 
@@ -110,6 +114,7 @@ npm run dev
 npm run lint
 npm run typecheck
 npm run build
+npm run test:e2e
 npm run preview
 ```
 
@@ -136,6 +141,7 @@ Antes de entregar o desplegar cambios, ejecutar:
 npm run lint
 npm run typecheck
 npm run build
+npm run test:e2e
 ```
 
 Qué cubren:
@@ -143,12 +149,13 @@ Qué cubren:
 - `lint`: reglas de ESLint, hooks de React, imports y tipado básico.
 - `typecheck`: validación completa de TypeScript.
 - `build`: compilación de producción con Vite.
+- `test:e2e`: pruebas Playwright de landing, login, recuperación, navegación y flujo básico de venta.
 
 Qué no cubren:
 
 - Login real con Supabase.
 - RLS y permisos en datos reales.
-- Flujos completos de venta, factura, cotización y caja.
+- Flujos completos de factura, cotización, cuentas por cobrar, caja, soporte y administración SaaS.
 - Webhooks de Stripe.
 - Envío real de correos.
 - Impresión térmica o WebUSB.

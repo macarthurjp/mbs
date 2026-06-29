@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { goToLoginForm, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD } from './utils/auth';
+import { assertE2ECredentials, goToLoginForm, TEST_OWNER_EMAIL, TEST_OWNER_PASSWORD } from './utils/auth';
 
 test.describe('Login page', () => {
   test('clicking through from the landing page reaches the login form and remembers the account on logout', async ({ page }) => {
+    assertE2ECredentials();
+
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'MatMax Business Suite' })).toBeVisible();
 

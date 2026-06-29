@@ -1,8 +1,15 @@
 import { Page, expect } from '@playwright/test';
+import 'dotenv/config';
 
-export const TEST_OWNER_EMAIL = 'e2e-test-owner@example.com';
-export const TEST_OWNER_PASSWORD = 'E2eTest!2026Matmax';
+export const TEST_OWNER_EMAIL = process.env.E2E_OWNER_EMAIL || '';
+export const TEST_OWNER_PASSWORD = process.env.E2E_OWNER_PASSWORD || '';
 export const TEST_BUSINESS_NAME = 'MatMax E2E Test Business';
+
+export function assertE2ECredentials() {
+  if (!TEST_OWNER_EMAIL || !TEST_OWNER_PASSWORD) {
+    throw new Error('Missing E2E_OWNER_EMAIL or E2E_OWNER_PASSWORD in the local environment.');
+  }
+}
 
 export async function goToLoginForm(page: Page) {
   // Root '/' shows the marketing landing page to browsers with no prior
@@ -12,6 +19,7 @@ export async function goToLoginForm(page: Page) {
 }
 
 export async function loginAsTestOwner(page: Page) {
+  assertE2ECredentials();
   await goToLoginForm(page);
   await page.getByPlaceholder('correo@empresa.com').fill(TEST_OWNER_EMAIL);
   await page.getByPlaceholder('••••••••').first().fill(TEST_OWNER_PASSWORD);

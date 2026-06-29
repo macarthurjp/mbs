@@ -615,33 +615,20 @@ export default function AccountsReceivablePage() {
     try {
       setSavingPayment(true);
 
-      const newBalance = Math.max(0, currentBalance - amount);
       const today = new Date().toLocaleDateString('en-CA');
 
-      const { error: paymentError } = await supabase
-        .from('pagos')
-        .insert([
-          {
-            negocio_id: negocioId,
-            cliente_id: payingClient.id,
-            venta_id: null,
-            fecha: today,
-            monto: amount,
-            moneda_pago: activePaymentCurrencyCode,
-            monto_original: paymentAmountNumber,
-            tasa_cambio: paymentCurrency === 'secondary' ? exchangeRateSettings.rate : null
-          }
-        ]);
+      const { data: paymentResult, error: paymentError } = await supabase.rpc('register_receivable_payment', {
+        p_cliente_id: payingClient.id,
+        p_monto: amount,
+        p_moneda_pago: activePaymentCurrencyCode,
+        p_monto_original: paymentAmountNumber,
+        p_tasa_cambio: paymentCurrency === 'secondary' ? exchangeRateSettings.rate : null,
+        p_fecha: today
+      });
 
       if (paymentError) throw paymentError;
 
-      const { error: clientError } = await supabase
-        .from('clientes')
-        .update({ saldo: newBalance })
-        .eq('id', payingClient.id)
-        .eq('negocio_id', negocioId);
-
-      if (clientError) throw clientError;
+      const newBalance = Number(paymentResult?.[0]?.new_client_balance ?? Math.max(0, currentBalance - amount));
 
       const { error: receivableNotificationError } = await supabase
         .from('notifications')
@@ -659,40 +646,6 @@ export default function AccountsReceivablePage() {
 
       if (receivableNotificationError) {
         console.warn('Accounts receivable notification was not created:', receivableNotificationError);
-      }
-
-      if (payingClient.id) {
-        let remainingPayment = amount;
-        const clientSales = getClientCreditSales(payingClient.id, creditSales)
-          .sort((a, b) => String(a.fecha_vencimiento || a.fecha).localeCompare(String(b.fecha_vencimiento || b.fecha)));
-
-        for (const sale of clientSales) {
-          if (remainingPayment <= 0) break;
-
-          const saleBalance = Number(sale.saldo_pendiente || 0);
-          const appliedAmount = Math.min(remainingPayment, saleBalance);
-          const newSaleBalance = Math.max(0, saleBalance - appliedAmount);
-          const newCreditStatus = newSaleBalance <= 0
-            ? 'pagado'
-            : newSaleBalance < Number(sale.total || 0)
-              ? 'parcial'
-              : getDaysLate(sale.fecha_vencimiento) > 0
-                ? 'vencido'
-                : 'pendiente';
-
-          const { error: saleError } = await supabase
-            .from('ventas')
-            .update({
-              saldo_pendiente: newSaleBalance,
-              estado_credito: newCreditStatus
-            })
-            .eq('id', sale.id)
-            .eq('negocio_id', negocioId);
-
-          if (saleError) throw saleError;
-
-          remainingPayment -= appliedAmount;
-        }
       }
 
       showToast(t.paymentSuccess, 'success');

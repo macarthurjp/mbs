@@ -8,6 +8,7 @@ import Sidebar, { AppPage } from './components/layout/Sidebar';
 import { getUserRoleFlags } from './utils/roles';
 import { supabase } from './lib/supabase';
 import { getEffectivePlan } from './utils/subscriptionPlan';
+import { clearChunkReloadGuard } from './lib/chunkReloadGuard';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const ProductsPage = lazy(() => import('./pages/ProductsPage').then((module) => ({ default: module.ProductsPage })));
@@ -1225,6 +1226,10 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    clearChunkReloadGuard();
+  }, []);
+
   return (
     <LanguageProvider>
       <AuthProvider>

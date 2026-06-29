@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import { ErrorFallback } from './components/ErrorFallback.tsx';
+import { reloadOnChunkError } from './lib/chunkReloadGuard';
 import './index.css';
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -17,7 +18,7 @@ if (sentryDsn) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+    <Sentry.ErrorBoundary fallback={<ErrorFallback />} onError={reloadOnChunkError}>
       <App />
     </Sentry.ErrorBoundary>
   </StrictMode>

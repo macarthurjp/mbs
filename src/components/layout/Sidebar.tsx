@@ -696,14 +696,14 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-[100dvh] max-w-[92vw] transform overflow-hidden border-r border-[#ece5d7] bg-[#fbfaf7]/92 shadow-[0_30px_90px_rgba(0,0,0,0.14)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:sticky lg:top-0 lg:translate-x-0 lg:shadow-none ${sidebarWidth} ${
+        className={`fixed left-0 top-0 z-50 h-[100dvh] max-w-[92vw] transform overflow-hidden border-r border-[#ece5d7] bg-[#fbfaf7]/92 shadow-[0_30px_90px_rgba(0,0,0,0.14)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:static lg:h-auto lg:translate-x-0 lg:overflow-visible lg:shadow-none ${sidebarWidth} ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ minHeight: elasticSidebarMinHeight }}
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(244,197,66,0.12),transparent_38%)]" />
 
-        <div className="relative z-10 flex h-[100dvh] min-h-0 flex-col">
+        <div className="relative z-10 flex h-[100dvh] min-h-0 flex-col lg:h-auto">
           <div className={`flex items-center justify-between gap-3 border-b border-[#ece5d7] bg-white/45 px-4 backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-5 ${isElasticOpen ? 'py-4 sm:py-5' : 'py-4 sm:py-5'}`}>
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#1b1b1b] bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
@@ -787,7 +787,7 @@ export default function Sidebar({
             </div>
           </div>
 
-          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 pb-4 scrollbar-hide">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 pb-4 scrollbar-hide lg:flex-none lg:overflow-visible">
             {visibleNavigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;

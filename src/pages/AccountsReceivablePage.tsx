@@ -302,6 +302,20 @@ function formatPaymentCode(id: number) {
   return `PAY-${String(id).padStart(4, '0')}`;
 }
 
+// Lets the browser wrap right after the "@" instead of mid-word,
+// avoiding an orphaned single character on its own line.
+function renderEmailWithBreak(email: string) {
+  const atIndex = email.indexOf('@');
+  if (atIndex === -1) return email;
+  return (
+    <>
+      {email.slice(0, atIndex + 1)}
+      <wbr />
+      {email.slice(atIndex + 1)}
+    </>
+  );
+}
+
 function getAvailableCredit(client: Cliente) {
   return Math.max(0, Number(client.limite_credito || 0) - Number(client.saldo || 0));
 }
@@ -852,85 +866,87 @@ export default function AccountsReceivablePage() {
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-[#fffdf8]">
-            <table className="w-full table-fixed text-sm">
-              <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]">
-                <tr>
-                  <th className="w-[16%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.client}</th>
-                  <th className="w-[20%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.contact}</th>
-                  <th className="w-[11%] px-3 py-3 text-right text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.balance}</th>
-                  <th className="w-[12%] px-3 py-3 text-right text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.dueDate}</th>
-                  <th className="w-[11%] px-3 py-3 text-right text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.daysLate}</th>
-                  <th className="w-[12%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.status}</th>
-                  <th className="w-[18%] px-3 py-3 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">{t.actions}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f1ebdf]">
-                {filteredClients.map((client) => {
-                  const nextDueDate = getClientNextDueDate(client.id, creditSales);
-                  const maxDaysLate = getClientMaxDaysLate(client.id, creditSales);
-                  const creditStatus = getClientCreditStatus(client.id, creditSales);
-                  const overdueAmount = getClientOverdueAmount(client.id, creditSales);
+          <div className="space-y-3">
+            {filteredClients.map((client) => {
+              const nextDueDate = getClientNextDueDate(client.id, creditSales);
+              const maxDaysLate = getClientMaxDaysLate(client.id, creditSales);
+              const creditStatus = getClientCreditStatus(client.id, creditSales);
+              const overdueAmount = getClientOverdueAmount(client.id, creditSales);
 
-                  return (
-                    <tr key={client.id} className="odd:bg-white even:bg-[#fffdf8] transition-all duration-300 hover:bg-[#fff9e8]">
-                      <td className="px-3 py-3">
-                        <p className="truncate font-black text-[#050505]">{client.nombre}</p>
-                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-[#71717a]" title={client.direccion || ''}>{client.direccion || '-'}</p>
-                      </td>
-                      <td className="px-3 py-3 align-middle">
-                        <p className="whitespace-nowrap font-semibold text-[#71717a]">{formatPhone(client.telefono)}</p>
-                        <p className="mt-1 block max-w-full truncate text-xs font-semibold leading-snug text-[#71717a]" title={client.email || ''}>
-                          {formatEmail(client.email)}
+              return (
+                <article key={client.id} className="group relative min-w-0 overflow-hidden rounded-[1.45rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)]">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="relative z-10 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.75fr)_104px] xl:items-center">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+                        <Users size={19} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="break-words text-lg font-black leading-snug text-[#050505] xl:text-xl">{client.nombre}</h3>
+                        <p className="mt-1 break-words text-xs font-semibold leading-snug text-[#71717a]">{client.direccion || '-'}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid min-w-0 w-full grid-cols-1 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner sm:grid-cols-2 2xl:grid-cols-[minmax(210px,1.2fr)_minmax(190px,0.9fr)_minmax(170px,0.9fr)_minmax(110px,0.55fr)_minmax(170px,0.85fr)] 2xl:gap-5">
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.contact}</p>
+                        <p className="mt-1 whitespace-nowrap font-semibold text-[#71717a]">{formatPhone(client.telefono)}</p>
+                        <p className="truncate text-xs font-semibold leading-snug text-[#71717a]" title={client.email || ''}>
+                          {renderEmailWithBreak(formatEmail(client.email))}
                         </p>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-right font-black tabular-nums text-red-700">
-                        {formatMoney(client.saldo, currencySettings)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.balance}</p>
+                        <p className="mt-1 whitespace-nowrap font-black tabular-nums text-red-700">{formatMoney(client.saldo, currencySettings)}</p>
                         {overdueAmount > 0 && (
-                          <p className="mt-1 text-[10px] font-black text-red-600">
+                          <p className="mt-1 whitespace-nowrap text-[10px] font-black text-red-600">
                             {t.overdue}: {formatMoney(overdueAmount, currencySettings)}
                           </p>
                         )}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-right font-black tabular-nums text-[#050505]">
-                        {nextDueDate || t.noDueDate}
-                      </td>
-                      <td className={`whitespace-nowrap px-3 py-3 text-right font-black tabular-nums ${maxDaysLate > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
-                        {maxDaysLate > 0 ? maxDaysLate.toLocaleString('en-US') : '0'}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${creditStatus === 'vencido' ? 'bg-red-100 text-red-700' : creditStatus === 'parcial' ? 'bg-[#fff4c7] text-[#8a6a16]' : 'bg-emerald-50 text-emerald-700'}`}>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.dueDate}</p>
+                        <p className="mt-1 whitespace-nowrap font-black tabular-nums text-[#050505]">{nextDueDate || t.noDueDate}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.daysLate}</p>
+                        <p className={`mt-1 whitespace-nowrap font-black tabular-nums ${maxDaysLate > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                          {maxDaysLate > 0 ? maxDaysLate.toLocaleString('en-US') : '0'}
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.status}</p>
+                        <span className={`mt-1 inline-flex max-w-full whitespace-nowrap rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${creditStatus === 'vencido' ? 'bg-red-100 text-red-700' : creditStatus === 'parcial' ? 'bg-[#fff4c7] text-[#8a6a16]' : 'bg-emerald-50 text-emerald-700'}`}>
                           {creditStatus === 'vencido' ? t.overdue : creditStatus === 'parcial' ? t.partial : t.pending}
                         </span>
-                      </td>
-                      <td className="px-3 py-3 text-center">
-                        <div className="flex min-w-[92px] items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openPaymentHistory(client)}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e9e2d3] bg-white text-[#71717a] shadow-[0_12px_24px_rgba(15,15,15,0.06)] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8] hover:text-[#050505]"
-                            title={t.paymentHistory}
-                          >
-                            <History className="h-5 w-5 shrink-0" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openPaymentModal(client)}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-[0_12px_24px_rgba(16,185,129,0.12)] transition-all hover:-translate-y-0.5 hover:bg-emerald-100"
-                            title={t.registerPayment}
-                          >
-                            <Banknote className="h-5 w-5 shrink-0" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center justify-end gap-2 opacity-90 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => openPaymentHistory(client)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e9e2d3] bg-white text-[#71717a] shadow-[0_12px_24px_rgba(15,15,15,0.06)] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8] hover:text-[#050505]"
+                        title={t.paymentHistory}
+                      >
+                        <History className="h-5 w-5 shrink-0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPaymentModal(client)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-[0_12px_24px_rgba(16,185,129,0.12)] transition-all hover:-translate-y-0.5 hover:bg-emerald-100"
+                        title={t.registerPayment}
+                      >
+                        <Banknote className="h-5 w-5 shrink-0" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
 
             {filteredClients.length === 0 && (
-              <div className="border-t border-[#f1ebdf] bg-[#fbfaf7] py-12 text-center font-semibold text-[#71717a]">
+              <div className="rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] py-12 text-center font-semibold text-[#71717a]">
                 {t.noDebtClients}
               </div>
             )}

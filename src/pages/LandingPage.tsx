@@ -277,7 +277,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               {t.saasBadge}
             </div>
 
-            <h2 className="matmax-heading-gradient mb-7 text-5xl font-serif font-bold leading-[1.1] tracking-tight md:text-7xl">
+            <h2 className="matmax-heading-gradient mb-7 text-5xl font-serif font-bold leading-[1.25] tracking-tight md:text-7xl">
               {t.heroTitle}
             </h2>
 

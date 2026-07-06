@@ -33,17 +33,13 @@ type Compra = {
   producto_id: number | null;
   fecha: string;
   cantidad: number;
-  costo: number;
-  total: number;
+  costo: number | null;
+  total: number | null;
   created_at?: string | null;
   productos?: {
     nombre: string;
     unidad: string | null;
   } | null;
-};
-
-type CompraRow = Omit<Compra, 'productos'> & {
-  productos: Compra['productos'] | Compra['productos'][];
 };
 
 
@@ -101,6 +97,10 @@ const purchasesCopy = {
     selectDateError: 'Selecciona una fecha',
     quantityError: 'La cantidad debe ser mayor que cero',
     costError: 'El costo no puede ser negativo',
+    pendingCost: 'Pendiente',
+    completeCost: 'Completar costo',
+    completeCostTitle: 'Completar Costo de Compra',
+    completeCostDescription: 'Esta compra fue registrada sin costo. Agrega el costo y proveedor para completarla.',
     productNotFound: 'Producto no encontrado',
     confirmTitle: 'Registrar compra',
     confirmText: 'Registrar compra',
@@ -167,6 +167,10 @@ const purchasesCopy = {
     selectDateError: 'Select a date',
     quantityError: 'Quantity must be greater than zero',
     costError: 'Cost cannot be negative',
+    pendingCost: 'Pending',
+    completeCost: 'Complete cost',
+    completeCostTitle: 'Complete Purchase Cost',
+    completeCostDescription: 'This purchase was registered without cost. Add the cost and supplier to complete it.',
     productNotFound: 'Product not found',
     confirmTitle: 'Register purchase',
     confirmText: 'Register purchase',
@@ -270,6 +274,10 @@ export default function PurchasesPage() {
   const [currencySettings, setCurrencySettings] = useState<CurrencySettings>(DEFAULT_CURRENCY);
   const [currentPage, setCurrentPage] = useState(1);
   const [supplierFilter, setSupplierFilter] = useState('all');
+  const [completeCostPurchase, setCompleteCostPurchase] = useState<Compra | null>(null);
+  const [completeCostAmount, setCompleteCostAmount] = useState('');
+  const [completeCostProveedor, setCompleteCostProveedor] = useState('');
+  const [savingCost, setSavingCost] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -412,14 +420,10 @@ export default function PurchasesPage() {
 
       const [productsResult, purchasesResult, businessResult] = await Promise.all([
         supabase
-          .from('productos')
-          .select('id, negocio_id, nombre, unidad, precio, costo, stock, minimo')
-          .eq('negocio_id', currentNegocioId)
+          .rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
           .order('nombre', { ascending: true }),
         supabase
-          .from('compras')
-          .select('id, negocio_id, proveedor, producto_id, fecha, cantidad, costo, total, created_at, productos(nombre, unidad)')
-          .eq('negocio_id', currentNegocioId)
+          .rpc('get_compras_for_business', { p_negocio_id: currentNegocioId })
           .order('created_at', { ascending: false }),
         supabase
           .from('negocios')
@@ -432,12 +436,18 @@ export default function PurchasesPage() {
       if (purchasesResult.error) throw purchasesResult.error;
       if (businessResult.error) throw businessResult.error;
 
-      const normalizedPurchases = ((purchasesResult.data || []) as CompraRow[]).map((purchase) => ({
-        ...purchase,
-        productos: Array.isArray(purchase.productos) ? purchase.productos[0] || null : purchase.productos
-      })) as Compra[];
+      const loadedProducts = (productsResult.data || []) as Producto[];
+      const productsById = new Map(loadedProducts.map((product) => [product.id, product]));
 
-      setProducts((productsResult.data || []) as Producto[]);
+      const normalizedPurchases = ((purchasesResult.data || []) as Compra[]).map((purchase) => {
+        const product = purchase.producto_id ? productsById.get(purchase.producto_id) : null;
+        return {
+          ...purchase,
+          productos: product ? { nombre: product.nombre, unidad: product.unidad } : null
+        };
+      });
+
+      setProducts(loadedProducts);
       setPurchases(normalizedPurchases);
       setFilteredPurchases(normalizedPurchases);
       setCurrencySettings(normalizeCurrencySettings(businessResult.data));
@@ -467,6 +477,65 @@ export default function PurchasesPage() {
       cantidad: '',
       costo: ''
     });
+  }
+
+  function openCompleteCostModal(purchase: Compra) {
+    if (!roleFlags.isOwner) return;
+    setCompleteCostPurchase(purchase);
+    setCompleteCostAmount('');
+    setCompleteCostProveedor('');
+  }
+
+  function closeCompleteCostModal() {
+    setCompleteCostPurchase(null);
+    setCompleteCostAmount('');
+    setCompleteCostProveedor('');
+  }
+
+  async function handleCompleteCost(e: FormEvent) {
+    e.preventDefault();
+    if (!roleFlags.isOwner || !completeCostPurchase) return;
+
+    const costo = Number(completeCostAmount || 0);
+    if (!completeCostAmount || costo < 0) {
+      showToast(t.costError, 'error');
+      return;
+    }
+
+    try {
+      setSavingCost(true);
+      const { error } = await supabase.rpc('set_purchase_cost', {
+        p_compra_id: completeCostPurchase.id,
+        p_costo: costo,
+        p_proveedor: completeCostProveedor.trim() || null
+      });
+
+      if (error) throw error;
+
+      if (user?.id && negocioId) {
+        await logAudit({
+          negocio_id: negocioId,
+          user_id: user.id,
+          user_name: loggedUserName,
+          user_email: loggedUserEmail || undefined,
+          user_role: loggedUserRole || undefined,
+          action: 'COMPLETE_PURCHASE_COST',
+          module: 'PURCHASES',
+          record_id: completeCostPurchase.id,
+          description: `${loggedUserName} completó el costo de la compra ${formatPurchaseCode(completeCostPurchase.id)}`,
+          new_data: { costo, proveedor: completeCostProveedor.trim() || null }
+        });
+      }
+
+      showToast(t.purchaseSuccess, 'success');
+      closeCompleteCostModal();
+      await loadData();
+    } catch (error) {
+      console.error('Error completing purchase cost:', error);
+      showToast(t.saveError, 'error');
+    } finally {
+      setSavingCost(false);
+    }
   }
 
   function handleProductChange(productId: string) {
@@ -509,14 +578,14 @@ export default function PurchasesPage() {
     }
 
     const cantidad = Number(formData.cantidad || 0);
-    const costo = Number(formData.costo || 0);
+    const costo = roleFlags.isOwner ? Number(formData.costo || 0) : null;
 
     if (cantidad <= 0) {
       showToast(t.quantityError, 'error');
       return;
     }
 
-    if (costo < 0) {
+    if (costo !== null && costo < 0) {
       showToast(t.costError, 'error');
       return;
     }
@@ -552,38 +621,20 @@ export default function PurchasesPage() {
     try {
       setSaving(true);
 
-      const total = cantidad * costo;
+      const total = costo !== null ? cantidad * costo : null;
+      const proveedor = roleFlags.isOwner ? (formData.proveedor.trim() || null) : null;
 
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('compras')
-        .insert([
-          {
-            negocio_id: negocioId,
-            proveedor: formData.proveedor.trim() || null,
-            producto_id: Number(formData.producto_id),
-            fecha: formData.fecha,
-            cantidad,
-            costo,
-            total
-          }
-        ])
-        .select('id, negocio_id, proveedor, producto_id, fecha, cantidad, costo, total, created_at')
-        .single();
+      const { data: compraId, error: purchaseError } = await supabase.rpc('create_purchase', {
+        p_producto_id: product.id,
+        p_cantidad: cantidad,
+        p_costo: costo,
+        p_proveedor: proveedor,
+        p_fecha: formData.fecha
+      });
 
       if (purchaseError) throw purchaseError;
 
       const newStock = Number(product.stock || 0) + cantidad;
-
-      const { error: productError } = await supabase
-        .from('productos')
-        .update({
-          stock: newStock,
-          costo
-        })
-        .eq('id', product.id)
-        .eq('negocio_id', negocioId);
-
-      if (productError) throw productError;
 
       await logAudit({
         negocio_id: negocioId,
@@ -593,11 +644,11 @@ export default function PurchasesPage() {
         user_role: loggedUserRole || undefined,
         action: 'CREATE_PURCHASE',
         module: 'PURCHASES',
-        record_id: purchaseData?.id,
-        description: `Compra ${purchaseData?.id ? formatPurchaseCode(purchaseData.id) : ''} registrada por ${loggedUserName}`,
+        record_id: compraId,
+        description: `Compra ${compraId ? formatPurchaseCode(compraId) : ''} registrada por ${loggedUserName}`,
         new_data: {
-          compra: purchaseData,
-          proveedor: formData.proveedor.trim() || null,
+          compra_id: compraId,
+          proveedor,
           producto_id: product.id,
           producto_nombre: product.nombre,
           cantidad,
@@ -605,44 +656,20 @@ export default function PurchasesPage() {
           total,
           stock_anterior: Number(product.stock || 0),
           stock_nuevo: newStock,
-          costo_anterior: Number(product.costo || 0),
-          costo_nuevo: costo,
           fecha: formData.fecha
         }
       });
 
-      await logAudit({
-        negocio_id: negocioId,
-        user_id: user.id,
-        user_name: loggedUserName,
-        user_email: loggedUserEmail || undefined,
-        user_role: loggedUserRole || undefined,
-        action: 'UPDATE_PRODUCT_STOCK_FROM_PURCHASE',
-        module: 'PRODUCTS',
-        record_id: product.id,
-        description: `Stock de ${product.nombre} aumentado por compra`,
-        old_data: {
-          producto_id: product.id,
-          nombre: product.nombre,
-          stock: Number(product.stock || 0),
-          costo: Number(product.costo || 0)
-        },
-        new_data: {
-          producto_id: product.id,
-          nombre: product.nombre,
-          stock: newStock,
-          costo
-        }
-      });
-
-            const { error: purchaseNotificationError } = await supabase
+      const { error: purchaseNotificationError } = await supabase
         .from('notifications')
         .insert({
           negocio_id: negocioId,
           user_id: null,
           audience: 'admin',
           title: t.purchaseNotificationTitle,
-          message: `${loggedUserName} ${t.purchaseNotificationMessage} ${formatMoney(total, currencySettings)} ${t.purchaseNotificationFor} ${product.nombre}.`,
+          message: total !== null
+            ? `${loggedUserName} ${t.purchaseNotificationMessage} ${formatMoney(total, currencySettings)} ${t.purchaseNotificationFor} ${product.nombre}.`
+            : `${loggedUserName} ${t.purchaseNotificationMessage} ${cantidad.toLocaleString('en-US')} ${product.unidad || ''} ${t.purchaseNotificationFor} ${product.nombre}.`,
           type: 'success',
           category: 'purchases',
           link: 'purchases',
@@ -753,34 +780,38 @@ export default function PurchasesPage() {
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-3">
-            <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#050505] bg-[#050505] p-5 text-white shadow-[0_24px_64px_rgba(0,0,0,0.18)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.2),transparent_38%)]" />
-              <div className="relative flex min-w-0 items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f4c542] text-[#050505] shadow-[0_16px_36px_rgba(244,197,66,0.2)]">
-                  <ShoppingBag className="h-6 w-6 shrink-0" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.totalPurchases}</p>
-                  <p className="break-words text-3xl font-black leading-none text-white sm:text-4xl">
-                    {formatMoney(metrics.totalCompras, currencySettings)}
-                  </p>
+            {roleFlags.isOwner && (
+              <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#050505] bg-[#050505] p-5 text-white shadow-[0_24px_64px_rgba(0,0,0,0.18)]">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.2),transparent_38%)]" />
+                <div className="relative flex min-w-0 items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f4c542] text-[#050505] shadow-[0_16px_36px_rgba(244,197,66,0.2)]">
+                    <ShoppingBag className="h-6 w-6 shrink-0" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.totalPurchases}</p>
+                    <p className="break-words text-3xl font-black leading-none text-white sm:text-4xl">
+                      {formatMoney(metrics.totalCompras, currencySettings)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white/78 p-4 shadow-sm backdrop-blur-xl">
-              <div className="relative flex min-w-0 items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16] shadow-[0_16px_36px_rgba(138,106,22,0.14)]">
-                  <Calculator className="h-5 w-5 shrink-0" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16]">{t.averagePurchase}</p>
-                  <p className="break-words text-xl font-black leading-tight text-[#050505] sm:text-2xl">
-                    {formatMoney(metrics.promedioCompra, currencySettings)}
-                  </p>
+            {roleFlags.isOwner && (
+              <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white/78 p-4 shadow-sm backdrop-blur-xl">
+                <div className="relative flex min-w-0 items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16] shadow-[0_16px_36px_rgba(138,106,22,0.14)]">
+                    <Calculator className="h-5 w-5 shrink-0" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16]">{t.averagePurchase}</p>
+                    <p className="break-words text-xl font-black leading-tight text-[#050505] sm:text-2xl">
+                      {formatMoney(metrics.promedioCompra, currencySettings)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {canManagePurchases && (
               <Button
@@ -812,12 +843,14 @@ export default function PurchasesPage() {
           icon={Package}
           color="bg-[#f6f4ee] text-[#050505]"
         />
-        <MetricCard
-          title={t.suppliers}
-          value={metrics.proveedores.toLocaleString('en-US')}
-          icon={Truck}
-          color="bg-[#050505] text-[#f4c542]"
-        />
+        {roleFlags.isOwner && (
+          <MetricCard
+            title={t.suppliers}
+            value={metrics.proveedores.toLocaleString('en-US')}
+            icon={Truck}
+            color="bg-[#050505] text-[#f4c542]"
+          />
+        )}
       </div>
 
       <div className="rounded-[1.6rem] border border-[#e9e2d3] bg-white/92 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
@@ -916,11 +949,18 @@ export default function PurchasesPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.id}</th>
                   <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.date}</th>
-                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.supplier}</th>
+                  {roleFlags.isOwner && (
+                    <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.supplier}</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.product}</th>
                   <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.quantity}</th>
-                  <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</th>
-                  <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.total}</th>
+                  {roleFlags.isOwner && (
+                    <>
+                      <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</th>
+                      <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.total}</th>
+                      <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]" />
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f1ebdf]">
@@ -932,11 +972,13 @@ export default function PurchasesPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-[#71717a]">{purchase.fecha}</td>
-                    <td className="px-4 py-3 font-semibold text-[#71717a]">
-                      <span className="line-clamp-2 break-words leading-snug" title={purchase.proveedor || t.noSupplier}>
-                        {purchase.proveedor || t.noSupplier}
-                      </span>
-                    </td>
+                    {roleFlags.isOwner && (
+                      <td className="px-4 py-3 font-semibold text-[#71717a]">
+                        <span className="line-clamp-2 break-words leading-snug" title={purchase.proveedor || t.noSupplier}>
+                          {purchase.proveedor || t.noSupplier}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3 font-black text-[#050505]">
                       <span className="line-clamp-2 break-words leading-snug" title={purchase.productos?.nombre || t.deletedProduct}>
                         {purchase.productos?.nombre || t.deletedProduct}
@@ -945,12 +987,27 @@ export default function PurchasesPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-right font-black tabular-nums text-[#050505]">
                       {Number(purchase.cantidad || 0).toLocaleString('en-US')} {purchase.productos?.unidad || ''}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-[#3f3f46]">
-                      {formatMoney(purchase.costo, currencySettings)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-black tabular-nums text-[#8a6a16]">
-                      {formatMoney(purchase.total, currencySettings)}
-                    </td>
+                    {roleFlags.isOwner && (
+                      <>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-[#3f3f46]">
+                          {purchase.costo === null ? t.pendingCost : formatMoney(purchase.costo, currencySettings)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-black tabular-nums text-[#8a6a16]">
+                          {purchase.total === null ? '—' : formatMoney(purchase.total, currencySettings)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right">
+                          {purchase.costo === null && (
+                            <button
+                              type="button"
+                              onClick={() => openCompleteCostModal(purchase)}
+                              className="rounded-xl border border-[#f4c542]/40 bg-[#fff4c7] px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] text-[#8a6a16] transition hover:-translate-y-0.5 hover:bg-[#ffeaa3]"
+                            >
+                              {t.completeCost}
+                            </button>
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -981,22 +1038,36 @@ export default function PurchasesPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.product}</p>
                       <p className="mt-1 line-clamp-2 break-words text-sm font-black text-[#050505]">{purchase.productos?.nombre || t.deletedProduct}</p>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.supplier}</p>
-                      <p className="mt-1 line-clamp-2 break-words text-sm font-semibold text-[#71717a]">{purchase.proveedor || t.noSupplier}</p>
-                    </div>
+                    {roleFlags.isOwner && (
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.supplier}</p>
+                        <p className="mt-1 line-clamp-2 break-words text-sm font-semibold text-[#71717a]">{purchase.proveedor || t.noSupplier}</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="min-w-0 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-2">
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.cost}</p>
-                      <p className="mt-1 truncate text-sm font-black tabular-nums text-[#050505]">{formatMoney(purchase.costo, currencySettings)}</p>
+                  {roleFlags.isOwner && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="min-w-0 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.cost}</p>
+                        <p className="mt-1 truncate text-sm font-black tabular-nums text-[#050505]">{purchase.costo === null ? t.pendingCost : formatMoney(purchase.costo, currencySettings)}</p>
+                      </div>
+                      <div className="min-w-0 rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-right">
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.total}</p>
+                        <p className="mt-1 truncate text-base font-black tabular-nums text-[#8a6a16]">{purchase.total === null ? '—' : formatMoney(purchase.total, currencySettings)}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-right">
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.total}</p>
-                      <p className="mt-1 truncate text-base font-black tabular-nums text-[#8a6a16]">{formatMoney(purchase.total, currencySettings)}</p>
-                    </div>
-                  </div>
+                  )}
+
+                  {roleFlags.isOwner && purchase.costo === null && (
+                    <button
+                      type="button"
+                      onClick={() => openCompleteCostModal(purchase)}
+                      className="w-full rounded-xl border border-[#f4c542]/40 bg-[#fff4c7] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#8a6a16] transition hover:-translate-y-0.5 hover:bg-[#ffeaa3]"
+                    >
+                      {t.completeCost}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -1047,12 +1118,14 @@ export default function PurchasesPage() {
         title={t.newPurchase}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
-          <Input
-            label={t.supplier}
-            placeholder={t.supplierPlaceholder}
-            value={formData.proveedor}
-            onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
-          />
+          {roleFlags.isOwner && (
+            <Input
+              label={t.supplier}
+              placeholder={t.supplierPlaceholder}
+              value={formData.proveedor}
+              onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
+            />
+          )}
 
           <Select
             label={t.product}
@@ -1075,10 +1148,12 @@ export default function PurchasesPage() {
                   <span className="text-[#71717a]">{t.currentStock}:</span>{' '}
                   <strong>{Number(selectedProduct.stock || 0).toLocaleString('en-US')} {selectedProduct.unidad || t.unit}</strong>
                 </div>
-                <div>
-                  <span className="text-[#71717a]">{t.currentCost}:</span>{' '}
-                  <strong>{formatMoney(selectedProduct.costo, currencySettings)}</strong>
-                </div>
+                {roleFlags.isOwner && (
+                  <div>
+                    <span className="text-[#71717a]">{t.currentCost}:</span>{' '}
+                    <strong>{formatMoney(selectedProduct.costo, currencySettings)}</strong>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1091,7 +1166,7 @@ export default function PurchasesPage() {
             required
           />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className={`grid grid-cols-1 gap-4 ${roleFlags.isOwner ? 'sm:grid-cols-2' : ''}`}>
             <Input
               label={t.quantity}
               type="number"
@@ -1101,23 +1176,27 @@ export default function PurchasesPage() {
               required
             />
 
-            <Input
-              label={t.unitCost}
-              type="number"
-              step="0.01"
-              value={formData.costo}
-              onChange={(e) => setFormData({ ...formData, costo: e.target.value })}
-              required
-            />
+            {roleFlags.isOwner && (
+              <Input
+                label={t.unitCost}
+                type="number"
+                step="0.01"
+                value={formData.costo}
+                onChange={(e) => setFormData({ ...formData, costo: e.target.value })}
+                required
+              />
+            )}
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-[#71717a]">
-              <DollarSign className="shrink-0" size={18} />
-              <span className="font-black">{t.purchaseTotal}</span>
+          {roleFlags.isOwner && (
+            <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-[#71717a]">
+                <DollarSign className="shrink-0" size={18} />
+                <span className="font-black">{t.purchaseTotal}</span>
+              </div>
+              <span className="max-w-full break-words text-left text-2xl font-black tabular-nums text-[#8a6a16] sm:max-w-[260px] sm:text-right sm:text-3xl">{formatMoney(formTotal, currencySettings)}</span>
             </div>
-            <span className="max-w-full break-words text-left text-2xl font-black tabular-nums text-[#8a6a16] sm:max-w-[260px] sm:text-right sm:text-3xl">{formatMoney(formTotal, currencySettings)}</span>
-          </div>
+          )}
 
           <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
             <Button
@@ -1131,11 +1210,50 @@ export default function PurchasesPage() {
             >
               {t.cancel}
             </Button>
-            <Button type="submit" disabled={saving || formTotal <= 0}>
+            <Button type="submit" disabled={saving || Number(formData.cantidad || 0) <= 0 || (roleFlags.isOwner && formTotal < 0)}>
               {saving ? t.saving : t.registerPurchase}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!completeCostPurchase} onClose={closeCompleteCostModal} title={t.completeCostTitle}>
+        {completeCostPurchase && (
+          <form onSubmit={handleCompleteCost} className="space-y-4">
+            <p className="text-sm font-semibold text-[#71717a]">{t.completeCostDescription}</p>
+
+            <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
+              <p className="text-lg font-black text-[#050505]">
+                {completeCostPurchase.productos?.nombre || t.deletedProduct}
+              </p>
+              <p className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-[#8a6a16]">
+                {formatPurchaseCode(completeCostPurchase.id)} · {Number(completeCostPurchase.cantidad || 0).toLocaleString('en-US')} {completeCostPurchase.productos?.unidad || ''}
+              </p>
+            </div>
+
+            <Input
+              label={t.unitCost}
+              type="number"
+              step="0.01"
+              value={completeCostAmount}
+              onChange={(e) => setCompleteCostAmount(e.target.value)}
+              required
+              autoFocus
+            />
+
+            <Input
+              label={t.supplier}
+              placeholder={t.supplierPlaceholder}
+              value={completeCostProveedor}
+              onChange={(e) => setCompleteCostProveedor(e.target.value)}
+            />
+
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={closeCompleteCostModal}>{t.cancel}</Button>
+              <Button type="submit" disabled={savingCost}>{savingCost ? t.saving : t.completeCost}</Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );

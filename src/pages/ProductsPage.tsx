@@ -91,6 +91,19 @@ const productsCopy = {
     update: 'Actualizar',
     create: 'Crear',
     productSingular: 'Producto',
+    addStockAction: 'Agregar stock',
+    addStockTitle: 'Agregar Stock',
+    addStockDescription: 'Suma unidades al stock actual, por ejemplo al recibir una compra.',
+    quantityToAdd: 'Cantidad a agregar',
+    quantityPlaceholder: 'Ej: 300',
+    newStockPreview: 'Nuevo stock',
+    addStockConfirm: 'Agregar Stock',
+    addStockSuccess: 'Stock actualizado correctamente',
+    addStockError: 'Error al actualizar el stock',
+    invalidQuantity: 'Ingresa una cantidad válida mayor a 0',
+    stockAddedNotificationTitle: 'Stock actualizado',
+    stockAddedNotificationMessage: 'agregó',
+    stockAddedNotificationSuffix: 'unidades a',
     massUpdateTitle: 'Modificación Masiva de Precios',
     massWarningStart: 'Esta acción modificará los precios de todos los productos',
     massWarningEnd: 'Los cambios son permanentes.',
@@ -216,6 +229,19 @@ const productsCopy = {
     update: 'Update',
     create: 'Create',
     productSingular: 'Product',
+    addStockAction: 'Add stock',
+    addStockTitle: 'Add Stock',
+    addStockDescription: 'Add units to the current stock, for example when receiving a purchase.',
+    quantityToAdd: 'Quantity to add',
+    quantityPlaceholder: 'E.g: 300',
+    newStockPreview: 'New stock',
+    addStockConfirm: 'Add Stock',
+    addStockSuccess: 'Stock updated successfully',
+    addStockError: 'Error updating stock',
+    invalidQuantity: 'Enter a valid quantity greater than 0',
+    stockAddedNotificationTitle: 'Stock updated',
+    stockAddedNotificationMessage: 'added',
+    stockAddedNotificationSuffix: 'units to',
     massUpdateTitle: 'Mass Price Update',
     massWarningStart: 'This action will modify the prices of all products',
     massWarningEnd: 'Changes are permanent.',
@@ -405,6 +431,9 @@ export function ProductsPage() {
   const [missingNegocio, setMissingNegocio] = useState(false);
   const [showMassUpdateModal, setShowMassUpdateModal] = useState(false);
   const [currencySettings, setCurrencySettings] = useState<CurrencySettings>(DEFAULT_CURRENCY);
+  const [stockAdjustProduct, setStockAdjustProduct] = useState<Producto | null>(null);
+  const [stockAdjustAmount, setStockAdjustAmount] = useState('');
+  const [addingStock, setAddingStock] = useState(false);
 
   const [massUpdateData, setMassUpdateData] = useState({
     adjustmentType: 'percentage',
@@ -521,9 +550,7 @@ export function ProductsPage() {
 
       const [productsResult, businessResult] = await Promise.all([
         supabase
-          .from('productos')
-          .select('*')
-          .eq('negocio_id', currentNegocioId)
+          .rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
           .order('created_at', { ascending: false }),
         supabase
           .from('negocios')
@@ -584,11 +611,13 @@ export function ProductsPage() {
         nombre: formData.nombre.trim(),
         unidad: formData.unidad,
         precio: Number(formData.precio),
-        costo: Number(formData.costo || 0),
         stock: Number(formData.stock || 0),
-        minimo: Number(formData.minimo || 0),
-        proveedor: formData.proveedor.trim() || null
+        minimo: Number(formData.minimo || 0)
       };
+      const nextCosto = Number(formData.costo || 0);
+      const nextProveedor = formData.proveedor.trim() || null;
+      const PRODUCT_SELECT_COLUMNS =
+        'id, negocio_id, nombre, unidad, precio, stock, minimo, created_at, precio_anterior, precio_cambio, precio_actualizado_en';
 
       if (editingProduct) {
         const oldPrice = Number(editingProduct.precio || 0);
@@ -608,10 +637,39 @@ export function ProductsPage() {
           .update(updateData)
           .eq('id', editingProduct.id)
           .eq('negocio_id', negocioId)
-          .select('*')
+          .select(PRODUCT_SELECT_COLUMNS)
           .single();
 
         if (error) throw error;
+
+        if (roleFlags.isOwner) {
+          const costoChanged = Number(editingProduct.costo || 0) !== nextCosto;
+          const proveedorChanged = (editingProduct.proveedor || null) !== nextProveedor;
+
+          if (costoChanged || proveedorChanged) {
+            const { error: costoError } = await supabase.rpc('upsert_producto_costo', {
+              p_producto_id: editingProduct.id,
+              p_costo: nextCosto,
+              p_proveedor: nextProveedor
+            });
+
+            if (costoError) throw costoError;
+
+            await logAudit({
+              negocio_id: negocioId,
+              user_id: user.id,
+              user_name: loggedUserName,
+              user_email: loggedUserEmail || undefined,
+              user_role: loggedUserRole || undefined,
+              action: 'UPDATE_PRODUCT_COST',
+              module: 'PRODUCTS',
+              record_id: editingProduct.id,
+              description: `Costo/proveedor de ${editingProduct.nombre} actualizado por ${loggedUserName}`,
+              old_data: { costo: editingProduct.costo, proveedor: editingProduct.proveedor },
+              new_data: { costo: nextCosto, proveedor: nextProveedor }
+            });
+          }
+        }
 
         await logAudit({
           negocio_id: negocioId,
@@ -628,10 +686,8 @@ export function ProductsPage() {
             nombre: editingProduct.nombre,
             unidad: editingProduct.unidad,
             precio: editingProduct.precio,
-            costo: editingProduct.costo,
             stock: editingProduct.stock,
-            minimo: editingProduct.minimo,
-            proveedor: editingProduct.proveedor
+            minimo: editingProduct.minimo
           },
           new_data: updatedProduct as Record<string, unknown>
         });
@@ -722,10 +778,20 @@ export function ProductsPage() {
         const { data: createdProduct, error } = await supabase
           .from('productos')
           .insert([productData])
-          .select('*')
+          .select(PRODUCT_SELECT_COLUMNS)
           .single();
 
         if (error) throw error;
+
+        if (roleFlags.isOwner && createdProduct?.id && (nextCosto !== 0 || nextProveedor)) {
+          const { error: costoError } = await supabase.rpc('upsert_producto_costo', {
+            p_producto_id: createdProduct.id,
+            p_costo: nextCosto,
+            p_proveedor: nextProveedor
+          });
+
+          if (costoError) throw costoError;
+        }
 
         await logAudit({
           negocio_id: negocioId,
@@ -888,6 +954,113 @@ export function ProductsPage() {
       minimo: '5',
       proveedor: ''
     });
+  }
+
+  function openAddStockModal(product: Producto) {
+    if (!canManageProducts) {
+      showToast(t.sellerReadOnly, 'error');
+      return;
+    }
+    setStockAdjustProduct(product);
+    setStockAdjustAmount('');
+  }
+
+  function closeAddStockModal() {
+    setStockAdjustProduct(null);
+    setStockAdjustAmount('');
+  }
+
+  async function handleAddStock(e: FormEvent) {
+    e.preventDefault();
+    if (!canManageProducts) {
+      showToast(t.sellerReadOnly, 'error');
+      return;
+    }
+    if (!stockAdjustProduct || !negocioId || !user?.id) return;
+
+    const quantity = Number(stockAdjustAmount);
+    if (!stockAdjustAmount || !Number.isFinite(quantity) || quantity <= 0) {
+      showToast(t.invalidQuantity, 'error');
+      return;
+    }
+
+    try {
+      setAddingStock(true);
+      const oldStock = Number(stockAdjustProduct.stock || 0);
+      const newStock = oldStock + quantity;
+
+      const { data: updatedProduct, error } = await supabase
+        .from('productos')
+        .update({ stock: newStock })
+        .eq('id', stockAdjustProduct.id)
+        .eq('negocio_id', negocioId)
+        .select('id, negocio_id, nombre, unidad, precio, stock, minimo, created_at, precio_anterior, precio_cambio, precio_actualizado_en')
+        .single();
+
+      if (error) throw error;
+
+      await logAudit({
+        negocio_id: negocioId,
+        user_id: user.id,
+        user_name: loggedUserName,
+        user_email: loggedUserEmail || undefined,
+        user_role: loggedUserRole || undefined,
+        action: 'ADD_PRODUCT_STOCK',
+        module: 'PRODUCTS',
+        record_id: stockAdjustProduct.id,
+        description: `${loggedUserName} agregó ${quantity} unidades a ${stockAdjustProduct.nombre}`,
+        old_data: { stock: oldStock },
+        new_data: { stock: newStock, quantity_added: quantity }
+      });
+
+      const { error: stockNotificationError } = await supabase
+        .from('notifications')
+        .insert({
+          negocio_id: negocioId,
+          user_id: null,
+          audience: 'admin',
+          title: t.stockAddedNotificationTitle,
+          message: `${loggedUserName} ${t.stockAddedNotificationMessage} ${quantity.toLocaleString('en-US')} ${t.stockAddedNotificationSuffix} ${stockAdjustProduct.nombre}. Stock: ${oldStock.toLocaleString('en-US')} → ${newStock.toLocaleString('en-US')}.`,
+          type: 'info',
+          category: 'inventory',
+          link: 'products',
+          read: false
+        });
+
+      if (stockNotificationError) {
+        console.warn('Stock update notification was not created:', stockNotificationError);
+      }
+
+      const updatedMinimum = Number(updatedProduct?.minimo || 0);
+      if (newStock <= updatedMinimum) {
+        const { error: lowStockNotificationError } = await supabase
+          .from('notifications')
+          .insert({
+            negocio_id: negocioId,
+            user_id: null,
+            audience: 'admin',
+            title: t.lowStockNotificationTitle,
+            message: `${stockAdjustProduct.nombre} ${t.lowStockNotificationMessage}. Stock: ${newStock.toLocaleString('en-US')}. ${t.minimum}: ${updatedMinimum.toLocaleString('en-US')}.`,
+            type: 'warning',
+            category: 'low_stock',
+            link: 'products',
+            read: false
+          });
+
+        if (lowStockNotificationError) {
+          console.warn('Low stock notification was not created:', lowStockNotificationError);
+        }
+      }
+
+      closeAddStockModal();
+      await loadProducts();
+      showToast(t.addStockSuccess, 'success');
+    } catch (error) {
+      console.error('Error adding stock:', error);
+      showToast(t.addStockError, 'error');
+    } finally {
+      setAddingStock(false);
+    }
   }
 
   async function handleMassUpdate() {
@@ -1064,9 +1237,9 @@ export function ProductsPage() {
         </div>
       </section>
 
-      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${isSeller ? '2xl:grid-cols-3' : '2xl:grid-cols-[0.95fr_1.35fr_0.95fr_0.95fr]'}`}>
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${!roleFlags.isOwner ? '2xl:grid-cols-3' : '2xl:grid-cols-[0.95fr_1.35fr_0.95fr_0.95fr]'}`}>
         <ProductMetricCard title={t.totalProducts} value={productMetrics.totalProducts.toLocaleString('en-US')} icon={Package} iconClass="bg-[#050505] text-[#f4c542]" />
-        {canManageProducts && (
+        {roleFlags.isOwner && (
           <ProductMetricCard title={t.inventoryValue} value={formatMoney(productMetrics.inventoryValue, currencySettings)} icon={DollarSign} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
         )}
         <ProductMetricCard title={t.lowStock} value={productMetrics.lowStock.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" valueClass={productMetrics.lowStock > 0 ? 'text-red-600' : 'text-[#050505]'} />
@@ -1121,15 +1294,17 @@ export function ProductsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16]">{formatProductCode(product.id)}</p>
                       <h3 className="mt-1 break-words text-lg font-black leading-snug text-[#050505] xl:text-xl">{product.nombre}</h3>
-                      <p className="mt-1 break-words text-xs font-bold uppercase tracking-[0.12em] text-[#71717a]">
-                        {t.provider}: {product.proveedor || t.noProvider}
-                      </p>
+                      {roleFlags.isOwner && (
+                        <p className="mt-1 break-words text-xs font-bold uppercase tracking-[0.12em] text-[#71717a]">
+                          {t.provider}: {product.proveedor || t.noProvider}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div
                     className={`grid min-w-0 flex-1 grid-cols-2 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner ${
-                      isSeller
+                      !roleFlags.isOwner
                         ? 'sm:grid-cols-[minmax(82px,0.85fr)_minmax(112px,1fr)_minmax(78px,0.7fr)_minmax(132px,1fr)] xl:max-w-[64%]'
                         : 'sm:grid-cols-[minmax(82px,0.85fr)_minmax(82px,0.85fr)_minmax(112px,1fr)_minmax(78px,0.7fr)_minmax(132px,1fr)] xl:max-w-[72%]'
                     }`}
@@ -1138,7 +1313,7 @@ export function ProductsPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.price}</p>
                       <p className="mt-1 max-w-full truncate text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#050505]">{formatMoney(product.precio, currencySettings)}</p>
                     </div>
-                    {canManageProducts && (
+                    {roleFlags.isOwner && (
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</p>
                         <p className="mt-1 max-w-full truncate text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#71717a]">{formatMoney(product.costo, currencySettings)}</p>
@@ -1170,6 +1345,9 @@ export function ProductsPage() {
 
                   {canManageProducts && (
                     <div className="flex shrink-0 items-center justify-end gap-2 opacity-90 transition-opacity group-hover:opacity-100 xl:min-w-[92px]">
+                      <button onClick={() => openAddStockModal(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100" type="button" aria-label={t.addStockAction}>
+                        <Plus size={17} />
+                      </button>
                       <button onClick={() => openEditModal(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] text-[#8a6a16] transition hover:-translate-y-0.5 hover:bg-[#ffeaa3]" type="button" aria-label={t.editProduct}>
                         <Edit2 size={17} />
                       </button>
@@ -1241,7 +1419,7 @@ export function ProductsPage() {
             ]}
           />
 
-          {providerOptions.length > 0 && (
+          {roleFlags.isOwner && providerOptions.length > 0 && (
             <Select
               label={t.provider}
               value={providerOptions.includes(formData.proveedor.trim()) ? formData.proveedor.trim() : ''}
@@ -1253,12 +1431,14 @@ export function ProductsPage() {
             />
           )}
 
-          <Input
-            label={t.provider}
-            value={formData.proveedor}
-            onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
-            placeholder={t.providerPlaceholder}
-          />
+          {roleFlags.isOwner && (
+            <Input
+              label={t.provider}
+              value={formData.proveedor}
+              onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
+              placeholder={t.providerPlaceholder}
+            />
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
@@ -1270,7 +1450,7 @@ export function ProductsPage() {
               onBlur={(e) => setFormData({ ...formData, precio: normalizeMoneyInput(e.target.value) })}
               required
             />
-            {canManageProducts && (
+            {roleFlags.isOwner && (
               <Input
                 label={t.purchaseCost}
                 type="number"
@@ -1292,6 +1472,46 @@ export function ProductsPage() {
             <Button type="submit">{editingProduct ? t.update : t.create} {t.productSingular}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!stockAdjustProduct} onClose={closeAddStockModal} title={t.addStockTitle}>
+        {stockAdjustProduct && (
+          <form onSubmit={handleAddStock} className="space-y-4">
+            <p className="text-sm font-semibold text-[#71717a]">{t.addStockDescription}</p>
+
+            <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
+              <p className="text-lg font-black text-[#050505]">{stockAdjustProduct.nombre}</p>
+              <p className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-[#8a6a16]">
+                {t.stock}: {Number(stockAdjustProduct.stock || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} {stockAdjustProduct.unidad || t.defaultUnit}
+              </p>
+            </div>
+
+            <Input
+              label={t.quantityToAdd}
+              type="number"
+              step="0.01"
+              min="0"
+              value={stockAdjustAmount}
+              onChange={(e) => setStockAdjustAmount(e.target.value)}
+              placeholder={t.quantityPlaceholder}
+              required
+              autoFocus
+            />
+
+            {stockAdjustAmount && Number(stockAdjustAmount) > 0 && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-sm font-bold text-emerald-700">
+                  {t.newStockPreview}: {(Number(stockAdjustProduct.stock || 0) + Number(stockAdjustAmount)).toLocaleString('en-US', { maximumFractionDigits: 2 })} {stockAdjustProduct.unidad || t.defaultUnit}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={closeAddStockModal}>{t.cancel}</Button>
+              <Button type="submit" disabled={addingStock}>{addingStock ? t.updating : t.addStockConfirm}</Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       <Modal

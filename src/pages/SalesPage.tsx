@@ -537,9 +537,11 @@ export function SalesPage() {
       }
 
       const [productsResult, clientsResult, businessResult] = await Promise.all([
-        isSeller
-          ? supabase.from('productos').select('id, negocio_id, nombre, unidad, precio, precio_anterior, precio_cambio, precio_actualizado_en, stock, minimo').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true })
-          : supabase.from('productos').select('*').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true }),
+        supabase
+          .from('productos')
+          .select('id, negocio_id, nombre, unidad, precio, precio_anterior, precio_cambio, precio_actualizado_en, stock, minimo')
+          .eq('negocio_id', currentNegocioId)
+          .order('nombre', { ascending: true }),
         supabase.from('clientes').select('*').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true }),
         supabase.from('negocios').select('*').eq('id', currentNegocioId).maybeSingle()
       ]);
@@ -550,7 +552,7 @@ export function SalesPage() {
 
       const normalizedProducts = ((productsResult.data || []) as ProductoRow[]).map((product) => ({
         ...product,
-        costo: product.costo ?? 0
+        costo: null
       })) as Producto[];
 
       setProducts(normalizedProducts);
@@ -566,7 +568,7 @@ export function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [isSeller, showToast, t.loadError, user?.id, userProfile?.negocio_id]);
+  }, [showToast, t.loadError, user?.id, userProfile?.negocio_id]);
 
   useEffect(() => {
     loadData();

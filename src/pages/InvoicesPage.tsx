@@ -64,7 +64,6 @@ type VentaItem = {
   productos?: {
     nombre: string;
     unidad: string | null;
-    costo?: number | null;
     stock?: number | null;
   } | null;
 };
@@ -403,10 +402,10 @@ function formatInvoiceCode(id: number) {
   return `FAC-${id.toString().padStart(6, '0')}`;
 }
 
-function getInvoiceGrossProfit(venta: Venta | null | undefined) {
+function getInvoiceGrossProfit(venta: Venta | null | undefined, costMap: Map<number, number>) {
   return (venta?.venta_items || []).reduce((sum, item) => {
     const total = Number(item.total ?? Number(item.cantidad || 0) * Number(item.precio || 0));
-    const cost = Number(item.productos?.costo || 0) * Number(item.cantidad || 0);
+    const cost = (costMap.get(item.producto_id || -1) ?? 0) * Number(item.cantidad || 0);
     return sum + (total - cost);
   }, 0);
 }
@@ -429,7 +428,7 @@ export default function InvoicesPage() {
   const isSeller = roleFlags.isSeller;
   const canManageFinancials = roleFlags.canManageFinancials;
   const canManageInvoices = roleFlags.isOwner || roleFlags.isAdmin || roleFlags.isSuperAdmin;
-  const canViewProfit = canManageFinancials;
+  const canViewProfit = roleFlags.isOwner;
 
   const [negocioId, setNegocioId] = useState<string | null>(null);
   const [negocio, setNegocio] = useState<Negocio | null>(null);
@@ -437,6 +436,7 @@ export default function InvoicesPage() {
   const [filteredVentas, setFilteredVentas] = useState<Venta[]>([]);
   const [selectedVenta, setSelectedVenta] = useState<Venta | null>(null);
   const [ventaItems, setVentaItems] = useState<VentaItem[]>([]);
+  const [productCosts, setProductCosts] = useState<Map<number, number>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'cancelled'>('all');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'Contado' | 'Crédito'>('all');
@@ -572,7 +572,7 @@ export default function InvoicesPage() {
     const pendingCredit = activeVentas
       .filter((venta) => venta.tipo_pago === 'Crédito')
       .reduce((sum, venta) => sum + Number(venta.saldo_pendiente || 0), 0);
-    const grossProfit = activeVentas.reduce((sum, venta) => sum + getInvoiceGrossProfit(venta), 0);
+    const grossProfit = activeVentas.reduce((sum, venta) => sum + getInvoiceGrossProfit(venta, productCosts), 0);
 
     return {
       activeCount: activeVentas.length,
@@ -583,7 +583,7 @@ export default function InvoicesPage() {
       pendingCredit,
       grossProfit
     };
-  }, [ventas, totalFacturado]);
+  }, [ventas, totalFacturado, productCosts]);
 
   const sellers = useMemo(() => {
     return Array.from(new Set(ventas.map((venta) => getVentaSeller(venta, loggedUserName)).filter(Boolean))).sort();
@@ -705,28 +705,35 @@ export default function InvoicesPage() {
 
       let ventasQuery = supabase
         .from('ventas')
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, costo, stock))')
+        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .eq('negocio_id', currentNegocioId);
 
       if (isSeller && user.id) {
         ventasQuery = ventasQuery.eq('vendedor_id', user.id);
       }
 
-      const [ventasResult, negocioResult] = await Promise.all([
+      const [ventasResult, negocioResult, costMapResult] = await Promise.all([
         ventasQuery.order('created_at', { ascending: false }),
         supabase
           .from('negocios')
           .select('*')
           .eq('id', currentNegocioId)
-          .maybeSingle()
+          .maybeSingle(),
+        roleFlags.isOwner
+          ? supabase.rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
+          : Promise.resolve({ data: [], error: null })
       ]);
 
       if (ventasResult.error) throw ventasResult.error;
       if (negocioResult.error) throw negocioResult.error;
+      if (costMapResult.error) throw costMapResult.error;
 
       setVentas((ventasResult.data || []) as unknown as Venta[]);
       setFilteredVentas((ventasResult.data || []) as unknown as Venta[]);
       setNegocio((negocioResult.data || null) as unknown as Negocio | null);
+      setProductCosts(new Map(
+        ((costMapResult.data || []) as { id: number; costo: number | null }[]).map((row) => [row.id, Number(row.costo || 0)])
+      ));
       setMissingNegocio(false);
 
       const invoiceId = getPendingInvoiceIdFromNavigation();
@@ -740,7 +747,7 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [isSeller, resolveNegocioId, showToast, t.loadError, user]);
+  }, [isSeller, resolveNegocioId, roleFlags.isOwner, showToast, t.loadError, user]);
 
   const openInvoice = useCallback(async (venta: Venta) => {
     try {
@@ -769,7 +776,7 @@ export default function InvoicesPage() {
 
       const { data, error } = await supabase
         .from('venta_items')
-        .select('id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, costo, stock)')
+        .select('id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)')
         .eq('venta_id', venta.id);
 
       if (error) throw error;
@@ -797,7 +804,7 @@ export default function InvoicesPage() {
     try {
       let invoiceQuery = supabase
         .from('ventas')
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, costo, stock))')
+        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .eq('negocio_id', currentNegocioId)
         .eq('id', Number(invoiceId));
 
@@ -1098,7 +1105,7 @@ export default function InvoicesPage() {
         })
         .eq('id', selectedVenta.id)
         .eq('negocio_id', negocioId)
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, costo, stock))')
+        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .maybeSingle();
 
       if (error) throw error;
@@ -1107,7 +1114,7 @@ export default function InvoicesPage() {
 
       const { data: itemsToReverse, error: itemsError } = await supabase
         .from('venta_items')
-        .select('id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, costo, stock)')
+        .select('id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)')
         .eq('venta_id', selectedVenta.id);
 
       if (itemsError) throw itemsError;

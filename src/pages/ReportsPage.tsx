@@ -49,7 +49,7 @@ type VentaItem = {
   cantidad: number;
   precio: number;
   total: number;
-  productos?: { nombre: string; costo: number | null } | null;
+  productos?: { nombre: string } | null;
   ventas?: { negocio_id: string | null; fecha: string; estado?: string | null } | null;
 };
 
@@ -362,6 +362,7 @@ export default function ReportsPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
+  const [productCosts, setProductCosts] = useState<Map<number, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [missingNegocio, setMissingNegocio] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('sales');
@@ -408,7 +409,7 @@ export default function ReportsPage() {
     const vendedorDestacado = Array.from(vendedorStats.values()).sort((a, b) => b.total - a.total)[0] || null;
 
     const gananciaEstimada = ventaItems.filter((item) => !isCancelledItem(item)).reduce((sum, item) => {
-      const costo = Number(item.productos?.costo || 0);
+      const costo = productCosts.get(item.producto_id || -1) ?? 0;
       const precio = Number(item.precio || 0);
       const cantidad = Number(item.cantidad || 0);
       return sum + (precio - costo) * cantidad;
@@ -430,7 +431,7 @@ export default function ReportsPage() {
       productosBajoStock: productos.filter((producto) => Number(producto.stock || 0) <= Number(producto.minimo || 0)).length,
       clientesConDeuda: clientes.filter((cliente) => Number(cliente.saldo || 0) > 0).length
     };
-  }, [activeVentas, cancelledVentas, ventaItems, productos, clientes, pagos]);
+  }, [activeVentas, cancelledVentas, ventaItems, productos, clientes, pagos, productCosts]);
 
   const productosMasVendidos = useMemo(() => {
     const grouped = new Map<number, { nombre: string; cantidad: number; total: number }>();
@@ -473,6 +474,7 @@ export default function ReportsPage() {
         setProductos([]);
         setClientes([]);
         setPagos([]);
+        setProductCosts(new Map());
         setCurrencySettings(DEFAULT_CURRENCY);
         setMissingNegocio(false);
         return;
@@ -485,6 +487,7 @@ export default function ReportsPage() {
         setProductos([]);
         setClientes([]);
         setPagos([]);
+        setProductCosts(new Map());
         setCurrencySettings(DEFAULT_CURRENCY);
         setMissingNegocio(true);
         return;
@@ -502,19 +505,26 @@ export default function ReportsPage() {
         ventasQuery = ventasQuery.eq('vendedor_id', user.id);
       }
 
-      const [ventasResult, productosResult, clientesResult, businessResult] = await Promise.all([
+      const [ventasResult, productosResult, clientesResult, businessResult, costMapResult] = await Promise.all([
         ventasQuery,
-        isSeller
-          ? supabase.from('productos').select('id, nombre, precio, stock, minimo').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true })
-          : supabase.from('productos').select('id, nombre, precio, costo, stock, minimo').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true }),
+        supabase.from('productos').select('id, nombre, precio, stock, minimo').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true }),
         supabase.from('clientes').select('id, nombre, telefono, saldo, limite_credito').eq('negocio_id', currentNegocioId).order('nombre', { ascending: true }),
-        supabase.from('negocios').select('*').eq('id', currentNegocioId).maybeSingle()
+        supabase.from('negocios').select('*').eq('id', currentNegocioId).maybeSingle(),
+        roleFlags.isOwner
+          ? supabase.rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
+          : Promise.resolve({ data: [], error: null })
       ]);
 
       if (ventasResult.error) throw ventasResult.error;
       if (productosResult.error) throw productosResult.error;
       if (clientesResult.error) throw clientesResult.error;
       if (businessResult.error) throw businessResult.error;
+      if (costMapResult.error) throw costMapResult.error;
+
+      const productCostMap = new Map<number, number>(
+        ((costMapResult.data || []) as { id: number; costo: number | null }[]).map((row) => [row.id, Number(row.costo || 0)])
+      );
+      setProductCosts(productCostMap);
 
       const loadedVentasData = (ventasResult.data || []) as unknown as Venta[];
       const ventaIds = loadedVentasData.map((venta) => venta.id);
@@ -549,7 +559,7 @@ export default function ReportsPage() {
       if (ventaIds.length > 0) {
         const itemsResult = await supabase
           .from('venta_items')
-          .select(isSeller ? 'id, venta_id, producto_id, cantidad, precio, total, productos(nombre), ventas(negocio_id, fecha, estado)' : 'id, venta_id, producto_id, cantidad, precio, total, productos(nombre, costo), ventas(negocio_id, fecha, estado)')
+          .select('id, venta_id, producto_id, cantidad, precio, total, productos(nombre), ventas(negocio_id, fecha, estado)')
           .in('venta_id', ventaIds);
         if (itemsResult.error) throw itemsResult.error;
         itemsData = (itemsResult.data || []) as unknown as VentaItem[];
@@ -567,7 +577,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.from, filters.to, isSeller, today, user?.id, userProfile?.negocio_id]);
+  }, [filters.from, filters.to, isSeller, roleFlags.isOwner, today, user?.id, userProfile?.negocio_id]);
 
   useEffect(() => {
     if (isSeller && (filters.from !== today || filters.to !== today || filters.paymentType !== 'all')) {
@@ -711,7 +721,13 @@ export default function ReportsPage() {
           <MetricTile title={t.clientsWithDebt} value={summary.clientesConDeuda.toLocaleString('en-US')} subtitle={t.lowStock} helperValue={summary.productosBajoStock.toLocaleString('en-US')} icon={Users} />
         )}
         {!isSeller && (
-          <MetricTile title={language === 'es' ? 'Venta promedio' : 'Avg Sale'} value={formatMoney(avgSale, currencySettings)} subtitle={t.estimatedProfit} helperValue={formatMoney(summary.gananciaEstimada, currencySettings)} icon={TrendingUp} />
+          <MetricTile
+            title={language === 'es' ? 'Venta promedio' : 'Avg Sale'}
+            value={formatMoney(avgSale, currencySettings)}
+            subtitle={roleFlags.isOwner ? t.estimatedProfit : t.quantitySold}
+            helperValue={roleFlags.isOwner ? formatMoney(summary.gananciaEstimada, currencySettings) : soldUnits.toLocaleString('en-US')}
+            icon={TrendingUp}
+          />
         )}
       </section>
 

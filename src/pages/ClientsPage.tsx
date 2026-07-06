@@ -49,7 +49,8 @@ const clientsCopy = {
     email: 'Email',
     address: 'Dirección',
     creditLimit: 'Límite Crédito',
-    balance: 'Saldo',
+    balance: 'Debe',
+    creditBalance: 'A favor',
     availableCredit: 'Disponible',
     actions: 'Acciones',
     profile: 'Perfil',
@@ -67,6 +68,7 @@ const clientsCopy = {
     emailPlaceholder: 'cliente@email.com',
     addressPlaceholder: 'Calle, ciudad, país',
     initialBalance: 'Saldo Inicial',
+    initialBalanceHint: 'Un valor positivo es deuda del cliente. Un valor negativo se registra como balance a favor del cliente.',
     sellerFinancialLocked: 'Solo administrador puede modificar crédito y saldo',
     sellerSensitiveLocked: 'Solo administrador puede modificar teléfono, email y dirección de un cliente existente',
     cancel: 'Cancelar',
@@ -103,7 +105,8 @@ const clientsCopy = {
     email: 'Email',
     address: 'Address',
     creditLimit: 'Credit Limit',
-    balance: 'Balance',
+    balance: 'Owes',
+    creditBalance: 'Credit',
     availableCredit: 'Available',
     actions: 'Actions',
     profile: 'Profile',
@@ -121,6 +124,7 @@ const clientsCopy = {
     emailPlaceholder: 'client@email.com',
     addressPlaceholder: 'Street, city, country',
     initialBalance: 'Initial Balance',
+    initialBalanceHint: 'A positive value is debt the client owes. A negative value is recorded as credit in the client\'s favor.',
     sellerFinancialLocked: 'Only admin can modify credit and balance',
     sellerSensitiveLocked: 'Only admin can modify phone, email, and address for an existing client',
     cancel: 'Cancel',
@@ -660,7 +664,7 @@ export function ClientsPage() {
                   <p className="mt-1 truncate text-base font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.balance}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{Number(client.saldo || 0) < 0 ? t.creditBalance : t.balance}</p>
                   <span className={`mt-1 inline-flex rounded-full px-3 py-1 text-sm font-black tabular-nums ${Number(client.saldo || 0) > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
                     {formatMoney(getDisplayBalance(client), currencySettings)}
                   </span>
@@ -711,7 +715,7 @@ export function ClientsPage() {
                   <p className="mt-1 truncate text-sm font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.balance}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{Number(client.saldo || 0) < 0 ? t.creditBalance : t.balance}</p>
                   <span className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black tabular-nums ${Number(client.saldo || 0) > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
                     {formatMoney(getDisplayBalance(client), currencySettings)}
                   </span>
@@ -829,13 +833,16 @@ export function ClientsPage() {
                 onChange={(e) => setFormData({ ...formData, limite_credito: e.target.value })}
               />
 
-              <Input
-                label={t.initialBalance}
-                type="number"
-                step="0.01"
-                value={formData.saldo}
-                onChange={(e) => setFormData({ ...formData, saldo: e.target.value })}
-              />
+              <div>
+                <Input
+                  label={t.initialBalance}
+                  type="number"
+                  step="0.01"
+                  value={formData.saldo}
+                  onChange={(e) => setFormData({ ...formData, saldo: e.target.value })}
+                />
+                <p className="mt-1.5 text-xs font-semibold leading-relaxed text-[#71717a]">{t.initialBalanceHint}</p>
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] px-4 py-3 text-sm font-bold text-[#71717a]">

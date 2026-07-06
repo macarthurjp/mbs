@@ -151,6 +151,9 @@ const receivablesCopy = {
     selectClientError: 'Selecciona un cliente válido',
     paymentAmountRequired: 'Ingresa un monto válido',
     paymentAmountTooHigh: 'El monto no puede ser mayor que el saldo pendiente',
+    overpaymentTitle: 'El pago es mayor que la deuda',
+    overpaymentMessage: 'Esto dejará un balance a favor del cliente de',
+    overpaymentConfirm: 'Sí, registrar pago',
     paymentSuccess: 'Pago registrado correctamente',
     paymentNotificationTitle: 'Pago recibido',
     paymentNotificationMessage: 'Pago registrado para',
@@ -224,6 +227,9 @@ const receivablesCopy = {
     selectClientError: 'Select a valid client',
     paymentAmountRequired: 'Enter a valid amount',
     paymentAmountTooHigh: 'The amount cannot be greater than the pending balance',
+    overpaymentTitle: 'Payment is greater than the debt',
+    overpaymentMessage: 'This will leave the client with a credit balance of',
+    overpaymentConfirm: 'Yes, register payment',
     paymentSuccess: 'Payment registered successfully',
     paymentNotificationTitle: 'Payment received',
     paymentNotificationMessage: 'Payment registered for',
@@ -380,7 +386,7 @@ function getClientCreditStatus(clientId: number, sales: VentaCredito[]) {
 
 export default function AccountsReceivablePage() {
   const { user, userProfile } = useAuth();
-  const { showToast } = useNotification();
+  const { showToast, showConfirm } = useNotification();
   const { language } = useLanguage();
   const t = receivablesCopy[language];
 
@@ -622,8 +628,15 @@ export default function AccountsReceivablePage() {
     }
 
     if (amount > currentBalance) {
-      showToast(t.paymentAmountTooHigh, 'error');
-      return;
+      const confirmed = await showConfirm({
+        title: t.overpaymentTitle,
+        message: `${t.overpaymentMessage} ${formatMoney(amount - currentBalance, currencySettings)}.`,
+        confirmText: t.overpaymentConfirm,
+        cancelText: t.cancel,
+        variant: 'warning'
+      });
+
+      if (!confirmed) return;
     }
 
     try {
@@ -642,7 +655,7 @@ export default function AccountsReceivablePage() {
 
       if (paymentError) throw paymentError;
 
-      const newBalance = Number(paymentResult?.[0]?.new_client_balance ?? Math.max(0, currentBalance - amount));
+      const newBalance = Number(paymentResult?.[0]?.new_client_balance ?? (currentBalance - amount));
 
       const { error: receivableNotificationError } = await supabase
         .from('notifications')

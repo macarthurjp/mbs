@@ -70,6 +70,8 @@ type ReceiptData = {
   aplicadoADeuda: number;
   cambio: number;
   deudaRestante: number;
+  creditoUsado: number;
+  creditoRestante: number;
   items: CartItem[];
   estado?: string | null;
   monedaCodigo: string;
@@ -122,15 +124,18 @@ const salesCopy = {
     convertedAmount: 'Monto convertido',
     exchangeRateUnavailable: 'Configura una tasa del día en Settings para cobrar en otra moneda.',
     change: 'Cambio',
-    appliedToDebt: 'Aplicado a deuda',
+    appliedToDebt: 'Aplicado a la cuenta',
     remainingDebt: 'Deuda restante',
     currentDebt: 'Deuda actual',
     creditBalance: 'Crédito a favor',
     extraAvailable: 'Excedente disponible',
-    applyExtraToDebt: 'Aplicar excedente a deuda',
-    debtApplyHint: 'Activa esta opción si el cliente quiere usar el dinero restante para bajar su deuda anterior.',
+    applyExtraToDebt: 'Aplicar excedente a la cuenta',
+    debtApplyHint: 'Activa esta opción si el cliente quiere dejar el dinero restante en su cuenta, en vez de recibir cambio. Primero baja su deuda; si sobra, queda como crédito a favor.',
     noDebt: 'Este cliente no tiene deuda pendiente.',
-    enterExtraCash: 'Para aplicar a deuda, el monto recibido debe ser mayor que el total de la venta.',
+    enterExtraCash: 'Para aplicar a la cuenta, el monto recibido debe ser mayor que el total a pagar.',
+    useCreditBalance: 'Usar balance a favor',
+    useCreditHint: 'Activa esta opción para descontar del total el crédito a favor que ya tiene este cliente.',
+    creditUsed: 'Crédito usado',
     amountReceivedRequired: 'El monto recibido debe cubrir el total de la venta',
     clear: 'Limpiar',
     saving: 'Guardando...',
@@ -220,15 +225,18 @@ const salesCopy = {
     convertedAmount: 'Converted amount',
     exchangeRateUnavailable: 'Set a daily exchange rate in Settings to accept another currency.',
     change: 'Change',
-    appliedToDebt: 'Applied to debt',
+    appliedToDebt: 'Applied to account',
     remainingDebt: 'Remaining debt',
     currentDebt: 'Current debt',
     creditBalance: 'Credit balance',
     extraAvailable: 'Available extra cash',
-    applyExtraToDebt: 'Apply extra cash to debt',
-    debtApplyHint: 'Turn this on if the client wants to use the remaining cash to reduce their previous debt.',
+    applyExtraToDebt: 'Apply extra cash to account',
+    debtApplyHint: 'Turn this on if the client wants to leave the remaining cash on their account instead of getting change back. It pays down debt first; anything left over becomes credit balance.',
     noDebt: 'This client has no pending debt.',
-    enterExtraCash: 'To apply cash to debt, the amount received must be greater than the sale total.',
+    enterExtraCash: 'To apply cash to the account, the amount received must be greater than the total due.',
+    useCreditBalance: 'Use credit balance',
+    useCreditHint: 'Turn this on to deduct this client\'s existing credit balance from the total.',
+    creditUsed: 'Credit used',
     amountReceivedRequired: 'Amount received must cover the sale total',
     clear: 'Clear',
     saving: 'Saving...',
@@ -436,6 +444,7 @@ export function SalesPage() {
   const [amountReceived, setAmountReceived] = useState('');
   const [paymentCurrency, setPaymentCurrency] = useState<'system' | 'secondary'>('system');
   const [applyExtraToDebt, setApplyExtraToDebt] = useState(false);
+  const [useCreditBalance, setUseCreditBalance] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [missingNegocio, setMissingNegocio] = useState(false);
@@ -486,26 +495,33 @@ export function SalesPage() {
   const convertedAmountReceived = paymentCurrency === 'secondary'
     ? amountReceivedNumber * Number(exchangeRateSettings.rate || 0)
     : amountReceivedNumber;
+  const selectedClientBalance = Number(selectedClient?.saldo || 0);
+  const selectedClientDebt = Math.max(0, selectedClientBalance);
+  const selectedClientCreditBalance = Math.max(0, -selectedClientBalance);
+  const creditApplied =
+    tipoPago === 'Contado' && useCreditBalance && selectedClient && selectedClientCreditBalance > 0
+      ? Math.min(selectedClientCreditBalance, totalToPay)
+      : 0;
+  const amountDueAfterCredit = Math.max(0, totalToPay - creditApplied);
   const effectiveAmountReceived = tipoPago === 'Contado'
-    ? (amountReceived.trim() ? convertedAmountReceived : totalToPay)
+    ? (amountReceived.trim() ? convertedAmountReceived : amountDueAfterCredit)
     : 0;
   const originalAmountReceived = tipoPago === 'Contado'
     ? (amountReceived.trim()
       ? amountReceivedNumber
       : paymentCurrency === 'secondary' && Number(exchangeRateSettings.rate || 0) > 0
-        ? totalToPay / Number(exchangeRateSettings.rate || 0)
-        : totalToPay)
+        ? amountDueAfterCredit / Number(exchangeRateSettings.rate || 0)
+        : amountDueAfterCredit)
     : 0;
-  const selectedClientBalance = Number(selectedClient?.saldo || 0);
-  const selectedClientDebt = Math.max(0, selectedClientBalance);
-  const selectedClientCreditBalance = Math.max(0, -selectedClientBalance);
-  const extraCash = Math.max(0, effectiveAmountReceived - totalToPay);
+  const extraCash = Math.max(0, effectiveAmountReceived - amountDueAfterCredit);
   const amountAppliedToDebt =
-    tipoPago === 'Contado' && applyExtraToDebt && selectedClient && selectedClientDebt > 0
-      ? Math.min(extraCash, selectedClientDebt)
+    tipoPago === 'Contado' && applyExtraToDebt && selectedClient && extraCash > 0
+      ? extraCash
       : 0;
   const changeAmount = Math.max(0, extraCash - amountAppliedToDebt);
-  const remainingClientDebt = Math.max(0, selectedClientDebt - amountAppliedToDebt);
+  const newClientBalance = selectedClientBalance + creditApplied - amountAppliedToDebt;
+  const remainingClientDebt = Math.max(0, newClientBalance);
+  const remainingClientCredit = Math.max(0, -newClientBalance);
 
   const loadData = useCallback(async () => {
     try {
@@ -628,6 +644,7 @@ export function SalesPage() {
     setAmountReceived('');
     setPaymentCurrency('system');
     setApplyExtraToDebt(false);
+    setUseCreditBalance(false);
   }
 
   function printReceipt(receipt: ReceiptData) {
@@ -694,8 +711,9 @@ export function SalesPage() {
               <div><strong>${t.amountReceived}:</strong> ${formatMoney(receipt.montoRecibido, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>
             ${receipt.monedaPago !== receipt.monedaCodigo ? `<div><strong>${t.paymentCurrency}:</strong> ${receipt.monedaPago} ${formatCurrency(receipt.montoRecibidoOriginal)}</div>` : ''}
             ${receipt.tasaCambio ? `<div><strong>${t.exchangeRate}:</strong> ${formatCurrency(receipt.tasaCambio)}</div>` : ''}
+              ${receipt.creditoUsado > 0 ? `<div><strong>${t.creditUsed}:</strong> ${formatMoney(receipt.creditoUsado, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
               ${receipt.aplicadoADeuda > 0 ? `<div><strong>${t.appliedToDebt}:</strong> ${formatMoney(receipt.aplicadoADeuda, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
-              ${receipt.aplicadoADeuda > 0 ? `<div><strong>${t.remainingDebt}:</strong> ${formatMoney(receipt.deudaRestante, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
+              ${receipt.aplicadoADeuda > 0 ? `<div><strong>${receipt.creditoRestante > 0 ? t.creditBalance : t.remainingDebt}:</strong> ${formatMoney(receipt.creditoRestante > 0 ? receipt.creditoRestante : receipt.deudaRestante, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
               <div><strong>${t.change}:</strong> ${formatMoney(receipt.cambio, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>
             </div>
             <div class="thanks">${t.thanks}</div>
@@ -740,7 +758,7 @@ export function SalesPage() {
       return;
     }
 
-    if (tipoPago === 'Contado' && amountReceived.trim() && effectiveAmountReceived < totalToPay) {
+    if (tipoPago === 'Contado' && amountReceived.trim() && effectiveAmountReceived < amountDueAfterCredit) {
       showToast(t.amountReceivedRequired, 'error');
       return;
     }
@@ -853,18 +871,20 @@ export function SalesPage() {
             moneda_pago?: string | null;
             monto_original?: number | null;
             tasa_cambio?: number | null;
-          }> = [
-            {
+          }> = [];
+
+          if (amountDueAfterCredit > 0) {
+            paymentRows.push({
               negocio_id: negocioId,
               cliente_id: clienteId,
               venta_id: ventaId,
               fecha: today,
-              monto: totalToPay,
+              monto: amountDueAfterCredit,
               moneda_pago: activePaymentCurrencyCode,
-              monto_original: paymentCurrency === 'secondary' && Number(exchangeRateSettings.rate || 0) > 0 ? totalToPay / Number(exchangeRateSettings.rate || 0) : totalToPay,
+              monto_original: paymentCurrency === 'secondary' && Number(exchangeRateSettings.rate || 0) > 0 ? amountDueAfterCredit / Number(exchangeRateSettings.rate || 0) : amountDueAfterCredit,
               tasa_cambio: paymentCurrency === 'secondary' ? exchangeRateSettings.rate : null
-            }
-          ];
+            });
+          }
 
           if (amountAppliedToDebt > 0 && clienteId) {
             paymentRows.push({
@@ -879,8 +899,10 @@ export function SalesPage() {
             });
           }
 
-        const { error: pagoError } = await supabase.from('pagos').insert(paymentRows);
-        if (pagoError) throw pagoError;
+        if (paymentRows.length > 0) {
+          const { error: pagoError } = await supabase.from('pagos').insert(paymentRows);
+          if (pagoError) throw pagoError;
+        }
 
         if (amountAppliedToDebt > 0 && clienteId && selectedClient) {
           let remainingDebtPayment = amountAppliedToDebt;
@@ -916,10 +938,12 @@ export function SalesPage() {
 
             remainingDebtPayment -= paymentForThisSale;
           }
+        }
 
+        if ((amountAppliedToDebt > 0 || creditApplied > 0) && clienteId && selectedClient) {
           const { error: clientDebtError } = await supabase
             .from('clientes')
-            .update({ saldo: remainingClientDebt })
+            .update({ saldo: newClientBalance })
             .eq('id', clienteId)
             .eq('negocio_id', negocioId);
 
@@ -952,10 +976,13 @@ export function SalesPage() {
           monto_recibido_original: originalAmountReceived,
           moneda_pago: activePaymentCurrencyCode,
           tasa_cambio: paymentCurrency === 'secondary' ? exchangeRateSettings.rate : null,
-          aplicar_excedente_a_deuda: applyExtraToDebt,
+          aplicar_excedente_a_cuenta: applyExtraToDebt,
           aplicado_a_deuda: amountAppliedToDebt,
+          usar_balance_a_favor: useCreditBalance,
+          credito_usado: creditApplied,
           cambio: changeAmount,
           deuda_restante: remainingClientDebt,
+          credito_restante: remainingClientCredit,
           saldo_pendiente: saldoPendiente,
           fecha: today,
           productos: cart.map((item) => ({
@@ -1079,6 +1106,8 @@ export function SalesPage() {
         aplicadoADeuda: amountAppliedToDebt,
         cambio: tipoPago === 'Contado' ? changeAmount : 0,
         deudaRestante: remainingClientDebt,
+        creditoUsado: creditApplied,
+        creditoRestante: remainingClientCredit,
         items: cart,
         estado: ventaData.estado || 'activa',
         monedaCodigo: currencySettings.code,
@@ -1209,6 +1238,7 @@ export function SalesPage() {
               onChange={(e) => {
                 setSelectedClientId(e.target.value);
                 setApplyExtraToDebt(false);
+                setUseCreditBalance(false);
                 if (e.target.value) setInformalClientName('');
               }}
               options={[
@@ -1235,7 +1265,7 @@ export function SalesPage() {
               <label className="mb-2.5 block text-[11px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.paymentType}</label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button type="button" onClick={() => { setTipoPago('Contado'); setFechaVencimiento(getDefaultCreditDueDate()); }} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 font-black transition-all ${tipoPago === 'Contado' ? 'border-[#050505] bg-[#050505] text-[#f4c542] shadow-[0_14px_34px_rgba(0,0,0,0.22)]' : 'border-[#e9e2d3] bg-white text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'}`}><Banknote className="shrink-0" size={20} />{t.cash}</button>
-                <button type="button" onClick={() => { setTipoPago('Crédito'); setApplyExtraToDebt(false); if (!fechaVencimiento) setFechaVencimiento(getDefaultCreditDueDate()); }} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 font-black transition-all ${tipoPago === 'Crédito' ? 'border-[#f4c542]/50 bg-[#fff4c7] text-[#8a6a16] shadow-[0_14px_34px_rgba(244,197,66,0.14)]' : 'border-[#e9e2d3] bg-white text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'}`}><CreditCard className="shrink-0" size={20} />{t.credit}</button>
+                <button type="button" onClick={() => { setTipoPago('Crédito'); setApplyExtraToDebt(false); setUseCreditBalance(false); if (!fechaVencimiento) setFechaVencimiento(getDefaultCreditDueDate()); }} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 font-black transition-all ${tipoPago === 'Crédito' ? 'border-[#f4c542]/50 bg-[#fff4c7] text-[#8a6a16] shadow-[0_14px_34px_rgba(244,197,66,0.14)]' : 'border-[#e9e2d3] bg-white text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'}`}><CreditCard className="shrink-0" size={20} />{t.credit}</button>
               </div>
             </div>
 
@@ -1287,7 +1317,7 @@ export function SalesPage() {
                     </button>
                   </div>
 
-                  <Input label={`${t.amountReceived} · ${activePaymentCurrencyCode}`} type="number" min="0" step="0.01" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} placeholder={formatCurrency(paymentCurrency === 'secondary' && Number(exchangeRateSettings.rate || 0) > 0 ? totalToPay / Number(exchangeRateSettings.rate || 0) : totalToPay)} />
+                  <Input label={`${t.amountReceived} · ${activePaymentCurrencyCode}`} type="number" min="0" step="0.01" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} placeholder={formatCurrency(paymentCurrency === 'secondary' && Number(exchangeRateSettings.rate || 0) > 0 ? amountDueAfterCredit / Number(exchangeRateSettings.rate || 0) : amountDueAfterCredit)} />
 
                   {paymentCurrency === 'secondary' && (
                     <div className="space-y-2 rounded-2xl border border-[#e9e2d3] bg-white/80 px-4 py-3 text-sm">
@@ -1304,15 +1334,35 @@ export function SalesPage() {
                   {selectedClient && (
                     <div className="space-y-3 rounded-2xl border border-[#e9e2d3] bg-white/80 px-4 py-3 text-sm">
                       <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{selectedClientCreditBalance > 0 ? t.creditBalance : t.currentDebt}</span><span className={`font-black ${selectedClientDebt > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{formatMoney(selectedClientCreditBalance > 0 ? selectedClientCreditBalance : selectedClientDebt, currencySettings)}</span></div>
+
+                      {selectedClientCreditBalance > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setUseCreditBalance((current) => !current)}
+                            className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left font-black transition-all ${useCreditBalance ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-[#e9e2d3] bg-[#fbfaf7] text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'}`}
+                          >
+                            <span>{t.useCreditBalance}</span>
+                            <span className={`h-6 w-11 rounded-full p-1 transition-all ${useCreditBalance ? 'bg-emerald-600' : 'bg-[#d9ceb8]'}`}>
+                              <span className={`block h-4 w-4 rounded-full bg-white transition-all ${useCreditBalance ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </span>
+                          </button>
+                          <p className="text-xs font-semibold leading-relaxed text-[#71717a]">{t.useCreditHint}</p>
+                          {creditApplied > 0 && (
+                            <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{t.creditUsed}</span><span className="font-black text-emerald-700">{formatMoney(creditApplied, currencySettings)}</span></div>
+                          )}
+                        </>
+                      )}
+
                       <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{t.extraAvailable}</span><span className="font-black text-[#050505]">{formatMoney(extraCash, currencySettings)}</span></div>
                       <button
                         type="button"
                         onClick={() => {
-                          if (selectedClientDebt > 0 && extraCash > 0) {
+                          if (extraCash > 0) {
                             setApplyExtraToDebt((current) => !current);
                           }
                         }}
-                        disabled={selectedClientDebt <= 0 || extraCash <= 0}
+                        disabled={extraCash <= 0}
                         className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left font-black transition-all disabled:cursor-not-allowed disabled:opacity-50 ${applyExtraToDebt ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-[#e9e2d3] bg-[#fbfaf7] text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'}`}
                       >
                         <span>{t.applyExtraToDebt}</span>
@@ -1321,10 +1371,10 @@ export function SalesPage() {
                         </span>
                       </button>
                       <p className="text-xs font-semibold leading-relaxed text-[#71717a]">
-                        {selectedClientCreditBalance > 0 ? t.noDebt : selectedClientDebt <= 0 ? t.noDebt : extraCash <= 0 ? t.enterExtraCash : t.debtApplyHint}
+                        {extraCash <= 0 ? t.enterExtraCash : t.debtApplyHint}
                       </p>
                       <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{t.appliedToDebt}</span><span className="font-black text-emerald-700">{formatMoney(amountAppliedToDebt, currencySettings)}</span></div>
-                      <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{t.remainingDebt}</span><span className="font-black text-[#050505]">{formatMoney(remainingClientDebt, currencySettings)}</span></div>
+                      <div className="flex items-center justify-between gap-3 text-[#71717a]"><span>{remainingClientCredit > 0 ? t.creditBalance : t.remainingDebt}</span><span className="font-black text-[#050505]">{formatMoney(remainingClientCredit > 0 ? remainingClientCredit : remainingClientDebt, currencySettings)}</span></div>
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#e9e2d3] bg-white/80 px-4 py-3 text-sm text-[#71717a]">
@@ -1334,7 +1384,7 @@ export function SalesPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Button type="button" variant="secondary" onClick={clearSale} disabled={saving || cart.length === 0}>{t.clear}</Button><Button type="button" onClick={saveSale} disabled={saving || cart.length === 0 || totalToPay <= 0 || isDiscountBlocked}>{saving ? t.saving : `${t.charge} ${formatMoney(totalToPay, currencySettings)}`}</Button></div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><Button type="button" variant="secondary" onClick={clearSale} disabled={saving || cart.length === 0}>{t.clear}</Button><Button type="button" onClick={saveSale} disabled={saving || cart.length === 0 || totalToPay <= 0 || isDiscountBlocked}>{saving ? t.saving : `${t.charge} ${formatMoney(tipoPago === 'Contado' ? amountDueAfterCredit : totalToPay, currencySettings)}`}</Button></div>
             </div>
           </div>
         </aside>
@@ -1376,6 +1426,12 @@ export function SalesPage() {
                     <span className="font-black text-[#050505]">{formatCurrency(lastReceipt.tasaCambio)}</span>
                   </div>
                 )}
+                {lastReceipt.creditoUsado > 0 && (
+                  <div className="flex items-center justify-between gap-3 text-[#71717a]">
+                    <span>{t.creditUsed}</span>
+                    <span className="font-black text-emerald-700">{formatMoney(lastReceipt.creditoUsado, { code: lastReceipt.monedaCodigo, symbol: lastReceipt.monedaSimbolo })}</span>
+                  </div>
+                )}
                 {lastReceipt.aplicadoADeuda > 0 && (
                   <div className="flex items-center justify-between gap-3 text-[#71717a]">
                     <span>{t.appliedToDebt}</span>
@@ -1384,8 +1440,8 @@ export function SalesPage() {
                 )}
                 {lastReceipt.aplicadoADeuda > 0 && (
                   <div className="flex items-center justify-between gap-3 text-[#71717a]">
-                    <span>{t.remainingDebt}</span>
-                    <span className="font-black text-[#050505]">{formatMoney(lastReceipt.deudaRestante, { code: lastReceipt.monedaCodigo, symbol: lastReceipt.monedaSimbolo })}</span>
+                    <span>{lastReceipt.creditoRestante > 0 ? t.creditBalance : t.remainingDebt}</span>
+                    <span className="font-black text-[#050505]">{formatMoney(lastReceipt.creditoRestante > 0 ? lastReceipt.creditoRestante : lastReceipt.deudaRestante, { code: lastReceipt.monedaCodigo, symbol: lastReceipt.monedaSimbolo })}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-3 text-[#71717a]">

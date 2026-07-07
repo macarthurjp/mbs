@@ -31,10 +31,10 @@ Necesito que crees un **Sistema POS (Punto de Venta) profesional y completo** co
 #### 1. SISTEMA DE AUTENTICACIÓN
 - Login con username/password (NO email)
 - Tres roles: admin, vendedor, cajero
-- Usuarios por defecto:
-  - admin / admin123 (todos los permisos)
-  - vendedor / vendedor123 (ventas, clientes, reportes)
-  - cajero / cajero123 (solo caja)
+- Sin usuarios por defecto: cada rol se crea manualmente con su propia contraseña
+  - admin (todos los permisos)
+  - vendedor (ventas, clientes, reportes)
+  - cajero (solo caja)
 - Context API para estado global de autenticación
 - Protección de rutas por rol
 
@@ -553,7 +553,7 @@ REGLAS CRÍTICAS:
 - Reversar stock al eliminar ventas
 - Gift card genera venta automática
 - Todos los reportes exportables a PDF
-- Usuarios por defecto: admin/admin123, vendedor/vendedor123, cajero/cajero123
+- Sin usuarios por defecto: crear cada cuenta manualmente con contraseña propia
 
 Implementa TODO con código limpio, validaciones completas y documentación.
 ```

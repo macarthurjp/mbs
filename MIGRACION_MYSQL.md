@@ -217,14 +217,15 @@ CREATE TABLE IF NOT EXISTS cashbox_movements (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Crear usuario admin por defecto
+-- Crear usuario admin: genera tu propio hash con bcrypt (nunca reutilices
+-- un hash de ejemplo) y usa un email/contraseña reales del negocio.
 INSERT INTO users (id, email, username, full_name, password_hash, role, active)
 VALUES (
   UUID(),
-  'admin@boutique.com',
+  'admin@tu-dominio.com',
   'admin',
   'Administrador',
-  '$2a$10$X9k8YBKqFvYHZPuEVqZn4.VKM8hL3BqXNNJYqJZPL9KzHQvZm5qOe', -- password: admin123
+  '<hash bcrypt generado>',
   'admin',
   1
 );

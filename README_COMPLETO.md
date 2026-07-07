@@ -182,9 +182,9 @@ http://localhost:5173
 
 ### Usuarios por Defecto
 
-- **Admin**: admin / admin123
-- **Vendedor**: vendedor / vendedor123
-- **Cajero**: cajero / cajero123
+Este proyecto no crea usuarios por defecto. Crea el primer usuario admin
+manualmente desde Supabase (Authentication) y asígnale un negocio en la
+tabla `usuarios`, con una contraseña propia y segura.
 
 ## Despliegue a Producción
 

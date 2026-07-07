@@ -1,12 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@12.18.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 // ---------------------------------------------------------
 // CONFIGURACIÓN
@@ -65,6 +60,8 @@ async function requirePlatformAdmin(req: Request) {
 // FUNCIÓN PRINCIPAL
 // ---------------------------------------------------------
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req, { methods: 'GET, OPTIONS' });
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

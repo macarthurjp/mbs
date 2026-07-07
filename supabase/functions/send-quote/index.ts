@@ -1,13 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
-function jsonResponse(payload: Record<string, unknown>, status = 200) {
+function jsonResponse(corsHeaders: Record<string, string>, payload: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,8 +130,10 @@ async function getBusinessEmailSettings(userId: string, negocioId: string) {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonResponse({ success: false, error: 'Método no permitido' }, 405);
+  if (req.method !== 'POST') return jsonResponse(corsHeaders, { success: false, error: 'Método no permitido' }, 405);
 
   try {
     const user = await requireAuthenticatedUser(req);
@@ -180,8 +178,8 @@ serve(async (req) => {
       attachments,
     });
 
-    return jsonResponse({ success: true, id: emailData?.id || null });
+    return jsonResponse(corsHeaders, { success: true, id: emailData?.id || null });
   } catch (error) {
-    return jsonResponse({ success: false, error: error instanceof Error ? error.message : String(error) }, 400);
+    return jsonResponse(corsHeaders, { success: false, error: error instanceof Error ? error.message : String(error) }, 400);
   }
 });

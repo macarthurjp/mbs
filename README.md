@@ -66,7 +66,8 @@ La separación por negocio usa `negocio_id` y debe estar reforzada por política
 
 ## Requisitos
 
-- Node.js 20.19 o superior, o Node.js 22.12 o superior
+- Node.js 20.19.x recomendado. Node.js 22.12.x tambien esta soportado.
+- No usar Node.js 26 por ahora: ESLint/Vite no son estables en ese runtime en este proyecto.
 - npm
 - Proyecto Supabase configurado
 - Supabase CLI para desplegar migraciones y Edge Functions

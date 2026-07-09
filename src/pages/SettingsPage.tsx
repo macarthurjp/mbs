@@ -13,7 +13,9 @@ import {
   Trash2,
   CreditCard,
   ExternalLink,
-  RefreshCcw
+  RefreshCcw,
+  Database,
+  Download
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -67,6 +69,64 @@ type NotificationSettings = {
   accounts_receivable_notifications: boolean;
   subscription_notifications: boolean;
 };
+
+type BackupRow = Record<string, unknown>;
+
+type BackupTableExport = {
+  label: string;
+  fileName: string;
+  rows: BackupRow[];
+  count: number;
+  skipped?: boolean;
+  error?: string;
+};
+
+type BusinessBackupTable = {
+  table: string;
+  fileName: string;
+  label: string;
+  field: string;
+};
+
+type PlatformBackupRecord = {
+  id: string;
+  created_at: string;
+  file_name: string;
+  size_bytes: number | null;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  status: string | null;
+  error: string | null;
+};
+
+const BUSINESS_BACKUP_TABLES: BusinessBackupTable[] = [
+  { table: 'clientes', fileName: 'clientes.json', label: 'Clientes', field: 'negocio_id' },
+  { table: 'ventas', fileName: 'ventas.json', label: 'Ventas', field: 'negocio_id' },
+  { table: 'pagos', fileName: 'pagos.json', label: 'Pagos', field: 'negocio_id' },
+  { table: 'cotizaciones', fileName: 'cotizaciones.json', label: 'Cotizaciones', field: 'negocio_id' },
+  { table: 'usuarios', fileName: 'usuarios.json', label: 'Usuarios', field: 'negocio_id' },
+  { table: 'suscripciones', fileName: 'suscripciones.json', label: 'Suscripciones', field: 'negocio_id' },
+  { table: 'notifications', fileName: 'notificaciones.json', label: 'Notificaciones', field: 'negocio_id' },
+  { table: 'support_tickets', fileName: 'tickets_soporte.json', label: 'Tickets de soporte', field: 'negocio_id' },
+  { table: 'cashbox_closures', fileName: 'cierres_caja.json', label: 'Cierres de caja', field: 'negocio_id' },
+  { table: 'audit_logs', fileName: 'auditoria.json', label: 'Auditoria', field: 'negocio_id' }
+];
+
+const PLATFORM_BACKUP_TABLES: Omit<BusinessBackupTable, 'field'>[] = [
+  { table: 'negocios', fileName: 'negocios.json', label: 'Negocios' },
+  { table: 'usuarios', fileName: 'usuarios.json', label: 'Usuarios' },
+  { table: 'clientes', fileName: 'clientes.json', label: 'Clientes' },
+  { table: 'ventas', fileName: 'ventas.json', label: 'Ventas' },
+  { table: 'venta_items', fileName: 'venta_items.json', label: 'Items de ventas' },
+  { table: 'pagos', fileName: 'pagos.json', label: 'Pagos' },
+  { table: 'cotizaciones', fileName: 'cotizaciones.json', label: 'Cotizaciones' },
+  { table: 'cotizacion_detalles', fileName: 'cotizacion_detalles.json', label: 'Detalles de cotizaciones' },
+  { table: 'suscripciones', fileName: 'suscripciones.json', label: 'Suscripciones' },
+  { table: 'notifications', fileName: 'notificaciones.json', label: 'Notificaciones' },
+  { table: 'support_tickets', fileName: 'tickets_soporte.json', label: 'Tickets de soporte' },
+  { table: 'cashbox_closures', fileName: 'cierres_caja.json', label: 'Cierres de caja' },
+  { table: 'audit_logs', fileName: 'auditoria.json', label: 'Auditoria' }
+];
 
 const DEFAULT_NOTIFICATION_SETTINGS = {
   support_notifications: true,
@@ -250,6 +310,28 @@ const settingsCopy = {
     website: 'Sitio web',
     taxId: 'Tax ID',
     timezone: 'Zona horaria',
+    businessBackup: 'Respaldo del negocio',
+    businessBackupDescription: 'Crea un archivo ZIP con los datos del negocio actual para guardarlo localmente o subirlo a Google Drive.',
+    createBackup: 'Crear backup ahora',
+    creatingBackup: 'Creando backup...',
+    backupIncludes: 'Incluye clientes, productos, ventas, pagos, compras, cotizaciones, usuarios, auditoría y configuración del negocio.',
+    backupSaved: 'Backup generado correctamente',
+    backupError: 'No se pudo generar el backup',
+    backupOwnerAdminOnly: 'Solo el owner o un administrador puede crear backups.',
+    lastBackup: 'Último backup',
+    noBackupYet: 'Aún no se ha generado en esta sesión',
+    platformBackup: 'Backup de plataforma',
+    platformBackupDescription: 'Crea un ZIP global con los datos que el Super Admin puede leer en todos los negocios del SaaS.',
+    platformBackupIncludes: 'Incluye negocios, usuarios, clientes, productos, ventas, pagos, cotizaciones, suscripciones, soporte, notificaciones y auditoría.',
+    createPlatformBackup: 'Crear backup de plataforma',
+    platformBackupSaved: 'Backup de plataforma generado correctamente',
+    platformBackupError: 'No se pudo generar el backup de plataforma',
+    platformBackupStored: 'Backup descargado y guardado en Storage',
+    platformBackupStorageWarning: 'El ZIP se descargó, pero no se pudo guardar en el historial. Aplica la migración de backups.',
+    backupHistory: 'Historial',
+    noBackupHistory: 'Sin backups guardados todavía',
+    downloadingBackup: 'Preparando descarga...',
+    downloadBackup: 'Descargar',
   },
   en: {
     loading: 'Loading settings...',
@@ -376,6 +458,28 @@ const settingsCopy = {
     website: 'Website',
     taxId: 'Tax ID',
     timezone: 'Timezone',
+    businessBackup: 'Business Backup',
+    businessBackupDescription: 'Create a ZIP file with the current business data to save locally or upload to Google Drive.',
+    createBackup: 'Create backup now',
+    creatingBackup: 'Creating backup...',
+    backupIncludes: 'Includes clients, products, sales, payments, purchases, quotes, users, audit logs, and business settings.',
+    backupSaved: 'Backup generated successfully',
+    backupError: 'Could not generate backup',
+    backupOwnerAdminOnly: 'Only the owner or an administrator can create backups.',
+    lastBackup: 'Last backup',
+    noBackupYet: 'Not generated in this session yet',
+    platformBackup: 'Platform Backup',
+    platformBackupDescription: 'Create a global ZIP with the data the Super Admin can read across all SaaS businesses.',
+    platformBackupIncludes: 'Includes businesses, users, clients, products, sales, payments, quotes, subscriptions, support, notifications, and audit logs.',
+    createPlatformBackup: 'Create platform backup',
+    platformBackupSaved: 'Platform backup generated successfully',
+    platformBackupError: 'Could not generate platform backup',
+    platformBackupStored: 'Backup downloaded and saved to Storage',
+    platformBackupStorageWarning: 'The ZIP was downloaded, but it could not be saved to history. Apply the backups migration.',
+    backupHistory: 'History',
+    noBackupHistory: 'No saved backups yet',
+    downloadingBackup: 'Preparing download...',
+    downloadBackup: 'Download',
   }
 } as const;
 
@@ -394,6 +498,7 @@ export default function SettingsPage() {
   const canManageSalesPermissions = isOwner || isAdmin;
   const canManageBilling = isOwner;
   const canManageInventorySettings = isOwner;
+  const canCreateBusinessBackup = !isSuperAdmin && (isOwner || isAdmin);
 
   const profileData = userProfile as Record<string, unknown> | null | undefined;
   const loggedUserName = String(
@@ -416,6 +521,13 @@ export default function SettingsPage() {
   const [missingNegocio, setMissingNegocio] = useState(false);
   const [savingSalesPermissions, setSavingSalesPermissions] = useState(false);
   const [isEditingSalesPermissions, setIsEditingSalesPermissions] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [lastBackup, setLastBackup] = useState<{ fileName: string; createdAt: string; size: number } | null>(null);
+  const [businessBackupHistory, setBusinessBackupHistory] = useState<Array<{ fileName: string; createdAt: string; size: number }>>([]);
+  const [isCreatingPlatformBackup, setIsCreatingPlatformBackup] = useState(false);
+  const [lastPlatformBackup, setLastPlatformBackup] = useState<{ fileName: string; createdAt: string; size: number } | null>(null);
+  const [platformBackupHistory, setPlatformBackupHistory] = useState<PlatformBackupRecord[]>([]);
+  const [downloadingPlatformBackupId, setDownloadingPlatformBackupId] = useState<string | null>(null);
 
   const [businessForm, setBusinessForm] = useState({
     nombre: '',
@@ -543,6 +655,27 @@ function formatStatusLabel(status: string | null | undefined) {
       setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
     }
   }, [user?.id]);
+
+  const loadPlatformBackupHistory = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setPlatformBackupHistory([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('platform_backups')
+        .select('id, created_at, file_name, size_bytes, storage_bucket, storage_path, status, error')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+      setPlatformBackupHistory((data || []) as PlatformBackupRecord[]);
+    } catch (error) {
+      console.warn('Platform backup history is not available yet:', error);
+      setPlatformBackupHistory([]);
+    }
+  }, [isSuperAdmin]);
 
   async function handleSaveNotificationSettings() {
     if (!user?.id) return;
@@ -808,7 +941,8 @@ function formatStatusLabel(status: string | null | undefined) {
   useEffect(() => {
     loadBusinessSettings();
     loadNotificationSettings();
-  }, [loadBusinessSettings, loadNotificationSettings, normalizedCurrentRole]);
+    loadPlatformBackupHistory();
+  }, [loadBusinessSettings, loadNotificationSettings, loadPlatformBackupHistory, normalizedCurrentRole]);
 
   async function uploadLogoToSupabase(file: File, negocioId: string) {
     const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
@@ -1175,6 +1309,661 @@ if (cleanEmail !== oldProfileEmail) {
       showToast(t.billingPortalError, 'error');
     } finally {
       setBillingPortalLoading(false);
+    }
+  }
+
+  function formatBackupSize(size: number) {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  function getSafeBackupSlug(value: string) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'negocio';
+  }
+
+  function formatBackupError(error: unknown) {
+    if (!error) return 'Error desconocido';
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+
+    if (typeof error === 'object') {
+      const errorRecord = error as Record<string, unknown>;
+      const parts = [
+        errorRecord.message,
+        errorRecord.details,
+        errorRecord.hint,
+        errorRecord.code ? `code: ${errorRecord.code}` : null
+      ]
+        .filter(Boolean)
+        .map(String);
+
+      if (parts.length > 0) return parts.join(' | ');
+
+      try {
+        return JSON.stringify(errorRecord);
+      } catch {
+        return 'Objeto de error no serializable';
+      }
+    }
+
+    return String(error);
+  }
+
+  async function fetchBackupTable(config: BusinessBackupTable, negocioId: string): Promise<BackupTableExport> {
+    const rows: BackupRow[] = [];
+    const pageSize = 1000;
+    let from = 0;
+
+    try {
+      while (true) {
+        const { data, error } = await supabase
+          .from(config.table)
+          .select('*')
+          .eq(config.field, negocioId)
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const pageRows = (data || []) as BackupRow[];
+        rows.push(...pageRows);
+
+        if (pageRows.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return {
+        label: config.label,
+        fileName: config.fileName,
+        rows,
+        count: rows.length
+      };
+    } catch (error) {
+      return {
+        label: config.label,
+        fileName: config.fileName,
+        rows: [],
+        count: 0,
+        skipped: true,
+        error: formatBackupError(error)
+      };
+    }
+  }
+
+  async function fetchFullBackupTable(config: Omit<BusinessBackupTable, 'field'>): Promise<BackupTableExport> {
+    const rows: BackupRow[] = [];
+    const pageSize = 1000;
+    let from = 0;
+
+    try {
+      while (true) {
+        const { data, error } = await supabase
+          .from(config.table)
+          .select('*')
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+
+        const pageRows = (data || []) as BackupRow[];
+        rows.push(...pageRows);
+
+        if (pageRows.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return {
+        label: config.label,
+        fileName: config.fileName,
+        rows,
+        count: rows.length
+      };
+    } catch (error) {
+      return {
+        label: config.label,
+        fileName: config.fileName,
+        rows: [],
+        count: 0,
+        skipped: true,
+        error: formatBackupError(error)
+      };
+    }
+  }
+
+  function createBackupReadme(params: {
+    type: 'business_backup' | 'platform_backup';
+    generatedAt: string;
+    generatedBy: string;
+    fileCount: number;
+  }) {
+    const title = params.type === 'platform_backup' ? 'MatMax Platform Backup' : 'MatMax Business Backup';
+
+    return [
+      title,
+      '',
+      `Generated at: ${params.generatedAt}`,
+      `Generated by: ${params.generatedBy}`,
+      `JSON files: ${params.fileCount}`,
+      '',
+      'How to read this backup:',
+      '- Open _metadata.json first.',
+      '- Every module is stored as a separate JSON file.',
+      '- Each file contains records, skipped, error, and data.',
+      '- If skipped is true, the table was unavailable, missing, or blocked by permissions.',
+      '',
+      'Google Drive:',
+      '- Upload this ZIP file to the backup folder in Google Drive.',
+      '- Keep several dated backups instead of replacing the same file.',
+      '',
+      'Restore note:',
+      '- This ZIP is an export backup, not an automatic restore package yet.',
+      '- Restoring should be done carefully by a technical admin after reviewing the JSON files.'
+    ].join('\n');
+  }
+
+  async function downloadBackupZip(params: {
+    rootFolder: string;
+    fileName: string;
+    metadata: Record<string, unknown>;
+    files: Array<{ name: string; content: string }>;
+  }) {
+    const { createZipBlob } = await import('../utils/createZip');
+    const zipBlob = createZipBlob([
+      {
+        name: `${params.rootFolder}/README_BACKUP.txt`,
+        content: createBackupReadme({
+          type: String(params.metadata.type) === 'platform_backup' ? 'platform_backup' : 'business_backup',
+          generatedAt: String(params.metadata.generated_at || ''),
+          generatedBy: loggedUserName,
+          fileCount: params.files.length
+        })
+      },
+      {
+        name: `${params.rootFolder}/_metadata.json`,
+        content: JSON.stringify(params.metadata, null, 2)
+      },
+      ...params.files
+    ]);
+
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = params.fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    return zipBlob;
+  }
+
+  async function savePlatformBackupToStorage(params: {
+    zipBlob: Blob;
+    fileName: string;
+    storagePath: string;
+    metadata: Record<string, unknown>;
+  }) {
+    const bucket = 'platform-backups';
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(params.storagePath, params.zipBlob, {
+        contentType: 'application/zip',
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { error: insertError } = await supabase
+      .from('platform_backups')
+      .insert({
+        created_by: user?.id || null,
+        backup_type: 'platform',
+        status: 'success',
+        storage_bucket: bucket,
+        storage_path: params.storagePath,
+        file_name: params.fileName,
+        size_bytes: params.zipBlob.size,
+        metadata: params.metadata
+      });
+
+    if (insertError) throw insertError;
+  }
+
+  async function handleDownloadStoredPlatformBackup(record: PlatformBackupRecord) {
+    if (!record.storage_bucket || !record.storage_path) return;
+
+    try {
+      setDownloadingPlatformBackupId(record.id);
+      const { data, error } = await supabase.storage
+        .from(record.storage_bucket)
+        .createSignedUrl(record.storage_path, 60);
+
+      if (error) throw error;
+
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = record.file_name;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error downloading platform backup:', error);
+      showToast(t.platformBackupError, 'error');
+    } finally {
+      setDownloadingPlatformBackupId(null);
+    }
+  }
+
+  async function fetchBackupRowsByIds(
+    table: string,
+    field: string,
+    values: Array<string | number>,
+    fileName: string,
+    label: string
+  ): Promise<BackupTableExport> {
+    const uniqueValues = Array.from(new Set(values.filter((value) => value !== null && value !== undefined && value !== '')));
+
+    if (uniqueValues.length === 0) {
+      return { label, fileName, rows: [], count: 0 };
+    }
+
+    try {
+      const rows: BackupRow[] = [];
+
+      for (let index = 0; index < uniqueValues.length; index += 200) {
+        const chunk = uniqueValues.slice(index, index + 200);
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .in(field, chunk);
+
+        if (error) throw error;
+        rows.push(...((data || []) as BackupRow[]));
+      }
+
+      return { label, fileName, rows, count: rows.length };
+    } catch (error) {
+      return {
+        label,
+        fileName,
+        rows: [],
+        count: 0,
+        skipped: true,
+        error: formatBackupError(error)
+      };
+    }
+  }
+
+  async function fetchPurchasesBackup(negocioId: string): Promise<BackupTableExport> {
+    try {
+      const { data, error } = await supabase.rpc('get_compras_for_business', {
+        p_negocio_id: negocioId
+      });
+
+      if (error) throw error;
+
+      const rows = (data || []) as BackupRow[];
+      return {
+        label: 'Compras',
+        fileName: 'compras.json',
+        rows,
+        count: rows.length
+      };
+    } catch (error) {
+      return {
+        label: 'Compras',
+        fileName: 'compras.json',
+        rows: [],
+        count: 0,
+        skipped: true,
+        error: formatBackupError(error)
+      };
+    }
+  }
+
+  async function fetchProductsBackup(negocioId: string): Promise<BackupTableExport> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_productos_for_business', {
+          p_negocio_id: negocioId
+        })
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const rows = (data || []) as BackupRow[];
+      return {
+        label: 'Productos',
+        fileName: 'productos.json',
+        rows,
+        count: rows.length
+      };
+    } catch (error) {
+      return {
+        label: 'Productos',
+        fileName: 'productos.json',
+        rows: [],
+        count: 0,
+        skipped: true,
+        error: formatBackupError(error)
+      };
+    }
+  }
+
+  async function fetchRpcBackupForBusinesses(
+    negocioIds: string[],
+    rpcName: 'get_productos_for_business' | 'get_compras_for_business',
+    fileName: string,
+    label: string
+  ): Promise<BackupTableExport> {
+    const rows: BackupRow[] = [];
+    const errors: string[] = [];
+
+    for (const negocioId of Array.from(new Set(negocioIds.filter(Boolean)))) {
+      const { data, error } = await supabase.rpc(rpcName, {
+        p_negocio_id: negocioId
+      });
+
+      if (error) {
+        errors.push(`${negocioId}: ${formatBackupError(error)}`);
+        continue;
+      }
+
+      rows.push(...((data || []) as BackupRow[]));
+    }
+
+    return {
+      label,
+      fileName,
+      rows,
+      count: rows.length,
+      skipped: errors.length > 0 && rows.length === 0,
+      error: errors.length > 0 ? errors.join(' || ') : undefined
+    };
+  }
+
+  async function handleCreateBusinessBackup() {
+    if (!canCreateBusinessBackup) {
+      showToast(t.backupOwnerAdminOnly, 'error');
+      return;
+    }
+
+    try {
+      setIsCreatingBackup(true);
+      const negocioId = await resolveNegocioId();
+
+      if (!negocioId) {
+        showToast(t.businessNotFound, 'error');
+        return;
+      }
+
+      const generatedAt = new Date().toISOString();
+      const businessSlug = getSafeBackupSlug(negocio?.nombre || businessForm.nombre || 'negocio');
+      const stamp = generatedAt.replace(/[:.]/g, '-');
+      const rootFolder = `matmax-backup-${businessSlug}-${stamp}`;
+      const fileName = `${rootFolder}.zip`;
+
+      const { data: businessData, error: businessError } = await supabase
+        .from('negocios')
+        .select('*')
+        .eq('id', negocioId)
+        .maybeSingle();
+
+      if (businessError) throw businessError;
+
+      const tableExports = await Promise.all(
+        BUSINESS_BACKUP_TABLES.map((config) => fetchBackupTable(config, negocioId))
+      );
+
+      const ventasExport = tableExports.find((item) => item.fileName === 'ventas.json');
+      const cotizacionesExport = tableExports.find((item) => item.fileName === 'cotizaciones.json');
+      const ventaIds = (ventasExport?.rows || []).map((row) => row.id as string | number);
+      const cotizacionIds = (cotizacionesExport?.rows || []).map((row) => row.id as string | number);
+
+      const [ventaItemsExport, quoteItemsExport, purchasesExport, productsExport] = await Promise.all([
+        fetchBackupRowsByIds('venta_items', 'venta_id', ventaIds, 'venta_items.json', 'Items de ventas'),
+        fetchBackupRowsByIds('cotizacion_detalles', 'cotizacion_id', cotizacionIds, 'cotizacion_detalles.json', 'Detalles de cotizaciones'),
+        fetchPurchasesBackup(negocioId),
+        fetchProductsBackup(negocioId)
+      ]);
+
+      const allExports = [
+        ...tableExports,
+        productsExport,
+        ventaItemsExport,
+        quoteItemsExport,
+        purchasesExport
+      ];
+      const skippedExports = allExports.filter((item) => item.skipped);
+
+      const metadata = {
+        app: 'MatMax Business Suite',
+        type: 'business_backup',
+        version: 1,
+        generated_at: generatedAt,
+        negocio_id: negocioId,
+        business_name: negocio?.nombre || businessForm.nombre || businessData?.nombre || null,
+        generated_by: {
+          user_id: user?.id || null,
+          name: loggedUserName,
+          email: loggedUserEmail || null,
+          role: loggedUserRole || null
+        },
+        summary: {
+          total_tables: allExports.length,
+          exported_tables: allExports.filter((item) => !item.skipped).length,
+          skipped_tables: skippedExports.length,
+          total_records: allExports.reduce((sum, item) => sum + item.count, 0)
+        },
+        tables: allExports.map(({ label, fileName: exportFileName, count, skipped, error }) => ({
+          label,
+          file: exportFileName,
+          records: count,
+          skipped: Boolean(skipped),
+          error: error || null
+        })),
+        skipped_tables: skippedExports.map((item) => ({
+          label: item.label,
+          file: item.fileName,
+          error: item.error || null
+        })),
+        notes: [
+          'Este ZIP contiene datos exportados desde Supabase para el negocio actual.',
+          'Las tablas marcadas como skipped no estaban disponibles, no existian o fueron bloqueadas por permisos RLS.',
+          'Para Google Drive, sube este archivo ZIP manualmente a la carpeta de respaldo del negocio.'
+        ]
+      };
+
+      const zipFiles = [
+        {
+          name: `${rootFolder}/negocio.json`,
+          content: JSON.stringify(businessData || negocio || {}, null, 2)
+        },
+        ...allExports.map((item) => ({
+          name: `${rootFolder}/${item.fileName}`,
+          content: JSON.stringify({
+            label: item.label,
+            exported_at: generatedAt,
+            records: item.count,
+            skipped: Boolean(item.skipped),
+            error: item.error || null,
+            data: item.rows
+          }, null, 2)
+        }))
+      ];
+
+      const zipBlob = await downloadBackupZip({
+        rootFolder,
+        fileName,
+        metadata,
+        files: zipFiles
+      });
+
+      setLastBackup({
+        fileName,
+        createdAt: generatedAt,
+        size: zipBlob.size
+      });
+      setBusinessBackupHistory((current) => [
+        {
+          fileName,
+          createdAt: generatedAt,
+          size: zipBlob.size
+        },
+        ...current
+      ].slice(0, 30));
+
+      if (user?.id) {
+        await logAudit({
+          negocio_id: negocioId,
+          user_id: user.id,
+          user_name: loggedUserName,
+          user_email: loggedUserEmail || undefined,
+          user_role: loggedUserRole || undefined,
+          action: 'EXPORT_BUSINESS_BACKUP',
+          module: 'SETTINGS',
+          record_id: negocioId,
+          description: `Backup del negocio generado por ${loggedUserName}`,
+          old_data: null,
+          new_data: {
+            file_name: fileName,
+            size: zipBlob.size,
+            tables: metadata.tables
+          }
+        });
+      }
+
+      showToast(t.backupSaved, 'success');
+    } catch (error) {
+      console.error('Error creating business backup:', error);
+      showToast(t.backupError, 'error');
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  }
+
+  async function handleCreatePlatformBackup() {
+    if (!isSuperAdmin) {
+      showToast(t.restrictedTitle, 'error');
+      return;
+    }
+
+    try {
+      setIsCreatingPlatformBackup(true);
+
+      const generatedAt = new Date().toISOString();
+      const stamp = generatedAt.replace(/[:.]/g, '-');
+      const rootFolder = `matmax-platform-backup-${stamp}`;
+      const fileName = `${rootFolder}.zip`;
+      const storagePath = `manual/${fileName}`;
+
+      const tableExports = await Promise.all(
+        PLATFORM_BACKUP_TABLES.map((config) => fetchFullBackupTable(config))
+      );
+      const businessExport = tableExports.find((item) => item.fileName === 'negocios.json');
+      const negocioIds = (businessExport?.rows || [])
+        .map((row) => String(row.id || ''))
+        .filter(Boolean);
+
+      const [productsExport, purchasesExport] = await Promise.all([
+        fetchRpcBackupForBusinesses(negocioIds, 'get_productos_for_business', 'productos.json', 'Productos'),
+        fetchRpcBackupForBusinesses(negocioIds, 'get_compras_for_business', 'compras.json', 'Compras')
+      ]);
+
+      const allExports = [
+        ...tableExports,
+        productsExport,
+        purchasesExport
+      ];
+      const skippedExports = allExports.filter((item) => item.skipped);
+
+      const metadata = {
+        app: 'MatMax Business Suite',
+        type: 'platform_backup',
+        version: 1,
+        generated_at: generatedAt,
+        generated_by: {
+          user_id: user?.id || null,
+          name: loggedUserName,
+          email: loggedUserEmail || null,
+          role: loggedUserRole || null
+        },
+        summary: {
+          total_tables: allExports.length,
+          exported_tables: allExports.filter((item) => !item.skipped).length,
+          skipped_tables: skippedExports.length,
+          total_records: allExports.reduce((sum, item) => sum + item.count, 0)
+        },
+        tables: allExports.map(({ label, fileName: exportFileName, count, skipped, error }) => ({
+          label,
+          file: exportFileName,
+          records: count,
+          skipped: Boolean(skipped),
+          error: error || null
+        })),
+        skipped_tables: skippedExports.map((item) => ({
+          label: item.label,
+          file: item.fileName,
+          error: item.error || null
+        })),
+        notes: [
+          'Este ZIP contiene un respaldo global creado desde la cuenta Super Admin.',
+          'El backup respeta los permisos RLS disponibles para el Super Admin en el frontend.',
+          'Las tablas marcadas como skipped no estaban disponibles, no existian o fueron bloqueadas por permisos.',
+          'Para Google Drive, sube este archivo ZIP manualmente a la carpeta de respaldo de plataforma.'
+        ]
+      };
+
+      const zipFiles = allExports.map((item) => ({
+        name: `${rootFolder}/${item.fileName}`,
+        content: JSON.stringify({
+          label: item.label,
+          exported_at: generatedAt,
+          records: item.count,
+          skipped: Boolean(item.skipped),
+          error: item.error || null,
+          data: item.rows
+        }, null, 2)
+      }));
+
+      const zipBlob = await downloadBackupZip({
+        rootFolder,
+        fileName,
+        metadata,
+        files: zipFiles
+      });
+
+      setLastPlatformBackup({
+        fileName,
+        createdAt: generatedAt,
+        size: zipBlob.size
+      });
+
+      try {
+        await savePlatformBackupToStorage({
+          zipBlob,
+          fileName,
+          storagePath,
+          metadata
+        });
+        await loadPlatformBackupHistory();
+        showToast(t.platformBackupStored, 'success');
+      } catch (storageError) {
+        console.warn('Platform backup storage/history is not available yet:', storageError);
+        showToast(t.platformBackupStorageWarning, 'error');
+      }
+    } catch (error) {
+      console.error('Error creating platform backup:', error);
+      showToast(t.platformBackupError, 'error');
+    } finally {
+      setIsCreatingPlatformBackup(false);
     }
   }
 
@@ -1988,6 +2777,173 @@ if (cleanEmail !== oldProfileEmail) {
             </div>
           </CardContent>
         </Card>
+
+        {!isSuperAdmin && (
+          <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="w-fit rounded-2xl bg-[#050505] p-3">
+                  <Database size={24} className="shrink-0 text-[#f4c542]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="mb-2 text-lg font-black text-[#050505]">
+                    {t.businessBackup}
+                  </h3>
+                  <p className="mb-4 text-sm text-[#71717a]">
+                    {t.businessBackupDescription}
+                  </p>
+
+                  <div className="mb-4 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
+                    <p className="text-sm font-black text-[#050505]">
+                      {t.lastBackup}
+                    </p>
+                    {lastBackup ? (
+                      <div className="mt-2 space-y-1 text-sm font-semibold text-[#71717a]">
+                        <p className="truncate text-[#050505]" title={lastBackup.fileName}>
+                          {new Date(lastBackup.createdAt).toLocaleDateString()} · {formatBackupSize(lastBackup.size)}
+                        </p>
+                        <p>{new Date(lastBackup.createdAt).toLocaleTimeString()}</p>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm font-semibold text-[#71717a]">
+                        {t.noBackupYet}
+                      </p>
+                    )}
+                    <p className="mt-3 text-xs font-semibold leading-relaxed text-[#71717a]">
+                      {t.backupIncludes}
+                    </p>
+                  </div>
+
+                  <div className="mb-4 rounded-2xl border border-[#e9e2d3] bg-white p-4">
+                    <p className="text-sm font-black text-[#050505]">
+                      {t.backupHistory}
+                    </p>
+                    {businessBackupHistory.length > 0 ? (
+                      <div className="mt-3 max-h-[390px] space-y-2 overflow-y-auto pr-1">
+                        {businessBackupHistory.map((record) => (
+                          <div
+                            key={`${record.fileName}-${record.createdAt}`}
+                            className="rounded-xl border border-[#e9e2d3] bg-[#fbfaf7] p-3"
+                          >
+                            <p className="truncate text-sm font-black text-[#050505]" title={record.fileName}>
+                              {new Date(record.createdAt).toLocaleDateString()} · {formatBackupSize(record.size)}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                              {new Date(record.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm font-semibold text-[#71717a]">
+                        {t.noBackupHistory}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleCreateBusinessBackup}
+                    disabled={!canCreateBusinessBackup || isCreatingBackup || !negocio}
+                    className="flex w-full items-center justify-center gap-2"
+                  >
+                    <Download className="shrink-0" size={18} />
+                    {isCreatingBackup ? t.creatingBackup : t.createBackup}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {isSuperAdmin && (
+          <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="w-fit rounded-2xl bg-[#050505] p-3">
+                  <Database size={24} className="shrink-0 text-[#f4c542]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="mb-2 text-lg font-black text-[#050505]">
+                    {t.platformBackup}
+                  </h3>
+                  <p className="mb-4 text-sm text-[#71717a]">
+                    {t.platformBackupDescription}
+                  </p>
+
+                  <div className="mb-4 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
+                    <p className="text-sm font-black text-[#050505]">
+                      {t.lastBackup}
+                    </p>
+                    {lastPlatformBackup ? (
+                      <div className="mt-2 space-y-1 text-sm font-semibold text-[#71717a]">
+                        <p className="break-words text-[#050505]">{lastPlatformBackup.fileName}</p>
+                        <p>{new Date(lastPlatformBackup.createdAt).toLocaleString()} · {formatBackupSize(lastPlatformBackup.size)}</p>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm font-semibold text-[#71717a]">
+                        {t.noBackupYet}
+                      </p>
+                    )}
+                    <p className="mt-3 text-xs font-semibold leading-relaxed text-[#71717a]">
+                      {t.platformBackupIncludes}
+                    </p>
+                  </div>
+
+                  <div className="mb-4 rounded-2xl border border-[#e9e2d3] bg-white p-4">
+                    <p className="text-sm font-black text-[#050505]">
+                      {t.backupHistory}
+                    </p>
+                    {platformBackupHistory.length > 0 ? (
+                      <div className="mt-3 max-h-[390px] space-y-2 overflow-y-auto pr-1">
+                        {platformBackupHistory.map((record) => (
+                          <div
+                            key={record.id}
+                            className="flex min-w-0 flex-col gap-2 rounded-xl border border-[#e9e2d3] bg-[#fbfaf7] p-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-black text-[#050505]" title={record.file_name}>
+                                {new Date(record.created_at).toLocaleDateString()} · {String(record.status || 'success').toUpperCase()}
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                                {new Date(record.created_at).toLocaleTimeString()} · {formatBackupSize(Number(record.size_bytes || 0))}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              className="w-full shrink-0 sm:w-auto"
+                              onClick={() => handleDownloadStoredPlatformBackup(record)}
+                              disabled={!record.storage_bucket || !record.storage_path || downloadingPlatformBackupId === record.id}
+                            >
+                              <Download className="shrink-0" size={15} />
+                              {downloadingPlatformBackupId === record.id ? t.downloadingBackup : t.downloadBackup}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm font-semibold text-[#71717a]">
+                        {t.noBackupHistory}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={handleCreatePlatformBackup}
+                    disabled={isCreatingPlatformBackup}
+                    className="flex w-full items-center justify-center gap-2"
+                  >
+                    <Download className="shrink-0" size={18} />
+                    {isCreatingPlatformBackup ? t.creatingBackup : t.createPlatformBackup}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {!isSuperAdmin && (
           <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl">

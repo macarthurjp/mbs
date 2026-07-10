@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/assets/*"
-  to = "/404.html"
+  to = "/stale-chunk.html"
   status = 404
 
 [[redirects]]

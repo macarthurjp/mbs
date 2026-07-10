@@ -81,7 +81,8 @@ serve(async (req) => {
     const subject = cleanText(body.subject) || 'Respuesta de soporte';
     const message = cleanText(body.message);
     const responseText = cleanText(body.response);
-    const from = Deno.env.get('RESEND_FROM_EMAIL') || 'MatMax Support <onboarding@resend.dev>';
+    const emailDomain = cleanText(Deno.env.get('SAAS_EMAIL_DOMAIN')) || 'mbs.app';
+    const from = Deno.env.get('RESEND_FROM_EMAIL') || `MatMax Support <soporte@${emailDomain}>`;
 
     if (!to) throw new Error('Email de destino es obligatorio');
     if (!responseText) throw new Error('La respuesta es obligatoria');

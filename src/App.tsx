@@ -32,6 +32,8 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 
 type PublicStep = 'landing' | 'auth';
 type PlanSlug = 'basic' | 'pro' | 'premium';
@@ -125,6 +127,8 @@ function AppContent() {
   const isResetPasswordRoute =
     window.location.pathname === '/reset-password' ||
     window.location.hash.includes('type=recovery');
+  const isTermsRoute = window.location.pathname === '/terms';
+  const isPrivacyRoute = window.location.pathname === '/privacy';
 
   const checkoutParams = useMemo(() => {
     return new URLSearchParams(window.location.search);
@@ -874,6 +878,22 @@ function AppContent() {
     return (
       <Suspense fallback={<PageLoader text={t.loadingPlatform} />}>
         <ResetPasswordPage />
+      </Suspense>
+    );
+  }
+
+  if (isTermsRoute) {
+    return (
+      <Suspense fallback={<PageLoader text={t.loadingPlatform} />}>
+        <TermsPage />
+      </Suspense>
+    );
+  }
+
+  if (isPrivacyRoute) {
+    return (
+      <Suspense fallback={<PageLoader text={t.loadingPlatform} />}>
+        <PrivacyPage />
       </Suspense>
     );
   }

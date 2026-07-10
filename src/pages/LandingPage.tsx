@@ -164,7 +164,10 @@ const landingCopy = {
     ctaDescription:
       'Crea tu cuenta, registra tu empresa y elige el plan que mejor se adapta a tu operación.',
     createAccountNow: 'Crear cuenta ahora',
-month: '/mes'
+month: '/mes',
+    footerRights: 'Todos los derechos reservados.',
+    footerTerms: 'Términos de Servicio',
+    footerPrivacy: 'Política de Privacidad'
   },
   en: {
     tagline: 'Management - Precision - Elegance',
@@ -211,7 +214,10 @@ month: '/mes'
     ctaDescription:
       'Create your account, register your company, and choose the plan that best fits your operation.',
     createAccountNow: 'Create account now',
-month: '/mo'
+month: '/mo',
+    footerRights: 'All rights reserved.',
+    footerTerms: 'Terms of Service',
+    footerPrivacy: 'Privacy Policy'
   }
 } as const;
 
@@ -489,6 +495,22 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
         </section>
       </main>
+
+      <footer className="border-t border-[#e9e2d3] bg-[#fbfaf7]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-[#71717a] md:flex-row">
+          <p>
+            © {new Date().getFullYear()} MatMax Consulting SARL-S. {t.footerRights}
+          </p>
+          <div className="flex items-center gap-6">
+            <a href="/terms" className="font-medium transition hover:text-[#050505]">
+              {t.footerTerms}
+            </a>
+            <a href="/privacy" className="font-medium transition hover:text-[#050505]">
+              {t.footerPrivacy}
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

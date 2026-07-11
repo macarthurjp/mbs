@@ -18,6 +18,14 @@ type BackupFile = {
   content: string;
 };
 
+type BackupState = {
+  has_changes?: boolean;
+  last_change_at?: string | null;
+  last_change_table?: string | null;
+  last_change_operation?: string | null;
+  last_backup_at?: string | null;
+};
+
 const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
 const SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const ANON_KEY = Deno.env.get('APP_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
@@ -241,6 +249,75 @@ function formatBytes(size: number) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function formatBackupDate(value: string | Date, locale: 'es' | 'en') {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return String(value || '');
+
+  const formatter = new Intl.DateTimeFormat(locale === 'es' ? 'es-ES' : 'en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: locale === 'en',
+  });
+
+  return `${formatter.format(date)} UTC`;
+}
+
+function createSummaryRows(params: {
+  generatedAt: string;
+  fileName?: string;
+  storagePath?: string | null;
+  sizeBytes?: number;
+  summary: Record<string, unknown>;
+  locale: 'es' | 'en';
+}) {
+  const labels =
+    params.locale === 'es'
+      ? {
+          date: 'Fecha',
+          file: 'Archivo',
+          size: 'Tamaño',
+          storage: 'Storage',
+          exported: 'Tablas exportadas',
+          skipped: 'Tablas omitidas',
+          records: 'Registros',
+        }
+      : {
+          date: 'Date',
+          file: 'File',
+          size: 'Size',
+          storage: 'Storage',
+          exported: 'Exported tables',
+          skipped: 'Skipped tables',
+          records: 'Records',
+        };
+
+  const rows = [
+    [labels.date, formatBackupDate(params.generatedAt, params.locale)],
+    [labels.file, params.fileName || '-'],
+    [labels.size, formatBytes(Number(params.sizeBytes || 0))],
+    [labels.storage, `${BUCKET}/${params.storagePath || ''}`],
+    [labels.exported, params.summary.exported_tables ?? '-'],
+    [labels.skipped, params.summary.skipped_tables ?? '-'],
+    [labels.records, params.summary.total_records ?? '-'],
+  ];
+
+  return rows
+    .map(
+      ([label, value]) => `
+        <tr>
+          <td style="padding: 8px 12px 8px 0; font-weight: 700; color: #111827; vertical-align: top; white-space: nowrap;">${escapeHtml(label)}</td>
+          <td style="padding: 8px 0; color: #374151; vertical-align: top; word-break: break-word;">${escapeHtml(value)}</td>
+        </tr>
+      `,
+    )
+    .join('');
+}
+
 async function getBackupNotificationRecipients() {
   const configuredRecipients = NOTIFY_EMAIL
     .split(',')
@@ -292,30 +369,54 @@ async function sendBackupNotification(params: {
   const summary = (params.metadata?.summary || {}) as Record<string, unknown>;
   const generatedAt = String(params.metadata?.generated_at || new Date().toISOString());
   const subject = params.success
-    ? 'Backup automatico completado - MatMax'
-    : 'ALERTA: Backup automatico fallo - MatMax';
+    ? 'Backup automático completado / Automatic backup completed - MatMax'
+    : 'ALERTA: Backup automático falló / Automatic backup failed - MatMax';
 
   const html = params.success
     ? `
-      <div style="font-family: Arial, sans-serif; color: #18181b;">
-        <h2>Backup automatico completado</h2>
-        <p>El backup de plataforma se completo correctamente.</p>
-        <table style="border-collapse: collapse; width: 100%; max-width: 640px;">
-          <tr><td style="padding: 6px 0;"><strong>Fecha UTC</strong></td><td>${escapeHtml(generatedAt)}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Archivo</strong></td><td>${escapeHtml(params.fileName)}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Tamano</strong></td><td>${escapeHtml(formatBytes(Number(params.sizeBytes || 0)))}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Storage</strong></td><td>${escapeHtml(`${BUCKET}/${params.storagePath || ''}`)}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Tablas exportadas</strong></td><td>${escapeHtml(summary.exported_tables)}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Tablas omitidas</strong></td><td>${escapeHtml(summary.skipped_tables)}</td></tr>
-          <tr><td style="padding: 6px 0;"><strong>Registros</strong></td><td>${escapeHtml(summary.total_records)}</td></tr>
+      <div style="font-family: Arial, sans-serif; color: #18181b; line-height: 1.5;">
+        <h2 style="margin: 0 0 12px; color: #050505;">Automatic backup completed</h2>
+        <p style="margin: 0 0 18px;">The platform backup completed successfully.</p>
+        <table style="border-collapse: collapse; width: 100%; max-width: 760px; margin-bottom: 28px;">
+          ${createSummaryRows({
+            generatedAt,
+            fileName: params.fileName,
+            storagePath: params.storagePath,
+            sizeBytes: params.sizeBytes,
+            summary,
+            locale: 'en',
+          })}
+        </table>
+
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+        <h2 style="margin: 0 0 12px; color: #050505;">Backup automático completado</h2>
+        <p style="margin: 0 0 18px;">El backup de plataforma se completó correctamente.</p>
+        <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
+          ${createSummaryRows({
+            generatedAt,
+            fileName: params.fileName,
+            storagePath: params.storagePath,
+            sizeBytes: params.sizeBytes,
+            summary,
+            locale: 'es',
+          })}
         </table>
       </div>
     `
     : `
-      <div style="font-family: Arial, sans-serif; color: #18181b;">
-        <h2 style="color: #b91c1c;">Backup automatico fallo</h2>
-        <p>El backup automatico de plataforma no pudo completarse.</p>
-        <p><strong>Fecha UTC:</strong> ${escapeHtml(new Date().toISOString())}</p>
+      <div style="font-family: Arial, sans-serif; color: #18181b; line-height: 1.5;">
+        <h2 style="color: #b91c1c; margin: 0 0 12px;">Automatic backup failed</h2>
+        <p>The automatic platform backup could not be completed.</p>
+        <p><strong>Date:</strong> ${escapeHtml(formatBackupDate(new Date(), 'en'))}</p>
+        <p><strong>Error:</strong></p>
+        <pre style="white-space: pre-wrap; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px;">${escapeHtml(params.error)}</pre>
+
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+        <h2 style="color: #b91c1c; margin: 0 0 12px;">Backup automático falló</h2>
+        <p>El backup automático de plataforma no pudo completarse.</p>
+        <p><strong>Fecha:</strong> ${escapeHtml(formatBackupDate(new Date(), 'es'))}</p>
         <p><strong>Error:</strong></p>
         <pre style="white-space: pre-wrap; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px;">${escapeHtml(params.error)}</pre>
       </div>
@@ -462,6 +563,67 @@ async function cleanupOldAutomaticBackups() {
   }
 }
 
+async function getPlatformBackupState(): Promise<BackupState | null> {
+  const { data, error } = await admin
+    .from('platform_backup_state')
+    .select('has_changes, last_change_at, last_change_table, last_change_operation, last_backup_at')
+    .eq('id', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data || null) as BackupState | null;
+}
+
+async function markPlatformBackupCompleted(backupAt: string) {
+  const { error } = await admin
+    .from('platform_backup_state')
+    .upsert({
+      id: true,
+      has_changes: false,
+      last_backup_at: backupAt,
+      updated_at: backupAt,
+    });
+
+  if (error) throw error;
+}
+
+async function recordSkippedAutomaticBackup(params: { generatedAt: string; state: BackupState | null }) {
+  const fileName = `matmax-platform-backup-skipped-${params.generatedAt.replace(/[:.]/g, '-')}.json`;
+  const metadata = {
+    app: 'MatMax Business Suite',
+    type: 'platform_backup',
+    version: 1,
+    mode: 'automatic',
+    generated_at: params.generatedAt,
+    skipped: true,
+    reason: 'no_database_changes',
+    message: 'No hay cambios en la base de datos desde el ultimo backup automatico exitoso.',
+    state: params.state || null,
+  };
+
+  const { error } = await admin.from('platform_backups').insert({
+    created_by: null,
+    backup_type: 'platform',
+    status: 'skipped',
+    storage_bucket: BUCKET,
+    storage_path: null,
+    file_name: fileName,
+    size_bytes: 0,
+    metadata,
+  });
+
+  if (error) throw error;
+
+  return {
+    success: true,
+    mode: 'automatic',
+    skipped: true,
+    reason: 'no_database_changes',
+    notification: { sent: false, reason: 'no_database_changes' },
+    metadata,
+  };
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
@@ -491,6 +653,21 @@ serve(async (req) => {
     const rootFolder = `matmax-platform-backup-${stamp}`;
     fileName = `${rootFolder}.zip`;
     storagePath = `${mode}/${fileName}`;
+
+    if (mode === 'automatic') {
+      const backupState = await getPlatformBackupState();
+
+      if (backupState && backupState.has_changes === false) {
+        const skippedBackup = await recordSkippedAutomaticBackup({
+          generatedAt,
+          state: backupState,
+        });
+
+        return new Response(JSON.stringify(skippedBackup), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     const allExports = await Promise.all(PLATFORM_BACKUP_TABLES.map((config) => fetchFullTable(config)));
     const skippedExports = allExports.filter((item) => item.skipped);
@@ -584,6 +761,7 @@ serve(async (req) => {
     let notification: Record<string, unknown> | null = null;
 
     if (mode === 'automatic') {
+      await markPlatformBackupCompleted(generatedAt);
       await cleanupOldAutomaticBackups();
       notification = await sendBackupNotification({
         success: true,

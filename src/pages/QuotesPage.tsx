@@ -1694,7 +1694,7 @@ function buildQuoteHtml(
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=900, initial-scale=1" />
   <title>${escapeHtml(t.quote)} ${quoteNumber}</title>
   <style>
     * { box-sizing: border-box; }
@@ -1704,9 +1704,11 @@ function buildQuoteHtml(
       color: #111111;
       font-family: Arial, Helvetica, sans-serif;
       padding: 32px;
+      min-width: 900px;
     }
     .quote-document {
-      max-width: 820px;
+      width: 820px;
+      max-width: none;
       margin: 0 auto;
       background: #ffffff;
       border: 1px solid #e9e2d3;
@@ -1781,7 +1783,11 @@ function buildQuoteHtml(
     }
     .box-main { margin: 0 0 5px; font-size: 18px; font-weight: 900; }
     .box-text { margin: 4px 0; color: #71717a; font-size: 13px; line-height: 1.4; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 12px; }
+    th:nth-child(1), td:nth-child(1) { width: 46%; }
+    th:nth-child(2), td:nth-child(2) { width: 18%; }
+    th:nth-child(3), td:nth-child(3) { width: 18%; }
+    th:nth-child(4), td:nth-child(4) { width: 18%; }
     th {
       background: #fbfaf7;
       color: #8a6a16;
@@ -1833,8 +1839,9 @@ function buildQuoteHtml(
       font-size: 13px;
     }
     @media print {
-      body { background: #ffffff; padding: 0; }
-      .quote-document { box-shadow: none; border-radius: 0; border: 0; max-width: 100%; }
+      @page { size: A4 portrait; margin: 10mm; }
+      html, body { width: 900px; min-width: 900px; background: #ffffff; padding: 0; }
+      .quote-document { width: 820px; max-width: none; box-shadow: none; border-radius: 0; border: 0; }
       .topbar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .box, .summary, th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }

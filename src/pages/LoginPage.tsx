@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Input } from '../components/ui/Input';
 import { supabase } from '../lib/supabase';
+import { notifySaasOwner } from '../utils/ownerAlerts';
 
 type AuthMode = 'login' | 'signup' | 'forgot';
 
@@ -180,13 +181,29 @@ export function LoginPage({ selectedPlan = 'basic' }: LoginPageProps) {
           password
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          notifySaasOwner({
+            event_type: 'signup_failed',
+            email: normalizedEmail,
+            selected_plan: selectedPlan,
+            error: signUpError.message
+          });
+
+          throw signUpError;
+        }
 
         const authUser = data.user;
 
         if (!authUser) {
           throw new Error('No se pudo crear el usuario');
         }
+
+        notifySaasOwner({
+          event_type: 'signup_started',
+          email: normalizedEmail,
+          user_id: authUser.id,
+          selected_plan: selectedPlan
+        });
 
         localStorage.setItem('matmax_has_account', 'true');
 

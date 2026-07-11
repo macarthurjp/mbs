@@ -20,6 +20,7 @@ import {
   normalizePhoneForStorage,
   sanitizePhoneInput
 } from '../utils/formatContact';
+import { notifySaasOwner } from '../utils/ownerAlerts';
 
 type OnboardingStep = 'business' | 'plans';
 type PlanId = 'basic' | 'pro' | 'premium';
@@ -272,6 +273,15 @@ export default function OnboardingPage({ selectedPlan: initialSelectedPlan = 'ba
       }
 
       setCreatedNegocioId(data.negocio_id);
+      notifySaasOwner({
+        event_type: 'signup_completed',
+        email: form.email.trim().toLowerCase() || user.email || null,
+        user_id: user.id,
+        negocio_id: data.negocio_id,
+        selected_plan: plan,
+        owner_name: form.owner_name.trim(),
+        business_name: form.business_name.trim()
+      });
       await refreshProfile();
       return data.negocio_id as string;
     } finally {

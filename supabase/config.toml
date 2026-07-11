@@ -14,3 +14,8 @@ entrypoint = "./functions/stripe-webhook/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/create-platform-backup/index.ts"
+
+[functions.send-owner-alert]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-owner-alert/index.ts"

@@ -52,6 +52,9 @@ Resultado actual: lint, typecheck, build y la suite e2e de Playwright pasan corr
 - Configuración del negocio, correo remitente, moneda, logo, permisos y facturación
 - Super Admin para gestión SaaS de negocios, usuarios, planes y suscripciones
 - Onboarding y protección de suscripción
+- Backups: respaldo automático diario de toda la plataforma (con salto de backups redundantes si no hubo cambios) y respaldo manual por negocio, ambos exportables como ZIP
+- Monitoreo de registros SaaS: alertas por correo al dueño de la plataforma cuando alguien se registra, completa el onboarding o falla al registrarse
+- Páginas públicas de Términos de Servicio (`/terms`) y Política de Privacidad (`/privacy`)
 
 ## Roles y Permisos
 
@@ -150,15 +153,13 @@ Qué cubren:
 - `lint`: reglas de ESLint, hooks de React, imports y tipado básico.
 - `typecheck`: validación completa de TypeScript.
 - `build`: compilación de producción con Vite.
-- `test:e2e`: pruebas Playwright de landing, login, recuperación, navegación y flujo básico de venta.
+- `test:e2e`: pruebas Playwright de landing, login, recuperación, navegación, flujo básico de venta, aislamiento entre negocios (multi-tenant) y permisos por rol.
 
 Qué no cubren:
 
-- Login real con Supabase.
-- RLS y permisos en datos reales.
 - Flujos completos de factura, cotización, cuentas por cobrar, caja, soporte y administración SaaS.
-- Webhooks de Stripe.
-- Envío real de correos.
+- Webhooks de Stripe, billing portal.
+- Envío real de correos (Resend), backups, alertas de registro.
 - Impresión térmica o WebUSB.
 
 Para validar producción se recomienda hacer una prueba manual/e2e de los flujos críticos.
@@ -268,6 +269,8 @@ npm run supabase:deploy:webhook
 
 ## Producción
 
+Hosting actual: **Cloudflare Pages** (proyecto `mbs`), desplegado automáticamente en cada push a `main` vía GitHub. Dominio: `app.matmaxsuite.com`.
+
 Para producción:
 
 - Ejecutar `npm run build`.
@@ -277,6 +280,8 @@ Para producción:
 - Verificar políticas RLS con usuarios reales de cada rol.
 - Verificar webhook de Stripe con eventos reales o Stripe CLI.
 - Verificar envío de facturas/cotizaciones con Resend.
+
+Nota sobre Cloudflare Pages: un `404.html` en la raíz del build es detectado automáticamente como página de error global del sitio, con **más prioridad que `public/_redirects`** (a diferencia de Netlify). Por eso el archivo de fallback para chunks JS viejos se llama `public/stale-chunk.html` y no `404.html` — no renombrarlo de vuelta, rompería el SPA routing (`/dashboard`, `/reset-password`, etc. volverían a dar 404).
 
 ## Seguridad
 

@@ -30,3 +30,6 @@ supabase/.temp/
 
 # Local Netlify folder
 .netlify
+
+# Local backup snapshots
+matmax-pos-backup-*.zip

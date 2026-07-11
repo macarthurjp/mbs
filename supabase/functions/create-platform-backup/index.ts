@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { renderBrandedEmail, type EmailSection } from '../_shared/emailTemplate.ts';
 
 type BackupRow = Record<string, unknown>;
 
@@ -234,15 +235,6 @@ function createBackupReadme(params: { generatedAt: string; mode: string; fileCou
   ].join('\n');
 }
 
-function escapeHtml(value: unknown) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function formatBytes(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -267,14 +259,17 @@ function formatBackupDate(value: string | Date, locale: 'es' | 'en') {
   return `${formatter.format(date)} UTC`;
 }
 
-function createSummaryRows(params: {
+function buildBackupSection(params: {
+  heading: string;
+  intro: string;
   generatedAt: string;
   fileName?: string;
   storagePath?: string | null;
   sizeBytes?: number;
   summary: Record<string, unknown>;
+  errorMessage?: string;
   locale: 'es' | 'en';
-}) {
+}): EmailSection {
   const labels =
     params.locale === 'es'
       ? {
@@ -296,26 +291,28 @@ function createSummaryRows(params: {
           records: 'Records',
         };
 
-  const rows = [
-    [labels.date, formatBackupDate(params.generatedAt, params.locale)],
-    [labels.file, params.fileName || '-'],
-    [labels.size, formatBytes(Number(params.sizeBytes || 0))],
-    [labels.storage, `${BUCKET}/${params.storagePath || ''}`],
-    [labels.exported, params.summary.exported_tables ?? '-'],
-    [labels.skipped, params.summary.skipped_tables ?? '-'],
-    [labels.records, params.summary.total_records ?? '-'],
-  ];
+  if (params.errorMessage) {
+    return {
+      heading: params.heading,
+      intro: params.intro,
+      rows: [[params.locale === 'es' ? 'Fecha' : 'Date', formatBackupDate(new Date(), params.locale)]],
+      preformatted: params.errorMessage,
+    };
+  }
 
-  return rows
-    .map(
-      ([label, value]) => `
-        <tr>
-          <td style="padding: 8px 12px 8px 0; font-weight: 700; color: #111827; vertical-align: top; white-space: nowrap;">${escapeHtml(label)}</td>
-          <td style="padding: 8px 0; color: #374151; vertical-align: top; word-break: break-word;">${escapeHtml(value)}</td>
-        </tr>
-      `,
-    )
-    .join('');
+  return {
+    heading: params.heading,
+    intro: params.intro,
+    rows: [
+      [labels.date, formatBackupDate(params.generatedAt, params.locale)],
+      [labels.file, params.fileName || '-'],
+      [labels.size, formatBytes(Number(params.sizeBytes || 0))],
+      [labels.storage, `${BUCKET}/${params.storagePath || ''}`],
+      [labels.exported, params.summary.exported_tables ?? '-'],
+      [labels.skipped, params.summary.skipped_tables ?? '-'],
+      [labels.records, params.summary.total_records ?? '-'],
+    ],
+  };
 }
 
 async function getBackupNotificationRecipients() {
@@ -373,54 +370,53 @@ async function sendBackupNotification(params: {
     : 'ALERTA: Backup automático falló / Automatic backup failed - MatMax';
 
   const html = params.success
-    ? `
-      <div style="font-family: Arial, sans-serif; color: #18181b; line-height: 1.5;">
-        <h2 style="margin: 0 0 12px; color: #050505;">Automatic backup completed</h2>
-        <p style="margin: 0 0 18px;">The platform backup completed successfully.</p>
-        <table style="border-collapse: collapse; width: 100%; max-width: 760px; margin-bottom: 28px;">
-          ${createSummaryRows({
+    ? renderBrandedEmail({
+        headerLabel: 'Platform Backup',
+        sections: [
+          buildBackupSection({
+            heading: 'Automatic backup completed',
+            intro: 'The platform backup completed successfully.',
             generatedAt,
             fileName: params.fileName,
             storagePath: params.storagePath,
             sizeBytes: params.sizeBytes,
             summary,
             locale: 'en',
-          })}
-        </table>
-
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-
-        <h2 style="margin: 0 0 12px; color: #050505;">Backup automático completado</h2>
-        <p style="margin: 0 0 18px;">El backup de plataforma se completó correctamente.</p>
-        <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
-          ${createSummaryRows({
+          }),
+          buildBackupSection({
+            heading: 'Backup automático completado',
+            intro: 'El backup de plataforma se completó correctamente.',
             generatedAt,
             fileName: params.fileName,
             storagePath: params.storagePath,
             sizeBytes: params.sizeBytes,
             summary,
             locale: 'es',
-          })}
-        </table>
-      </div>
-    `
-    : `
-      <div style="font-family: Arial, sans-serif; color: #18181b; line-height: 1.5;">
-        <h2 style="color: #b91c1c; margin: 0 0 12px;">Automatic backup failed</h2>
-        <p>The automatic platform backup could not be completed.</p>
-        <p><strong>Date:</strong> ${escapeHtml(formatBackupDate(new Date(), 'en'))}</p>
-        <p><strong>Error:</strong></p>
-        <pre style="white-space: pre-wrap; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px;">${escapeHtml(params.error)}</pre>
-
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-
-        <h2 style="color: #b91c1c; margin: 0 0 12px;">Backup automático falló</h2>
-        <p>El backup automático de plataforma no pudo completarse.</p>
-        <p><strong>Fecha:</strong> ${escapeHtml(formatBackupDate(new Date(), 'es'))}</p>
-        <p><strong>Error:</strong></p>
-        <pre style="white-space: pre-wrap; background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px;">${escapeHtml(params.error)}</pre>
-      </div>
-    `;
+          }),
+        ],
+      })
+    : renderBrandedEmail({
+        headerLabel: 'Platform Backup',
+        accentColor: '#f87171',
+        sections: [
+          buildBackupSection({
+            heading: 'Automatic backup failed',
+            intro: 'The automatic platform backup could not be completed.',
+            generatedAt,
+            summary,
+            errorMessage: params.error,
+            locale: 'en',
+          }),
+          buildBackupSection({
+            heading: 'Backup automático falló',
+            intro: 'El backup automático de plataforma no pudo completarse.',
+            generatedAt,
+            summary,
+            errorMessage: params.error,
+            locale: 'es',
+          }),
+        ],
+      });
 
   const resendResponse = await fetch('https://api.resend.com/emails', {
     method: 'POST',

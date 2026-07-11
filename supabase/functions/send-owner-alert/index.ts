@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { renderBrandedEmail, type EmailSection } from '../_shared/emailTemplate.ts';
 
 type SignupEventType = 'signup_started' | 'signup_completed' | 'signup_failed';
 
@@ -8,7 +9,9 @@ const SUPABASE_URL = Deno.env.get('APP_SUPABASE_URL') || Deno.env.get('SUPABASE_
 const SERVICE_ROLE_KEY = Deno.env.get('APP_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const ANON_KEY = Deno.env.get('APP_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'MatMax Alerts <onboarding@resend.dev>';
+// Deliberately a different env var (and default) than the backup emails'
+// RESEND_FROM_EMAIL, so the two alert types are visibly distinct senders.
+const SIGNUP_ALERT_FROM_EMAIL = Deno.env.get('SAAS_SIGNUP_ALERT_FROM_EMAIL') || 'MatMax Business Sign Up <signups@matmaxsuite.com>';
 const OWNER_ALERT_EMAIL = Deno.env.get('SAAS_OWNER_ALERT_EMAIL') || Deno.env.get('PLATFORM_BACKUP_NOTIFY_EMAIL') || '';
 
 // signup_started/signup_failed happen before email confirmation, so there is
@@ -94,15 +97,6 @@ function getErrorMessage(error: unknown) {
   return 'Error desconocido';
 }
 
-function escapeHtml(value: unknown) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function formatDate(value: string | Date, locale: 'en' | 'es') {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return String(value || '');
@@ -148,7 +142,9 @@ function getEventCopy(eventType: SignupEventType) {
   };
 }
 
-function createRows(params: {
+function buildSection(params: {
+  heading: string;
+  intro: string;
   createdAt: string;
   email: string;
   userId: string | null;
@@ -158,7 +154,7 @@ function createRows(params: {
   businessName: string;
   errorMessage: string;
   locale: 'en' | 'es';
-}) {
+}): EmailSection {
   const labels =
     params.locale === 'en'
       ? {
@@ -182,7 +178,7 @@ function createRows(params: {
           error: 'Error',
         };
 
-  const rows = [
+  const rows: Array<[string, unknown]> = [
     [labels.date, formatDate(params.createdAt, params.locale)],
     [labels.email, params.email || '-'],
     [labels.plan, params.selectedPlan || '-'],
@@ -194,16 +190,7 @@ function createRows(params: {
 
   if (params.errorMessage) rows.push([labels.error, params.errorMessage]);
 
-  return rows
-    .map(
-      ([label, value]) => `
-        <tr>
-          <td style="padding: 8px 12px 8px 0; font-weight: 700; color: #111827; vertical-align: top; white-space: nowrap;">${escapeHtml(label)}</td>
-          <td style="padding: 8px 0; color: #374151; vertical-align: top; word-break: break-word;">${escapeHtml(value)}</td>
-        </tr>
-      `,
-    )
-    .join('');
+  return { heading: params.heading, intro: params.intro, rows };
 }
 
 async function sendEmail(params: {
@@ -221,23 +208,13 @@ async function sendEmail(params: {
   if (!OWNER_ALERT_EMAIL) return { sent: false, reason: 'missing_owner_alert_email' };
 
   const copy = getEventCopy(params.eventType);
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #18181b; line-height: 1.5;">
-      <h2 style="margin: 0 0 12px; color: #050505;">${escapeHtml(copy.enTitle)}</h2>
-      <p style="margin: 0 0 18px;">${escapeHtml(copy.enBody)}</p>
-      <table style="border-collapse: collapse; width: 100%; max-width: 760px; margin-bottom: 28px;">
-        ${createRows({ ...params, locale: 'en' })}
-      </table>
-
-      <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-
-      <h2 style="margin: 0 0 12px; color: #050505;">${escapeHtml(copy.esTitle)}</h2>
-      <p style="margin: 0 0 18px;">${escapeHtml(copy.esBody)}</p>
-      <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
-        ${createRows({ ...params, locale: 'es' })}
-      </table>
-    </div>
-  `;
+  const html = renderBrandedEmail({
+    headerLabel: 'Sign Up Alert',
+    sections: [
+      buildSection({ ...params, heading: copy.enTitle, intro: copy.enBody, locale: 'en' }),
+      buildSection({ ...params, heading: copy.esTitle, intro: copy.esBody, locale: 'es' }),
+    ],
+  });
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -246,7 +223,7 @@ async function sendEmail(params: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: RESEND_FROM_EMAIL,
+      from: SIGNUP_ALERT_FROM_EMAIL,
       to: OWNER_ALERT_EMAIL.split(',').map((email) => email.trim()).filter(Boolean),
       subject: copy.subject,
       html,

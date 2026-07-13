@@ -128,6 +128,7 @@ serve(async (req) => {
     const userId = cleanText(body.userId || body.user_id || body.id);
     const email = cleanText(body.email).toLowerCase();
     const fullName = cleanText(body.full_name || body.fullName || body.name);
+    const username = cleanText(body.username);
     const requestedRole = normalizeRole(body.role || body.rol);
     const isActive = body.is_active;
 
@@ -199,6 +200,7 @@ serve(async (req) => {
     const updateProfilePayload: Record<string, unknown> = {
       email,
       full_name: fullName || email,
+      username: username || null,
     };
 
     if (requestedRole && !callerIsSelf) updateProfilePayload.rol = requestedRole;

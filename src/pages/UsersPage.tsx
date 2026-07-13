@@ -773,23 +773,14 @@ export function UsersPage() {
       }
     }
 
-    const updatePayload = {
-      rol: formData.role,
-      email: formData.email.trim().toLowerCase() || null,
-      username: formData.username.trim() || null,
-      full_name: formData.full_name.trim() || null,
-      is_active: formData.is_active
-    };
-
     const normalizedEmail = formData.email.trim().toLowerCase();
-
-    console.log('Updating user:', userId, updatePayload);
 
     const { data: authSyncData, error: authSyncError } = await supabase.functions.invoke('update-user', {
       body: {
         userId,
         email: normalizedEmail,
         full_name: formData.full_name.trim() || null,
+        username: formData.username.trim() || null,
         role: formData.role,
         is_active: formData.is_active
       }
@@ -804,17 +795,18 @@ export function UsersPage() {
       throw new Error(authSyncData.error || t.authSyncError);
     }
 
-    let updateQuery = supabase
+    // update-user already wrote the usuarios row via service role above —
+    // just read it back, don't write it again from the client.
+    let selectQuery = supabase
       .from('usuarios')
-      .update(updatePayload)
+      .select('id, negocio_id, rol, created_at, email, username, full_name, is_active, negocios(nombre)')
       .eq('id', userId);
 
     if (!isSuperAdmin) {
-      updateQuery = updateQuery.eq('negocio_id', userProfile?.negocio_id || '');
+      selectQuery = selectQuery.eq('negocio_id', userProfile?.negocio_id || '');
     }
 
-    const { data: updatedRows, error } = await updateQuery
-      .select('id, negocio_id, rol, created_at, email, username, full_name, is_active, negocios(nombre)');
+    const { data: updatedRows, error } = await selectQuery;
 
     if (error) {
       console.error('Update user error:', error);

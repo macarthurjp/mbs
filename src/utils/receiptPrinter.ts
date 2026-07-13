@@ -137,7 +137,7 @@ export function printCompactReceipt(data: CompactReceiptData, language: 'es' | '
           .grand-total { border-top: 1px dashed #777; padding-top: 8px; margin-top: 8px; font-size: 17px; font-weight: 800; }
           .thanks { margin-top: 18px; text-align: center; font-size: 11px; color: #555; }
           .cancelled { margin: 9px auto 0; width: fit-content; border: 2px solid #111; padding: 4px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-          @page { margin: 6mm; }
+          @page { margin: 16mm 8mm 10mm 8mm; }
           @media print {
             body { padding: 0; }
             .receipt { max-width: none; }

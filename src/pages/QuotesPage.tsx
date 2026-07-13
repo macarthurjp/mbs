@@ -554,76 +554,18 @@ function money(value: number | null | undefined) {
     try {
       setConvertingQuote(true);
 
-      const today = getLocalDateString(new Date());
       const saleTotal = Number(selectedQuote.total || 0);
 
-      const { data: saleData, error: saleError } = await supabase
-        .from('ventas')
-        .insert([
-          {
-            negocio_id: currentNegocioId,
-            cliente_id: selectedQuote.cliente_id,
-            vendedor_id: user?.id || null,
-            vendedor_nombre: loggedUserName,
-            fecha: today,
-            subtotal: Number(selectedQuote.subtotal || saleTotal),
-            descuento: Number(selectedQuote.descuento || 0),
-            descuento_monto: Number(selectedQuote.descuento || 0),
-            total: saleTotal,
-            tipo_pago: 'Contado',
-            saldo_pendiente: 0,
-            estado: 'activa'
-          }
-        ])
-        .select('id, vendedor_id, vendedor_nombre')
-        .single();
+      const { data: saleId, error: convertError } = await supabase.rpc('convert_quote_to_sale', {
+        p_quote_id: selectedQuote.id,
+        p_negocio_id: currentNegocioId
+      });
 
-      if (saleError) throw saleError;
-
-      const saleId = saleData?.id;
+      if (convertError) throw convertError;
 
       if (!saleId) {
         throw new Error('Sale id was not returned');
       }
-
-      const saleItems = selectedQuoteItems.map((item) => ({
-        venta_id: saleId,
-        producto_id: item.producto_id,
-        cantidad: Number(item.cantidad || 0),
-        precio: Number(item.precio_unitario || 0),
-        total: Number(item.total || 0)
-      }));
-
-      const { error: saleItemsError } = await supabase
-        .from('venta_items')
-        .insert(saleItems);
-
-      if (saleItemsError) throw saleItemsError;
-
-      await Promise.all(
-        selectedQuoteItems
-          .filter((item) => item.producto_id)
-          .map((item) => {
-            const product = products.find((productItem) => Number(productItem.id) === Number(item.producto_id));
-            const currentStock = Number(product?.stock || 0);
-            const quantity = Number(item.cantidad || 0);
-            const newStock = Math.max(0, currentStock - quantity);
-
-            return supabase
-              .from('productos')
-              .update({ stock: newStock })
-              .eq('id', item.producto_id)
-              .eq('negocio_id', currentNegocioId);
-          })
-      );
-
-      const { error: quoteUpdateError } = await supabase
-        .from('cotizaciones')
-        .update({ estado: 'approved' })
-        .eq('id', selectedQuote.id)
-        .eq('negocio_id', currentNegocioId);
-
-      if (quoteUpdateError) throw quoteUpdateError;
 
       if (user?.id) {
         await logAudit({
@@ -640,8 +582,8 @@ function money(value: number | null | undefined) {
             cotizacion_id: selectedQuote.id,
             venta_id: saleId,
             cliente_id: selectedQuote.cliente_id,
-            vendedor_id: saleData?.vendedor_id || user?.id || null,
-            vendedor_nombre: saleData?.vendedor_nombre || loggedUserName,
+            vendedor_id: user?.id || null,
+            vendedor_nombre: loggedUserName,
             total: saleTotal,
             estado_anterior: selectedQuote.estado,
             estado_nuevo: 'approved',

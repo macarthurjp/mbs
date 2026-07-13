@@ -911,14 +911,9 @@ export function SalesPage() {
       const { error: itemsError } = await supabase.from('venta_items').insert(ventaItems);
       if (itemsError) throw itemsError;
 
-      await Promise.all(cart.map(async (item) => {
-        const { error } = await supabase.rpc('adjust_producto_stock', {
-          p_producto_id: item.producto.id,
-          p_negocio_id: negocioId,
-          p_delta: -item.cantidad,
-        });
-        if (error) throw error;
-      }));
+      // productos.stock is decremented automatically by the DB trigger
+      // trg_stock_venta (AFTER INSERT ON venta_items) — do not also
+      // decrement it here, that double-counts every sale.
 
       if (tipoPago === 'Crédito' && clienteId && selectedClient) {
         const newBalance = Number(selectedClient.saldo || 0) + totalToPay;

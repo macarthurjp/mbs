@@ -140,7 +140,6 @@ export function printCompactReceipt(data: CompactReceiptData, language: 'es' | '
           @page { margin: 16mm 8mm 10mm 8mm; }
           @media print {
             body { padding: 0; }
-            .receipt { max-width: none; }
           }
         </style>
       </head>

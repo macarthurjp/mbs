@@ -64,6 +64,8 @@ type ReceiptSnapshotItem = {
   cantidad?: number | string | null;
   unit_price?: number | string | null;
   precio?: number | string | null;
+  product_id?: number | string | null;
+  producto_id?: number | string | null;
 };
 
 type ReceiptSnapshot = Record<string, unknown> & {
@@ -417,6 +419,19 @@ function getSnapshotItems(snapshot: ReceiptSnapshot | null | undefined) {
       unitPrice: Number(item.unit_price ?? item.precio ?? 0),
     }))
     .filter((item) => item.name && Number.isFinite(item.quantity) && item.quantity > 0 && Number.isFinite(item.unitPrice));
+}
+
+function getSnapshotProductName(snapshot: ReceiptSnapshot | null | undefined, productoId: number | null) {
+  if (productoId === null) return '';
+
+  const rawItems = Array.isArray(snapshot?.items)
+    ? snapshot.items
+    : Array.isArray(snapshot?.productos)
+      ? snapshot.productos
+      : [];
+  const match = rawItems.find((item) => Number(item.product_id ?? item.producto_id) === productoId);
+
+  return match ? String(match.name || match.nombre || '').trim() : '';
 }
 
 function getVentaClientName(venta: Venta | null | undefined, fallback: string) {
@@ -2270,14 +2285,17 @@ function buildInvoiceHtml(
   const seller = getVentaSeller(venta, loggedUserName);
   const saleTime = getVentaTime(venta, language === 'es' ? 'es-ES' : 'en-US');
   const formattedTotal = `${currency} ${formatNumber(venta.total || 0)}`;
-  const rows = items.map((item) => `
+  const rows = items.map((item) => {
+    const productName = getSnapshotProductName(venta.recibo_datos, item.producto_id) || item.productos?.nombre || t.deletedProduct;
+    return `
     <tr>
-      <td class="product-name">${escapeHtml(item.productos?.nombre || t.deletedProduct)}</td>
+      <td class="product-name">${escapeHtml(productName)}</td>
       <td class="text-right">${Number(item.cantidad || 0)} ${escapeHtml(item.productos?.unidad || '')}</td>
       <td class="text-right">${currency} ${formatNumber(item.precio)}</td>
       <td class="text-right strong">${currency} ${formatNumber(item.total)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `
 <!doctype html>

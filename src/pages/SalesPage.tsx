@@ -914,12 +914,11 @@ export function SalesPage() {
       // productos.stock is decremented automatically by the DB trigger
       // trg_stock_venta (AFTER INSERT ON venta_items) — do not also
       // decrement it here, that double-counts every sale.
-
-      if (tipoPago === 'Crédito' && clienteId && selectedClient) {
-        const newBalance = Number(selectedClient.saldo || 0) + totalToPay;
-        const { error: clientError } = await supabase.from('clientes').update({ saldo: newBalance }).eq('id', clienteId).eq('negocio_id', negocioId);
-        if (clientError) throw clientError;
-      }
+      //
+      // For Crédito sales, clientes.saldo and ventas.saldo_pendiente are
+      // both updated automatically by the DB trigger trg_saldo_credito
+      // (AFTER INSERT ON ventas) — do not also update them here, that
+      // double-counts the client's debt.
 
         if (tipoPago === 'Contado') {
           const paymentRows: Array<{

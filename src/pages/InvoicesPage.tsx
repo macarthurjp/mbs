@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { formatPhone, normalizePhoneForLink } from '../utils/formatContact';
+import { printCompactReceipt } from '../utils/receiptPrinter';
 
 type Venta = {
   id: number;
@@ -32,6 +33,8 @@ type Venta = {
   motivo_anulacion?: string | null;
   vendedor_nombre?: string | null;
   vendedor?: string | null;
+  cliente_nombre?: string | null;
+  recibo_datos?: ReceiptSnapshot | null;
   clientes?: {
     nombre: string;
     telefono: string | null;
@@ -52,6 +55,20 @@ type Venta = {
       stock?: number | null;
     } | null;
   }> | null;
+};
+
+type ReceiptSnapshotItem = {
+  name?: string | null;
+  nombre?: string | null;
+  quantity?: number | string | null;
+  cantidad?: number | string | null;
+  unit_price?: number | string | null;
+  precio?: number | string | null;
+};
+
+type ReceiptSnapshot = Record<string, unknown> & {
+  items?: ReceiptSnapshotItem[];
+  productos?: ReceiptSnapshotItem[];
 };
 
 type VentaItem = {
@@ -91,7 +108,7 @@ const invoicesCopy = {
     missingTitle: 'Usuario sin negocio asignado',
     missingText: 'El login funciona, pero este usuario todavía no existe en la tabla usuarios o no tiene un negocio_id asignado.',
     title: 'Facturas',
-    subtitle: 'Consulta, imprime y descarga facturas de ventas',
+    subtitle: 'Consulta, envía y descarga facturas; imprime recibos compactos',
     sellerSubtitle: 'Consulta solo tus facturas y ventas propias',
     refresh: 'Actualizar',
     invoices: 'Facturas',
@@ -144,10 +161,10 @@ const invoicesCopy = {
     credit: 'Crédito',
     view: 'Ver',
     noInvoices: 'No se encontraron facturas',
-    printPdf: 'Imprimir / PDF',
+    printReceipt: 'Imprimir recibo',
     sendEmail: 'Enviar Email',
     whatsapp: 'WhatsApp',
-    downloadHtml: 'Descargar HTML',
+    downloadPdf: 'Descargar PDF',
     salesInvoice: 'Factura de venta',
     phone: 'Tel',
     pendingBalance: 'Saldo pendiente',
@@ -175,6 +192,15 @@ const invoicesCopy = {
     whatsappIntro: 'Te compartimos la factura',
     whatsappFrom: 'de',
     downloadInvoice: 'Descargar factura',
+    downloadError: 'No se pudo descargar la factura en PDF',
+    amountReceived: 'Monto recibido',
+    paymentCurrency: 'Moneda recibida',
+    exchangeRate: 'Tasa',
+    creditUsed: 'Crédito usado',
+    appliedToDebt: 'Aplicado a la cuenta',
+    remainingDebt: 'Deuda restante',
+    creditBalance: 'Crédito a favor',
+    change: 'Cambio',
     systemPos: 'Sistema POS',
     active: 'Activa',
     cancelled: 'Anulada',
@@ -196,7 +222,7 @@ const invoicesCopy = {
     missingTitle: 'User has no assigned business',
     missingText: 'Login works, but this user does not exist in the usuarios table yet or does not have an assigned negocio_id.',
     title: 'Invoices',
-    subtitle: 'View, print, and download sales invoices',
+    subtitle: 'View, send, and download invoices; print compact receipts',
     sellerSubtitle: 'View only your own invoices and sales',
     refresh: 'Refresh',
     invoices: 'Invoices',
@@ -249,10 +275,10 @@ const invoicesCopy = {
     credit: 'Credit',
     view: 'View',
     noInvoices: 'No invoices found',
-    printPdf: 'Print / PDF',
+    printReceipt: 'Print receipt',
     sendEmail: 'Send Email',
     whatsapp: 'WhatsApp',
-    downloadHtml: 'Download HTML',
+    downloadPdf: 'Download PDF',
     salesInvoice: 'Sales invoice',
     phone: 'Phone',
     pendingBalance: 'Pending balance',
@@ -280,6 +306,15 @@ const invoicesCopy = {
     whatsappIntro: 'We are sharing invoice',
     whatsappFrom: 'from',
     downloadInvoice: 'Download invoice',
+    downloadError: 'Could not download the invoice as PDF',
+    amountReceived: 'Amount received',
+    paymentCurrency: 'Payment currency',
+    exchangeRate: 'Rate',
+    creditUsed: 'Credit used',
+    appliedToDebt: 'Applied to account',
+    remainingDebt: 'Remaining debt',
+    creditBalance: 'Credit balance',
+    change: 'Change',
     systemPos: 'POS System',
     active: 'Active',
     cancelled: 'Cancelled',
@@ -348,6 +383,49 @@ function getVentaDiscount(items: VentaItem[], venta?: Venta | null) {
   const percent = subtotal > 0 ? (amount / subtotal) * 100 : 0;
 
   return { subtotal, amount, percent };
+}
+
+function getSnapshotString(snapshot: ReceiptSnapshot | null | undefined, ...keys: string[]) {
+  for (const key of keys) {
+    const value = snapshot?.[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+function getSnapshotNumber(snapshot: ReceiptSnapshot | null | undefined, ...keys: string[]) {
+  for (const key of keys) {
+    const value = snapshot?.[key];
+    if (value === null || value === undefined || value === '') continue;
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) return numberValue;
+  }
+  return null;
+}
+
+function getSnapshotItems(snapshot: ReceiptSnapshot | null | undefined) {
+  const rawItems = Array.isArray(snapshot?.items)
+    ? snapshot.items
+    : Array.isArray(snapshot?.productos)
+      ? snapshot.productos
+      : [];
+
+  return rawItems
+    .map((item) => ({
+      name: String(item.name || item.nombre || '').trim(),
+      quantity: Number(item.quantity ?? item.cantidad ?? 0),
+      unitPrice: Number(item.unit_price ?? item.precio ?? 0),
+    }))
+    .filter((item) => item.name && Number.isFinite(item.quantity) && item.quantity > 0 && Number.isFinite(item.unitPrice));
+}
+
+function getVentaClientName(venta: Venta | null | undefined, fallback: string) {
+  return (
+    venta?.cliente_nombre?.trim() ||
+    getSnapshotString(venta?.recibo_datos, 'client_name', 'cliente_nombre') ||
+    venta?.clientes?.nombre ||
+    fallback
+  );
 }
 
 function getVentaTime(venta: Venta | null | undefined, locale: string) {
@@ -509,7 +587,7 @@ export default function InvoicesPage() {
         venta.id.toString().includes(search) ||
         venta.fecha.includes(search) ||
         (venta.tipo_pago || '').toLowerCase().includes(search) ||
-        (venta.clientes?.nombre || t.generalClient).toLowerCase().includes(search);
+        getVentaClientName(venta, t.generalClient).toLowerCase().includes(search);
 
       const matchesStatus =
         statusFilter === 'all' ||
@@ -705,7 +783,7 @@ export default function InvoicesPage() {
 
       let ventasQuery = supabase
         .from('ventas')
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
+        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .eq('negocio_id', currentNegocioId);
 
       if (isSeller && user.id) {
@@ -804,7 +882,7 @@ export default function InvoicesPage() {
     try {
       let invoiceQuery = supabase
         .from('ventas')
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
+        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .eq('negocio_id', currentNegocioId)
         .eq('id', Number(invoiceId));
 
@@ -848,47 +926,104 @@ export default function InvoicesPage() {
     openInvoiceById(pendingInvoiceId);
   }, [isModalOpen, loading, openInvoiceById, pendingInvoiceId]);
 
-  function printInvoice() {
+  function printReceipt() {
     if (!selectedVenta) return;
     if (isCancelledInvoice(selectedVenta)) {
       showToast(t.cancelled, 'error');
       return;
     }
 
-    const html = buildInvoiceHtml(selectedVenta, ventaItems, negocio, t, loggedUserName, language);
-    const printWindow = window.open('', '_blank', 'width=900,height=1100');
+    const snapshot = selectedVenta.recibo_datos;
+    const discount = getVentaDiscount(ventaItems, selectedVenta);
+    const snapshotItems = getSnapshotItems(snapshot);
+    const currencySymbol = getSnapshotString(snapshot, 'currency_symbol', 'moneda_simbolo') || getCurrencyFromBusiness(negocio);
+    const currencyCode = getSnapshotString(snapshot, 'currency_code', 'moneda_codigo') || String(negocio?.moneda_codigo || negocio?.currency_code || negocio?.moneda || '');
+    const formatReceiptMoney = (value: number) => `${currencySymbol} ${formatNumber(value)}`;
+    const amountReceived = getSnapshotNumber(snapshot, 'amount_received', 'monto_recibido');
+    const originalAmountReceived = getSnapshotNumber(snapshot, 'amount_received_original', 'monto_recibido_original');
+    const paymentCurrency = getSnapshotString(snapshot, 'payment_currency', 'moneda_pago');
+    const exchangeRate = getSnapshotNumber(snapshot, 'exchange_rate', 'tasa_cambio');
+    const creditUsed = getSnapshotNumber(snapshot, 'credit_used', 'credito_usado');
+    const appliedToDebt = getSnapshotNumber(snapshot, 'applied_to_debt', 'aplicado_a_deuda');
+    const remainingDebt = getSnapshotNumber(snapshot, 'remaining_debt', 'deuda_restante');
+    const remainingCredit = getSnapshotNumber(snapshot, 'remaining_credit', 'credito_restante');
+    const change = getSnapshotNumber(snapshot, 'change', 'cambio');
+    const receiptDetails: Array<{ label: string; value: string }> = [
+      ...(amountReceived !== null ? [{ label: t.amountReceived, value: formatReceiptMoney(amountReceived) }] : []),
+      ...(paymentCurrency && originalAmountReceived !== null && paymentCurrency !== currencyCode
+        ? [{ label: t.paymentCurrency, value: `${paymentCurrency} ${formatNumber(originalAmountReceived)}` }]
+        : []),
+      ...(exchangeRate !== null && exchangeRate > 0 ? [{ label: t.exchangeRate, value: formatNumber(exchangeRate) }] : []),
+      ...(creditUsed !== null && creditUsed > 0 ? [{ label: t.creditUsed, value: formatReceiptMoney(creditUsed) }] : []),
+      ...(appliedToDebt !== null && appliedToDebt > 0 ? [{ label: t.appliedToDebt, value: formatReceiptMoney(appliedToDebt) }] : []),
+      ...(remainingCredit !== null && remainingCredit > 0
+        ? [{ label: t.creditBalance, value: formatReceiptMoney(remainingCredit) }]
+        : remainingDebt !== null && appliedToDebt !== null && appliedToDebt > 0
+          ? [{ label: t.remainingDebt, value: formatReceiptMoney(remainingDebt) }]
+          : []),
+      ...(change !== null ? [{ label: t.change, value: formatReceiptMoney(change) }] : []),
+    ];
 
-    if (!printWindow) {
-      showToast(t.printBlocked, 'error');
-      return;
+    if (receiptDetails.length === 0 && selectedVenta.tipo_pago === 'Crédito') {
+      receiptDetails.push({ label: t.pendingBalance, value: money(selectedVenta.saldo_pendiente) });
     }
 
-    printWindow.document.write(html);
-    printWindow.document.close();
+    const opened = printCompactReceipt({
+      saleId: selectedVenta.id,
+      businessName: getSnapshotString(snapshot, 'business_name', 'negocio_nombre') || negocio?.nombre || t.systemPos,
+      date: selectedVenta.fecha,
+      time: getSnapshotString(snapshot, 'sale_time', 'hora') || getVentaTime(selectedVenta, language === 'es' ? 'es-ES' : 'en-US'),
+      seller: getSnapshotString(snapshot, 'seller_name', 'vendedor_nombre') || getVentaSeller(selectedVenta, loggedUserName),
+      client: getVentaClientName(selectedVenta, t.generalClient),
+      paymentType: selectedVenta.tipo_pago === 'Crédito' ? 'Crédito' : 'Contado',
+      subtotal: getSnapshotNumber(snapshot, 'subtotal') ?? discount.subtotal,
+      discountPercent: getSnapshotNumber(snapshot, 'discount_percent', 'descuento_porcentaje') ?? discount.percent,
+      discountAmount: getSnapshotNumber(snapshot, 'discount_amount', 'descuento_monto') ?? discount.amount,
+      total: getSnapshotNumber(snapshot, 'total') ?? Number(selectedVenta.total || 0),
+      currencySymbol,
+      items: snapshotItems.length > 0
+        ? snapshotItems
+        : ventaItems.map((item) => ({
+          name: item.productos?.nombre || t.deletedProduct,
+          quantity: Number(item.cantidad || 0),
+          unitPrice: Number(item.precio || 0),
+        })),
+      details: receiptDetails,
+      status: selectedVenta.estado,
+    }, language);
 
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
+    if (!opened) showToast(t.printBlocked, 'error');
   }
 
-  function downloadInvoiceHtml() {
+  async function downloadInvoicePdf() {
     if (!selectedVenta) return;
     if (isCancelledInvoice(selectedVenta)) {
       showToast(t.cancelled, 'error');
       return;
     }
 
-    const html = buildInvoiceHtml(selectedVenta, ventaItems, negocio, t, loggedUserName, language);
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${formatInvoiceCode(selectedVenta.id)}.html`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const pdfBase64 = await generateInvoicePdfBase64();
+      const binary = window.atob(pdfBase64);
+      const bytes = new Uint8Array(binary.length);
+
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${formatInvoiceCode(selectedVenta.id)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading invoice PDF:', error);
+      showToast(t.downloadError, 'error');
+    }
   }
 
   function exportInvoicesCsv() {
@@ -902,7 +1037,7 @@ export default function InvoicesPage() {
       formatInvoiceCode(venta.id),
       venta.fecha,
       getVentaTime(venta, language === 'es' ? 'es-ES' : 'en-US'),
-      `"${venta.clientes?.nombre || t.generalClient}"`,
+      `"${getVentaClientName(venta, t.generalClient)}"`,
       `"${getVentaSeller(venta, loggedUserName)}"`,
       venta.tipo_pago === 'Contado' ? t.cash : t.credit,
       isCancelledInvoice(venta) ? t.cancelled : t.active,
@@ -933,7 +1068,7 @@ export default function InvoicesPage() {
       <tr>
         <td>${formatInvoiceCode(venta.id)}</td>
         <td>${venta.fecha}</td>
-        <td>${escapeHtml(venta.clientes?.nombre || t.generalClient)}</td>
+        <td>${escapeHtml(getVentaClientName(venta, t.generalClient))}</td>
         <td>${escapeHtml(getVentaSeller(venta, loggedUserName))}</td>
         <td>${venta.tipo_pago === 'Contado' ? t.cash : t.credit}</td>
         <td>${isCancelledInvoice(venta) ? t.cancelled : t.active}</td>
@@ -1105,7 +1240,7 @@ export default function InvoicesPage() {
         })
         .eq('id', selectedVenta.id)
         .eq('negocio_id', negocioId)
-        .select('id, negocio_id, cliente_id, vendedor_id, fecha, subtotal, descuento, descuento_porcentaje, descuento_monto, total, tipo_pago, saldo_pendiente, vendedor_nombre, created_at, estado, anulada_at, anulada_por, motivo_anulacion, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
+        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
         .maybeSingle();
 
       if (error) throw error;
@@ -1251,7 +1386,7 @@ export default function InvoicesPage() {
       const phone = normalizePhoneForLink(selectedVenta.clientes?.telefono);
       const invoiceUrl = data?.invoiceUrl || data?.invoice_url || '';
       const message = encodeURIComponent(
-        `${t.whatsappHello} ${selectedVenta.clientes?.nombre || t.clientFallback},\n\n` +
+        `${t.whatsappHello} ${getVentaClientName(selectedVenta, t.clientFallback)},\n\n` +
         `${t.whatsappIntro} ${invoiceNumber} ${t.whatsappFrom} ${negocio?.nombre || t.systemPos}.\n` +
         `${t.total}: ${money(selectedVenta.total)}\n\n` +
         `${invoiceUrl ? `${t.downloadInvoice}:\n${invoiceUrl}\n\n` : ''}` +
@@ -1684,7 +1819,7 @@ export default function InvoicesPage() {
                     <td className="whitespace-nowrap px-2 py-3 text-sm font-black text-[#050505]">{formatInvoiceCode(venta.id)}</td>
                     <td className="whitespace-nowrap px-2 py-3 text-sm font-semibold text-[#71717a]">{venta.fecha}</td>
                     <td className="whitespace-nowrap px-2 py-3 text-sm font-semibold text-[#71717a]">{getVentaTime(venta, language === 'es' ? 'es-ES' : 'en-US')}</td>
-                    <td className="truncate px-2 py-3 text-sm font-semibold text-[#71717a]">{venta.clientes?.nombre || t.generalClient}</td>
+                    <td className="truncate px-2 py-3 text-sm font-semibold text-[#71717a]">{getVentaClientName(venta, t.generalClient)}</td>
                     <td className="truncate px-2 py-3 text-sm font-semibold text-[#71717a]">{getVentaSeller(venta, loggedUserName)}</td>
                     <td className="px-2 py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-black ${venta.tipo_pago === 'Contado' ? 'bg-[#050505] text-[#f4c542]' : 'bg-[#fff4c7] text-[#8a6a16]'}`}>
@@ -1758,7 +1893,7 @@ export default function InvoicesPage() {
                   <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.client}</p>
-                      <p className="mt-1 truncate text-sm font-black text-[#050505]">{venta.clientes?.nombre || t.generalClient}</p>
+                      <p className="mt-1 truncate text-sm font-black text-[#050505]">{getVentaClientName(venta, t.generalClient)}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="min-w-0">
@@ -1852,9 +1987,9 @@ export default function InvoicesPage() {
             <div className="flex flex-col-reverse justify-end gap-3 print:hidden sm:flex-row sm:flex-wrap">
               {!isCancelledInvoice(selectedVenta) && (
                 <>
-                  <Button type="button" variant="secondary" onClick={printInvoice}>
+                  <Button type="button" variant="secondary" onClick={printReceipt} disabled={loadingItems || ventaItems.length === 0}>
                     <Printer className="shrink-0" size={18} />
-                    {t.printPdf}
+                    {t.printReceipt}
                   </Button>
 
                   <Button type="button" variant="secondary" onClick={sendInvoiceByEmail}>
@@ -1865,9 +2000,9 @@ export default function InvoicesPage() {
                     WhatsApp
                   </Button>
 
-                  <Button type="button" onClick={downloadInvoiceHtml}>
+                  <Button type="button" onClick={downloadInvoicePdf}>
                     <Download className="shrink-0" size={18} />
-                    {t.downloadHtml}
+                    {t.downloadPdf}
                   </Button>
 
                   {canManageInvoices && (
@@ -1939,7 +2074,7 @@ export default function InvoicesPage() {
               <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
                   <p className="mb-2 text-xs font-black uppercase tracking-widest text-[#8a6a16]">{t.client}</p>
-                  <p className="font-black text-[#050505]">{selectedVenta.clientes?.nombre || t.generalClient}</p>
+                  <p className="font-black text-[#050505]">{getVentaClientName(selectedVenta, t.generalClient)}</p>
                   <p className="text-sm text-[#71717a]">{formatPhone(selectedVenta.clientes?.telefono, '')}</p>
                   <p className="text-sm text-[#71717a]">{selectedVenta.clientes?.direccion || ''}</p>
                 </div>
@@ -2372,7 +2507,7 @@ function buildInvoiceHtml(
       <div class="cards">
         <div class="box">
           <p class="box-title">${t.client}</p>
-          <p class="box-main">${escapeHtml(venta.clientes?.nombre || t.generalClient)}</p>
+          <p class="box-main">${escapeHtml(getVentaClientName(venta, t.generalClient))}</p>
           ${venta.clientes?.telefono ? `<p class="box-text">${escapeHtml(formatPhone(venta.clientes.telefono))}</p>` : ''}
           ${venta.clientes?.direccion ? `<p class="box-text">${escapeHtml(venta.clientes.direccion)}</p>` : ''}
         </div>

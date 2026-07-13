@@ -2,8 +2,14 @@ import { test, expect } from '@playwright/test';
 import { hasE2ECredentials, loginAsTestOwner } from './utils/auth';
 
 test.describe('Sales money flow', () => {
-  test('owner creates a product and completes a cash sale', async ({ page }) => {
+  test('owner creates a product, completes a cash sale, and reprints its receipt', async ({ page, context }) => {
     test.skip(!hasE2ECredentials, 'E2E owner credentials are not configured.');
+
+    await context.addInitScript(() => {
+      window.print = () => {
+        document.documentElement.dataset.printCalled = 'true';
+      };
+    });
 
     await loginAsTestOwner(page);
 
@@ -30,11 +36,49 @@ test.describe('Sales money flow', () => {
     await expect(page.getByRole('heading', { name: 'Ventas', level: 1 })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: new RegExp(productName) }).click();
+    const quantityInput = page.getByLabel(`Cant.: ${productName}`);
+    await quantityInput.fill('20');
+    await expect(quantityInput).toHaveValue('20');
     await page.getByRole('button', { name: /^Cobrar/ }).click();
 
     await expect(page.getByRole('heading', { name: 'Confirmar venta' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Registrar venta' }).click();
 
-    await expect(page.getByRole('button', { name: 'Imprimir recibo' })).toBeVisible({ timeout: 15_000 });
+    const printReceiptButton = page.getByRole('button', { name: 'Imprimir recibo' });
+    await expect(printReceiptButton).toBeVisible({ timeout: 15_000 });
+
+    const saleCode = await page.locator('h2').filter({ hasText: /^V-\d+$/ }).textContent();
+    expect(saleCode).toMatch(/^V-\d+$/);
+
+    const immediatePopupPromise = page.waitForEvent('popup');
+    await printReceiptButton.click();
+    const immediateReceipt = await immediatePopupPromise;
+    await expect(immediateReceipt.getByText(productName)).toBeVisible();
+    await expect(immediateReceipt.locator('html')).toHaveAttribute('data-print-called', 'true');
+    await immediateReceipt.close();
+
+    await page.getByRole('button', { name: 'Cerrar' }).click();
+    await page.getByRole('button', { name: 'Facturas' }).click();
+    await expect(page.getByRole('heading', { name: 'Facturas', level: 1 })).toBeVisible({ timeout: 10_000 });
+
+    const saleId = Number(saleCode?.replace('V-', ''));
+    const invoiceCode = `FAC-${String(saleId).padStart(6, '0')}`;
+    await page.getByPlaceholder('Buscar por número, cliente, fecha o tipo de pago...').fill(invoiceCode);
+    await page.getByRole('button', { name: 'Ver' }).first().click();
+
+    const reprintButton = page.getByRole('button', { name: 'Imprimir recibo' });
+    await expect(reprintButton).toBeEnabled({ timeout: 10_000 });
+    const historicalPopupPromise = page.waitForEvent('popup');
+    await reprintButton.click();
+    const historicalReceipt = await historicalPopupPromise;
+    await expect(historicalReceipt.getByText(productName)).toBeVisible();
+    await expect(historicalReceipt.getByText('20', { exact: true })).toBeVisible();
+    await expect(historicalReceipt.locator('html')).toHaveAttribute('data-print-called', 'true');
+    await historicalReceipt.close();
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Descargar PDF' }).click();
+    const invoiceDownload = await downloadPromise;
+    expect(invoiceDownload.suggestedFilename()).toBe(`${invoiceCode}.pdf`);
   });
 });

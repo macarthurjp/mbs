@@ -11,6 +11,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getUserRoleFlags } from '../utils/roles';
 import { logAudit } from '../utils/audit';
+import { printCompactReceipt } from '../utils/receiptPrinter';
 
 type Producto = {
   id: number;
@@ -417,6 +418,62 @@ function getDefaultCreditDueDate() {
   return getLocalDateString(date);
 }
 
+type QuantityInputProps = {
+  value: number;
+  max: number;
+  label: string;
+  onChange: (quantity: number) => void;
+};
+
+function QuantityInput({ value, max, label, onChange }: QuantityInputProps) {
+  const [draftValue, setDraftValue] = useState(String(value));
+
+  useEffect(() => {
+    setDraftValue(String(value));
+  }, [value]);
+
+  function restoreOrCommit() {
+    const quantity = Number(draftValue);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setDraftValue(String(value));
+      return;
+    }
+
+    setDraftValue(String(Math.min(quantity, max)));
+    onChange(quantity);
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      aria-label={label}
+      value={draftValue}
+      onFocus={(event) => event.currentTarget.select()}
+      onChange={(event) => {
+        const nextValue = event.target.value;
+        if (!/^\d*$/.test(nextValue)) return;
+
+        const quantity = Number(nextValue);
+        if (nextValue && Number.isInteger(quantity) && quantity > 0) {
+          setDraftValue(String(Math.min(quantity, max)));
+          onChange(quantity);
+          return;
+        }
+
+        setDraftValue(nextValue);
+      }}
+      onBlur={restoreOrCommit}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur();
+      }}
+      className="h-8 w-14 rounded-xl border border-[#d9ceb8] bg-white px-1 text-center font-semibold tabular-nums text-[#050505] outline-none transition focus:border-[#f4c542] focus:ring-2 focus:ring-[#f4c542]/25"
+      title={`1–${max.toLocaleString('en-US')}`}
+    />
+  );
+}
+
 export function SalesPage() {
   const { user, userProfile } = useAuth();
   const roleFlags = getUserRoleFlags(userProfile);
@@ -613,7 +670,10 @@ export function SalesPage() {
   }
 
   function updateQuantity(productId: number, quantity: number) {
-    if (quantity <= 0) {
+    if (!Number.isFinite(quantity)) return;
+
+    const normalizedQuantity = Math.trunc(quantity);
+    if (normalizedQuantity <= 0) {
       removeFromCart(productId);
       return;
     }
@@ -622,8 +682,8 @@ export function SalesPage() {
       currentCart.map((item) => {
         if (item.producto.id !== productId) return item;
         const stock = Number(item.producto.stock || 0);
-        const safeQuantity = Math.min(quantity, stock);
-        if (quantity > stock) showToast(t.notEnoughStock, 'error');
+        const safeQuantity = Math.min(normalizedQuantity, stock);
+        if (normalizedQuantity > stock) showToast(t.notEnoughStock, 'error');
         return { ...item, cantidad: safeQuantity };
       })
     );
@@ -648,82 +708,38 @@ export function SalesPage() {
   }
 
   function printReceipt(receipt: ReceiptData) {
-    const rows = receipt.items
-      .map(
-        (item) => `
-          <tr>
-            <td>${item.producto.nombre}</td>
-            <td style="text-align:right;">${item.cantidad}</td>
-            <td style="text-align:right;">${formatMoney(item.precio, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</td>
-            <td style="text-align:right;">${formatMoney(item.cantidad * item.precio, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</td>
-          </tr>
-        `
-      )
-      .join('');
+    const details = [
+      { label: t.amountReceived, value: formatMoney(receipt.montoRecibido, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo }) },
+      ...(receipt.monedaPago !== receipt.monedaCodigo ? [{ label: t.paymentCurrency, value: `${receipt.monedaPago} ${formatCurrency(receipt.montoRecibidoOriginal)}` }] : []),
+      ...(receipt.tasaCambio ? [{ label: t.exchangeRate, value: formatCurrency(receipt.tasaCambio) }] : []),
+      ...(receipt.creditoUsado > 0 ? [{ label: t.creditUsed, value: formatMoney(receipt.creditoUsado, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo }) }] : []),
+      ...(receipt.aplicadoADeuda > 0 ? [{ label: t.appliedToDebt, value: formatMoney(receipt.aplicadoADeuda, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo }) }] : []),
+      ...(receipt.aplicadoADeuda > 0 ? [{ label: receipt.creditoRestante > 0 ? t.creditBalance : t.remainingDebt, value: formatMoney(receipt.creditoRestante > 0 ? receipt.creditoRestante : receipt.deudaRestante, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo }) }] : []),
+      { label: t.change, value: formatMoney(receipt.cambio, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo }) },
+    ];
+    const opened = printCompactReceipt({
+      saleId: receipt.ventaId,
+      businessName: receipt.negocioNombre,
+      date: receipt.fecha,
+      time: receipt.hora,
+      seller: receipt.vendedor,
+      client: receipt.cliente,
+      paymentType: receipt.tipoPago,
+      subtotal: receipt.subtotal,
+      discountPercent: receipt.descuentoPorcentaje,
+      discountAmount: receipt.descuentoMonto,
+      total: receipt.total,
+      currencySymbol: receipt.monedaSimbolo,
+      items: receipt.items.map((item) => ({
+        name: item.producto.nombre,
+        quantity: item.cantidad,
+        unitPrice: item.precio,
+      })),
+      details,
+      status: receipt.estado,
+    }, language);
 
-    const cancelled = isCancelledSale(receipt.estado);
-    const receiptWindow = window.open('', '_blank', 'width=420,height=700');
-
-    if (!receiptWindow) {
-      showToast(t.blockedPrint, 'error');
-      return;
-    }
-
-    receiptWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>${t.receiptTitle} ${formatSaleCode(receipt.ventaId)}</title>
-          <style>
-            body { font-family: Arial, sans-serif; color: #111; padding: 22px; }
-            .receipt { max-width: 360px; margin: 0 auto; }
-            h1 { font-size: 22px; margin: 0 0 6px; text-align: center; }
-            .muted { color: #666; font-size: 12px; text-align: center; margin: 0; }
-            .info { border-top: 1px dashed #bbb; border-bottom: 1px dashed #bbb; margin: 18px 0; padding: 12px 0; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { padding: 7px 0; border-bottom: 1px solid #eee; }
-            th { text-align: left; }
-            .total { display: flex; justify-content: space-between; margin-top: 16px; font-size: 18px; font-weight: 800; }
-            .thanks { margin-top: 22px; text-align: center; font-size: 12px; color: #666; }
-            .cancelled { margin: 10px auto 0; width: fit-content; border: 1px solid #fecaca; background: #fee2e2; color: #b91c1c; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <h1>${receipt.negocioNombre}</h1>
-            <p class="muted">${t.receiptTitle}</p>
-            <p class="muted">${formatSaleCode(receipt.ventaId)}</p>
-            ${cancelled ? `<p class="cancelled">${t.cancelled}</p>` : ''}
-            <div class="info">
-              <div><strong>${t.date}:</strong> ${receipt.fecha}</div>
-              <div><strong>${t.time}:</strong> ${receipt.hora}</div>
-              <div><strong>${t.seller}:</strong> ${receipt.vendedor}</div>
-              <div><strong>${t.client}:</strong> ${receipt.cliente}</div>
-              <div><strong>${t.payment}:</strong> ${receipt.tipoPago === 'Contado' ? t.cash : t.credit}</div>
-            </div>
-            <table><thead><tr><th>${t.product}</th><th style="text-align:right;">${t.quantityShort}</th><th style="text-align:right;">${t.price}</th><th style="text-align:right;">${t.total}</th></tr></thead><tbody>${rows}</tbody></table>
-            <div class="total"><span>${t.subtotal}</span><span>${formatMoney(receipt.subtotal, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</span></div>
-            <div class="total" style="font-size:14px; margin-top:8px;"><span>${t.discount} (${formatCurrency(receipt.descuentoPorcentaje)}%)</span><span>-${formatMoney(receipt.descuentoMonto, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</span></div>
-            <div class="total" style="border-top:1px dashed #bbb; padding-top:10px;"><span>${t.total}</span><span>${formatMoney(receipt.total, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</span></div>
-            <div class="info" style="border-top:none; margin-top:14px;">
-              <div><strong>${t.amountReceived}:</strong> ${formatMoney(receipt.montoRecibido, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>
-            ${receipt.monedaPago !== receipt.monedaCodigo ? `<div><strong>${t.paymentCurrency}:</strong> ${receipt.monedaPago} ${formatCurrency(receipt.montoRecibidoOriginal)}</div>` : ''}
-            ${receipt.tasaCambio ? `<div><strong>${t.exchangeRate}:</strong> ${formatCurrency(receipt.tasaCambio)}</div>` : ''}
-              ${receipt.creditoUsado > 0 ? `<div><strong>${t.creditUsed}:</strong> ${formatMoney(receipt.creditoUsado, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
-              ${receipt.aplicadoADeuda > 0 ? `<div><strong>${t.appliedToDebt}:</strong> ${formatMoney(receipt.aplicadoADeuda, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
-              ${receipt.aplicadoADeuda > 0 ? `<div><strong>${receipt.creditoRestante > 0 ? t.creditBalance : t.remainingDebt}:</strong> ${formatMoney(receipt.creditoRestante > 0 ? receipt.creditoRestante : receipt.deudaRestante, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>` : ''}
-              <div><strong>${t.change}:</strong> ${formatMoney(receipt.cambio, { code: receipt.monedaCodigo, symbol: receipt.monedaSimbolo })}</div>
-            </div>
-            <div class="thanks">${t.thanks}</div>
-          </div>
-          <script>window.onload = function() { window.print(); };</script>
-        </body>
-      </html>
-    `);
-
-    receiptWindow.document.close();
+    if (!opened) showToast(t.blockedPrint, 'error');
   }
 
   async function saveSale() {
@@ -815,32 +831,78 @@ export function SalesPage() {
       const saldoPendiente = tipoPago === 'Crédito' ? totalToPay : 0;
       const fechaVencimientoCredito = tipoPago === 'Crédito' ? fechaVencimiento : null;
       const estadoCredito = tipoPago === 'Crédito' ? 'pendiente' : null;
+      const baseSalePayload = {
+        negocio_id: negocioId,
+        cliente_id: clienteId,
+        vendedor_id: user.id,
+        vendedor_nombre: loggedUserName,
+        fecha: today,
+        subtotal,
+        descuento: discountAmount,
+        descuento_porcentaje: safeDiscountPercent,
+        descuento_monto: discountAmount,
+        total: totalToPay,
+        tipo_pago: tipoPago,
+        saldo_pendiente: saldoPendiente,
+        fecha_vencimiento: fechaVencimientoCredito,
+        estado_credito: estadoCredito,
+        estado: 'activa'
+      };
+      const receiptSnapshot = {
+        version: 1,
+        client_name: receiptClientName,
+        business_name: businessName,
+        seller_name: loggedUserName,
+        sale_time: saleTime,
+        subtotal,
+        discount_percent: safeDiscountPercent,
+        discount_amount: discountAmount,
+        total: totalToPay,
+        amount_received: effectiveAmountReceived,
+        amount_received_original: originalAmountReceived,
+        payment_currency: activePaymentCurrencyCode,
+        exchange_rate: paymentCurrency === 'secondary' ? exchangeRateSettings.rate : null,
+        applied_to_debt: amountAppliedToDebt,
+        change: tipoPago === 'Contado' ? changeAmount : 0,
+        remaining_debt: remainingClientDebt,
+        credit_used: creditApplied,
+        remaining_credit: remainingClientCredit,
+        currency_code: currencySettings.code,
+        currency_symbol: currencySettings.symbol,
+        items: cart.map((item) => ({
+          product_id: item.producto.id,
+          name: item.producto.nombre,
+          quantity: item.cantidad,
+          unit_price: item.precio,
+        })),
+      };
 
-      const { data: ventaData, error: ventaError } = await supabase
+      let { data: ventaData, error: ventaError } = await supabase
         .from('ventas')
         .insert([
           {
-            negocio_id: negocioId,
-            cliente_id: clienteId,
-            vendedor_id: user.id,
-            vendedor_nombre: loggedUserName,
-            fecha: today,
-            subtotal,
-            descuento: discountAmount,
-            descuento_porcentaje: safeDiscountPercent,
-            descuento_monto: discountAmount,
-            total: totalToPay,
-            tipo_pago: tipoPago,
-            saldo_pendiente: saldoPendiente,
-            fecha_vencimiento: fechaVencimientoCredito,
-            estado_credito: estadoCredito,
-            estado: 'activa'
+            ...baseSalePayload,
+            cliente_nombre: receiptClientName,
+            recibo_datos: receiptSnapshot,
           }
         ])
         .select('id, estado, subtotal, descuento, descuento_porcentaje, descuento_monto, vendedor_id, vendedor_nombre')
         .single();
 
+      // Keep sales operational during a frontend-first rollout. Once the
+      // migration is applied, every new sale automatically stores the snapshot.
+      if (ventaError && /cliente_nombre|recibo_datos/i.test(ventaError.message || '')) {
+        const fallbackResult = await supabase
+          .from('ventas')
+          .insert([baseSalePayload])
+          .select('id, estado, subtotal, descuento, descuento_porcentaje, descuento_monto, vendedor_id, vendedor_nombre')
+          .single();
+        ventaData = fallbackResult.data;
+        ventaError = fallbackResult.error;
+      }
+
       if (ventaError) throw ventaError;
+      if (!ventaData) throw new Error(t.saveError);
 
       const ventaId = ventaData.id;
       const highDiscountThreshold = isSeller ? Math.max(1, sellerDiscountLimit * 0.8) : 10;
@@ -1279,7 +1341,7 @@ export function SalesPage() {
               {cart.map((item) => (
                 <div key={item.producto.id} className="min-w-0 rounded-2xl border border-[#e9e2d3] bg-[#fffdf8] p-4 shadow-sm transition-all duration-300 hover:border-[#f4c542]/30 hover:bg-white hover:shadow-[0_14px_34px_rgba(15,15,15,0.06)]">
                   <div className="mb-3 flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="truncate font-black text-[#050505]">{item.producto.nombre}</p><p className="text-sm text-[#71717a]">{formatMoney(item.precio, currencySettings)} {t.each}</p></div><button type="button" onClick={() => removeFromCart(item.producto.id)} className="rounded-xl border border-red-100 bg-red-50 p-2 text-red-600 transition-all hover:-translate-y-0.5 hover:bg-red-100"><Trash2 className="shrink-0" size={18} /></button></div>
-                  <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => updateQuantity(item.producto.id, item.cantidad - 1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#d9ceb8] bg-white text-[#050505] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8]"><Minus className="shrink-0" size={16} /></button><span className="w-10 text-center font-semibold">{item.cantidad}</span><button type="button" onClick={() => updateQuantity(item.producto.id, item.cantidad + 1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#d9ceb8] bg-white text-[#050505] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8]"><Plus className="shrink-0" size={16} /></button></div><p className="shrink-0 whitespace-nowrap font-bold text-[#050505]">{formatMoney(item.cantidad * item.precio, currencySettings)}</p></div>
+                  <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><button type="button" onClick={() => updateQuantity(item.producto.id, item.cantidad - 1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#d9ceb8] bg-white text-[#050505] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8]"><Minus className="shrink-0" size={16} /></button><QuantityInput value={item.cantidad} max={Number(item.producto.stock || 0)} label={`${t.quantityShort}: ${item.producto.nombre}`} onChange={(quantity) => updateQuantity(item.producto.id, quantity)} /><button type="button" onClick={() => updateQuantity(item.producto.id, item.cantidad + 1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#d9ceb8] bg-white text-[#050505] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8]"><Plus className="shrink-0" size={16} /></button></div><p className="shrink-0 whitespace-nowrap font-bold text-[#050505]">{formatMoney(item.cantidad * item.precio, currencySettings)}</p></div>
                 </div>
               ))}
               {cart.length === 0 && <div className="rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] py-10 text-center font-semibold text-[#71717a]">{t.emptyCart}</div>}

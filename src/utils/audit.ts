@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { supabase } from '../lib/supabase';
 
 type AuditLogParams = {
@@ -31,5 +32,16 @@ export async function logAudit(params: AuditLogParams) {
     });
   } catch (error) {
     console.error('Audit log error:', error);
+    // A failed audit write is otherwise invisible — it doesn't throw, so it
+    // wouldn't reach Sentry's automatic capture on its own. Report it
+    // manually so a missing compliance record is at least noticed.
+    Sentry.captureException(error, {
+      extra: {
+        negocio_id: params.negocio_id,
+        action: params.action,
+        module: params.module,
+        record_id: params.record_id
+      }
+    });
   }
 }

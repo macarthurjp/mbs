@@ -59,8 +59,7 @@ export function formatPhone(value: string | null | undefined, fallback = '-') {
   }
 
   const prefix = hasInternationalPrefix ? '+' : '';
-  const number = hasInternationalPrefix ? digits : digits;
-  const grouped = number.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
   return `${prefix}${grouped}`;
 }

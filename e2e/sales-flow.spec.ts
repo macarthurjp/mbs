@@ -57,13 +57,15 @@ test.describe('Sales money flow', () => {
     await expect(immediateReceipt.locator('html')).toHaveAttribute('data-print-called', 'true');
     await immediateReceipt.close();
 
-    await page.getByRole('button', { name: 'Cerrar' }).click();
+    await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
     await page.getByRole('button', { name: 'Facturas' }).click();
     await expect(page.getByRole('heading', { name: 'Facturas', level: 1 })).toBeVisible({ timeout: 10_000 });
 
     const saleId = Number(saleCode?.replace('V-', ''));
     const invoiceCode = `FAC-${String(saleId).padStart(6, '0')}`;
-    await page.getByPlaceholder('Buscar por número, cliente, fecha o tipo de pago...').fill(invoiceCode);
+    // The search box matches the raw sale id (see InvoicesPage's
+    // matchesSearch), not the formatted "FAC-000098" invoice code.
+    await page.getByPlaceholder('Buscar por número, cliente, fecha o tipo de pago...').fill(String(saleId));
     await page.getByRole('button', { name: 'Ver' }).first().click();
 
     const reprintButton = page.getByRole('button', { name: 'Imprimir recibo' });

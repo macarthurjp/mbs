@@ -987,17 +987,18 @@ export function ProductsPage() {
     try {
       setAddingStock(true);
       const oldStock = Number(stockAdjustProduct.stock || 0);
-      const newStock = oldStock + quantity;
 
       const { data: updatedProduct, error } = await supabase
-        .from('productos')
-        .update({ stock: newStock })
-        .eq('id', stockAdjustProduct.id)
-        .eq('negocio_id', negocioId)
+        .rpc('adjust_producto_stock', {
+          p_producto_id: stockAdjustProduct.id,
+          p_negocio_id: negocioId,
+          p_delta: quantity,
+        })
         .select('id, negocio_id, nombre, unidad, precio, stock, minimo, created_at, precio_anterior, precio_cambio, precio_actualizado_en')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      const newStock = Number(updatedProduct?.stock || 0);
 
       await logAudit({
         negocio_id: negocioId,

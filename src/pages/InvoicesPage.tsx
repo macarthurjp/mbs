@@ -1275,14 +1275,13 @@ export default function InvoicesPage() {
         reverseItems
           .filter((item) => item.producto_id)
           .map((item) => {
-            const currentStock = Number(item.productos?.stock || 0);
             const quantityToRestore = Number(item.cantidad || 0);
 
-            return supabase
-              .from('productos')
-              .update({ stock: currentStock + quantityToRestore })
-              .eq('id', item.producto_id)
-              .eq('negocio_id', negocioId);
+            return supabase.rpc('adjust_producto_stock', {
+              p_producto_id: item.producto_id,
+              p_negocio_id: negocioId,
+              p_delta: quantityToRestore,
+            });
           })
       );
 

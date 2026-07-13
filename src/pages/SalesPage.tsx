@@ -912,8 +912,11 @@ export function SalesPage() {
       if (itemsError) throw itemsError;
 
       await Promise.all(cart.map(async (item) => {
-        const newStock = Number(item.producto.stock || 0) - item.cantidad;
-        const { error } = await supabase.from('productos').update({ stock: newStock }).eq('id', item.producto.id).eq('negocio_id', negocioId);
+        const { error } = await supabase.rpc('adjust_producto_stock', {
+          p_producto_id: item.producto.id,
+          p_negocio_id: negocioId,
+          p_delta: -item.cantidad,
+        });
         if (error) throw error;
       }));
 

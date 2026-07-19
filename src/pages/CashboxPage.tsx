@@ -486,9 +486,12 @@ export default function CashboxPage() {
 
       if (pagosResult.error) throw pagosResult.error;
 
+      const loadedReturns = (returnsResult.data || []) as unknown as SaleReturn[];
+      const ventaIdSet = new Set(ventaIds);
+
       setVentas(loadedVentas);
       setPagos((pagosResult.data || []) as Pago[]);
-      setSaleReturns((returnsResult.data || []) as unknown as SaleReturn[]);
+      setSaleReturns(isSeller ? loadedReturns.filter((item) => ventaIdSet.has(item.sale_id)) : loadedReturns);
       setProductos((productosResult.data || []) as Producto[]);
       setClientes((clientesResult.data || []) as Cliente[]);
       setCurrencySettings(normalizeCurrencySettings(businessResult.data));

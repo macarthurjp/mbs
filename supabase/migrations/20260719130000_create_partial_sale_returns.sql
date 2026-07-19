@@ -37,6 +37,55 @@ CREATE TABLE IF NOT EXISTS public.sale_return_items (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Some environments received an early version of these tables before this
+-- migration was tracked. Complete that schema in place without dropping or
+-- replacing existing return records.
+ALTER TABLE public.sale_returns
+  ADD COLUMN IF NOT EXISTS processed_by_name text,
+  ADD COLUMN IF NOT EXISTS return_date date;
+
+UPDATE public.sale_returns
+SET processed_by_name = COALESCE(NULLIF(trim(processed_by_name), ''), 'Usuario'),
+    return_date = COALESCE(return_date, created_at::date, current_date)
+WHERE processed_by_name IS NULL
+   OR trim(processed_by_name) = ''
+   OR return_date IS NULL;
+
+ALTER TABLE public.sale_returns
+  ALTER COLUMN processed_by_name SET DEFAULT 'Usuario',
+  ALTER COLUMN processed_by_name SET NOT NULL,
+  ALTER COLUMN return_date SET DEFAULT current_date,
+  ALTER COLUMN return_date SET NOT NULL;
+
+ALTER TABLE public.sale_return_items
+  ADD COLUMN IF NOT EXISTS negocio_id uuid;
+
+UPDATE public.sale_return_items sri
+SET negocio_id = sr.negocio_id
+FROM public.sale_returns sr
+WHERE sr.id = sri.return_id
+  AND sri.negocio_id IS NULL;
+
+ALTER TABLE public.sale_return_items
+  ALTER COLUMN negocio_id SET NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'sale_return_items_negocio_id_fkey'
+      AND conrelid = 'public.sale_return_items'::regclass
+  ) THEN
+    ALTER TABLE public.sale_return_items
+      ADD CONSTRAINT sale_return_items_negocio_id_fkey
+      FOREIGN KEY (negocio_id)
+      REFERENCES public.negocios(id)
+      ON DELETE CASCADE;
+  END IF;
+END;
+$$;
+
 CREATE INDEX IF NOT EXISTS sale_returns_business_created_idx
   ON public.sale_returns (negocio_id, created_at DESC);
 

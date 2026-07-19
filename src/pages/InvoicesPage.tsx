@@ -565,16 +565,6 @@ const INVOICE_SELECT_BASE =
   '*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))';
 const INVOICE_SELECT_WITH_RETURNS = `${INVOICE_SELECT_BASE}, sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))`;
 
-function isMissingReturnsSchema(error: unknown) {
-  if (!error || typeof error !== 'object') return false;
-
-  const record = error as Record<string, unknown>;
-  const code = String(record.code || '');
-  const message = `${String(record.message || '')} ${String(record.details || '')}`.toLowerCase();
-
-  return ['42P01', 'PGRST200', 'PGRST205'].includes(code) && message.includes('sale_return');
-}
-
 function getInvoiceGrossProfit(venta: Venta | null | undefined, costMap: Map<number, number>) {
   return (venta?.venta_items || []).reduce((sum, item) => {
     const total = Number(item.total ?? Number(item.cantidad || 0) * Number(item.precio || 0));
@@ -965,7 +955,7 @@ export default function InvoicesPage() {
         return query.order('created_at', { ascending: false });
       };
 
-      let [ventasResult, negocioResult, costMapResult] = await Promise.all([
+      const [initialVentasResult, negocioResult, costMapResult] = await Promise.all([
         fetchVentas(true),
         supabase
           .from('negocios')
@@ -976,8 +966,13 @@ export default function InvoicesPage() {
           ? supabase.rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
           : Promise.resolve({ data: [], error: null })
       ]);
+      let ventasResult = initialVentasResult;
 
-      if (ventasResult.error && isMissingReturnsSchema(ventasResult.error)) {
+      // Keep the existing invoice list usable while the returns migration is
+      // rolling out. If the expanded relation is unavailable, retry the exact
+      // query used before returns were introduced. Genuine base-query errors
+      // still propagate below.
+      if (ventasResult.error) {
         ventasResult = await fetchVentas(false);
       }
 
@@ -1075,7 +1070,7 @@ export default function InvoicesPage() {
 
       let { data, error } = await fetchInvoice(true);
 
-      if (error && isMissingReturnsSchema(error)) {
+      if (error) {
         ({ data, error } = await fetchInvoice(false));
       }
 

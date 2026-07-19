@@ -1288,7 +1288,7 @@ export function ProductsPage() {
               <article key={product.id} className="group relative min-w-0 overflow-hidden rounded-[1.45rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)]">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="relative z-10 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex min-w-0 flex-1 items-start gap-3 xl:max-w-[32%]">
+                  <div className="flex min-w-0 flex-1 items-start gap-3 xl:max-w-[28%]">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
                       <Barcode size={19} />
                     </div>
@@ -1306,18 +1306,18 @@ export function ProductsPage() {
                   <div
                     className={`grid min-w-0 flex-1 grid-cols-2 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner ${
                       !roleFlags.isOwner
-                        ? 'sm:grid-cols-[minmax(82px,0.85fr)_minmax(112px,1fr)_minmax(78px,0.7fr)_minmax(132px,1fr)] xl:max-w-[64%]'
-                        : 'sm:grid-cols-[minmax(82px,0.85fr)_minmax(82px,0.85fr)_minmax(112px,1fr)_minmax(78px,0.7fr)_minmax(132px,1fr)] xl:max-w-[72%]'
+                        ? 'sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.65fr)_minmax(0,1fr)] xl:max-w-[68%]'
+                        : 'sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.65fr)_minmax(0,1fr)] xl:max-w-[76%]'
                     }`}
                   >
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.price}</p>
-                      <p className="mt-1 max-w-full truncate text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#050505]">{formatMoney(product.precio, currencySettings)}</p>
+                      <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#050505]" title={formatMoney(product.precio, currencySettings)}>{formatMoney(product.precio, currencySettings)}</p>
                     </div>
                     {roleFlags.isOwner && (
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</p>
-                        <p className="mt-1 max-w-full truncate text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#71717a]">{formatMoney(product.costo, currencySettings)}</p>
+                        <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#71717a]" title={formatMoney(product.costo, currencySettings)}>{formatMoney(product.costo, currencySettings)}</p>
                       </div>
                     )}
                     <div className="min-w-0">

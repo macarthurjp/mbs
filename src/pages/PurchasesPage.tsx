@@ -1257,21 +1257,21 @@ export default function PurchasesPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="hidden rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] lg:block">
-            <table className="w-full table-fixed">
+          <div className="hidden overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] lg:block">
+            <table className="w-full table-auto">
               <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.id}</th>
-                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.date}</th>
+                  <th className="min-w-[7.5rem] whitespace-nowrap px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.id}</th>
+                  <th className="min-w-[8.5rem] whitespace-nowrap px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.date}</th>
                   {roleFlags.isOwner && (
-                    <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.supplier}</th>
+                    <th className="w-[18%] min-w-[9.5rem] px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.supplier}</th>
                   )}
-                  <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.product}</th>
-                  <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.quantity}</th>
+                  <th className="w-[22%] min-w-[11rem] px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.product}</th>
+                  <th className="min-w-[8.5rem] whitespace-nowrap px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.quantity}</th>
                   {roleFlags.isOwner && (
                     <>
-                      <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</th>
-                      <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.total}</th>
+                      <th className="min-w-[7.5rem] whitespace-nowrap px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</th>
+                      <th className="min-w-[8rem] whitespace-nowrap px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.total}</th>
                       <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]" />
                     </>
                   )}
@@ -1280,21 +1280,21 @@ export default function PurchasesPage() {
               <tbody className="divide-y divide-[#f1ebdf]">
                 {visiblePurchases.map((purchase) => (
                   <tr key={purchase.id} className="transition-all duration-300 hover:bg-[#fff9e8]">
-                    <td className="px-4 py-3 font-black text-[#050505]">
-                      <span className="inline-flex rounded-full border border-[#e9e2d3] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#8a6a16] shadow-sm">
+                    <td className="whitespace-nowrap px-4 py-3 font-black text-[#050505]">
+                      <span className="inline-flex whitespace-nowrap rounded-full border border-[#e9e2d3] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#8a6a16] shadow-sm">
                         {formatPurchaseCode(purchase.id)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-[#71717a]">{purchase.fecha}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#71717a]">{purchase.fecha}</td>
                     {roleFlags.isOwner && (
                       <td className="px-4 py-3 font-semibold text-[#71717a]">
-                        <span className="line-clamp-2 break-words leading-snug" title={purchase.proveedor || t.noSupplier}>
+                        <span className="line-clamp-2 break-normal leading-snug" title={purchase.proveedor || t.noSupplier}>
                           {purchase.proveedor || t.noSupplier}
                         </span>
                       </td>
                     )}
                     <td className="px-4 py-3 font-black text-[#050505]">
-                      <span className="line-clamp-2 break-words leading-snug" title={purchase.productos?.nombre || t.deletedProduct}>
+                      <span className="line-clamp-2 break-normal leading-snug" title={purchase.productos?.nombre || t.deletedProduct}>
                         {purchase.productos?.nombre || t.deletedProduct}
                       </span>
                     </td>

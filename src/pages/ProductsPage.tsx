@@ -1306,8 +1306,8 @@ export function ProductsPage() {
                   <div
                     className={`grid min-w-0 flex-1 grid-cols-2 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner ${
                       !roleFlags.isOwner
-                        ? 'sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.65fr)_minmax(0,1fr)] xl:max-w-[68%]'
-                        : 'sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.65fr)_minmax(0,1fr)] xl:max-w-[76%]'
+                        ? 'sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.5fr)_minmax(0,1fr)] xl:max-w-[68%]'
+                        : 'sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.05fr)_minmax(0,1.4fr)_minmax(0,0.5fr)_minmax(0,1fr)] xl:max-w-[76%]'
                     }`}
                   >
                     <div className="min-w-0">
@@ -1323,7 +1323,7 @@ export function ProductsPage() {
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.stock}</p>
                       <span
-                        className={`mt-1 inline-block max-w-full whitespace-normal break-words rounded-2xl px-2.5 py-1 text-xs xl:text-sm font-black leading-tight tabular-nums ${
+                        className={`mt-1 inline-block max-w-full whitespace-normal break-words rounded-2xl px-2.5 py-1 text-[11px] xl:text-xs font-black leading-tight tabular-nums ${
                           isLowStock
                             ? 'bg-red-50 text-red-700'
                             : 'bg-emerald-50 text-emerald-700'

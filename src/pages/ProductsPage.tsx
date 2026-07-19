@@ -1613,7 +1613,7 @@ function ProductMetricCard({
       <div className="relative z-10 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="mb-4 max-w-[13rem] text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16] sm:text-[11px]">{title}</p>
-          <p className={`max-w-full whitespace-nowrap text-[clamp(1.45rem,1.85vw,2.15rem)] font-black leading-[0.95] tracking-tight tabular-nums ${valueClass}`}>{value}</p>
+          <p className={`max-w-full break-words text-[clamp(1.45rem,1.85vw,2.15rem)] font-black leading-[0.95] tracking-tight tabular-nums ${valueClass}`}>{value}</p>
         </div>
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.05rem] border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:h-12 sm:w-12 ${iconClass}`}>
           <Icon className="h-5 w-5 shrink-0" />

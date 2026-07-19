@@ -1051,7 +1051,7 @@ export function DashboardPage() {
                         {t.limit}: {money(cliente.limite_credito)}
                       </p>
                     </div>
-                    <p className="shrink-0 whitespace-nowrap rounded-full bg-red-100 px-3 py-1 text-sm font-black tabular-nums text-red-700">
+                    <p className="max-w-[50%] shrink-0 break-words rounded-full bg-red-100 px-3 py-1 text-right text-sm font-black tabular-nums text-red-700">
                       {money(cliente.saldo)}
                     </p>
                   </div>

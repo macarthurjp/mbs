@@ -910,9 +910,9 @@ export default function AccountsReceivablePage() {
                       </div>
                       <div className="min-w-0">
                         <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.balance}</p>
-                        <p className="mt-1 whitespace-nowrap font-black tabular-nums text-red-700">{formatMoney(client.saldo, currencySettings)}</p>
+                        <p className="mt-1 max-w-full break-words font-black tabular-nums text-red-700">{formatMoney(client.saldo, currencySettings)}</p>
                         {overdueAmount > 0 && (
-                          <p className="mt-1 whitespace-nowrap text-[10px] font-black text-red-600">
+                          <p className="mt-1 max-w-full break-words text-[10px] font-black text-red-600">
                             {t.overdue}: {formatMoney(overdueAmount, currencySettings)}
                           </p>
                         )}

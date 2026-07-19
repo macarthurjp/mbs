@@ -657,11 +657,11 @@ export function ClientsPage() {
               <div className="relative z-10 mt-5 grid grid-cols-3 gap-3 rounded-[1.4rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.creditLimit}</p>
-                  <p className="mt-1 truncate text-base font-black tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
+                  <p className="mt-1 max-w-full break-words text-base font-black tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.availableCredit}</p>
-                  <p className="mt-1 truncate text-base font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
+                  <p className="mt-1 max-w-full break-words text-base font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{Number(client.saldo || 0) < 0 ? t.creditBalance : t.balance}</p>
@@ -708,11 +708,11 @@ export function ClientsPage() {
               <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-[#f1ebdf] bg-white/80 p-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.creditLimit}</p>
-                  <p className="mt-1 truncate text-sm font-black tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
+                  <p className="mt-1 max-w-full break-words text-sm font-black tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.availableCredit}</p>
-                  <p className="mt-1 truncate text-sm font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
+                  <p className="mt-1 max-w-full break-words text-sm font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{Number(client.saldo || 0) < 0 ? t.creditBalance : t.balance}</p>

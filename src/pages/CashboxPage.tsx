@@ -420,11 +420,23 @@ export default function CashboxPage() {
           .eq('id', userProfile.negocio_id)
           .maybeSingle(),
 
-        supabase
-          .from('sale_returns')
-          .select('id, sale_id, refund_total, compensation_method, reason, processed_by_name, return_date, created_at, ventas(id, tipo_pago, cliente_nombre, clientes(nombre))')
-          .eq('negocio_id', userProfile.negocio_id)
-          .eq('return_date', selectedDate)
+        (() => {
+          let returnsQuery = supabase
+            .from('sale_returns')
+            .select(
+              isSeller
+                ? 'id, sale_id, refund_total, compensation_method, reason, processed_by_name, return_date, created_at, ventas!inner(id, tipo_pago, cliente_nombre, vendedor_id, clientes(nombre))'
+                : 'id, sale_id, refund_total, compensation_method, reason, processed_by_name, return_date, created_at, ventas(id, tipo_pago, cliente_nombre, clientes(nombre))'
+            )
+            .eq('negocio_id', userProfile.negocio_id)
+            .eq('return_date', selectedDate);
+
+          if (isSeller && user?.id) {
+            returnsQuery = returnsQuery.eq('ventas.vendedor_id', user.id);
+          }
+
+          return returnsQuery;
+        })()
       ]);
 
       if (ventasResult.error) throw ventasResult.error;
@@ -487,11 +499,10 @@ export default function CashboxPage() {
       if (pagosResult.error) throw pagosResult.error;
 
       const loadedReturns = (returnsResult.data || []) as unknown as SaleReturn[];
-      const ventaIdSet = new Set(ventaIds);
 
       setVentas(loadedVentas);
       setPagos((pagosResult.data || []) as Pago[]);
-      setSaleReturns(isSeller ? loadedReturns.filter((item) => ventaIdSet.has(item.sale_id)) : loadedReturns);
+      setSaleReturns(loadedReturns);
       setProductos((productosResult.data || []) as Producto[]);
       setClientes((clientesResult.data || []) as Cliente[]);
       setCurrencySettings(normalizeCurrencySettings(businessResult.data));

@@ -109,6 +109,9 @@ const BUSINESS_BACKUP_TABLES: BusinessBackupTable[] = [
   { table: 'notifications', fileName: 'notificaciones.json', label: 'Notificaciones', field: 'negocio_id' },
   { table: 'support_tickets', fileName: 'tickets_soporte.json', label: 'Tickets de soporte', field: 'negocio_id' },
   { table: 'cashbox_closures', fileName: 'cierres_caja.json', label: 'Cierres de caja', field: 'negocio_id' },
+  { table: 'inventory_transformations', fileName: 'transformaciones_inventario.json', label: 'Transformaciones de inventario', field: 'negocio_id' },
+  { table: 'sale_returns', fileName: 'devoluciones_ventas.json', label: 'Devoluciones de ventas', field: 'negocio_id' },
+  { table: 'sale_return_items', fileName: 'items_devoluciones_ventas.json', label: 'Items de devoluciones', field: 'negocio_id' },
   { table: 'audit_logs', fileName: 'auditoria.json', label: 'Auditoria', field: 'negocio_id' }
 ];
 
@@ -125,6 +128,9 @@ const PLATFORM_BACKUP_TABLES: Omit<BusinessBackupTable, 'field'>[] = [
   { table: 'notifications', fileName: 'notificaciones.json', label: 'Notificaciones' },
   { table: 'support_tickets', fileName: 'tickets_soporte.json', label: 'Tickets de soporte' },
   { table: 'cashbox_closures', fileName: 'cierres_caja.json', label: 'Cierres de caja' },
+  { table: 'inventory_transformations', fileName: 'transformaciones_inventario.json', label: 'Transformaciones de inventario' },
+  { table: 'sale_returns', fileName: 'devoluciones_ventas.json', label: 'Devoluciones de ventas' },
+  { table: 'sale_return_items', fileName: 'items_devoluciones_ventas.json', label: 'Items de devoluciones' },
   { table: 'audit_logs', fileName: 'auditoria.json', label: 'Auditoria' }
 ];
 

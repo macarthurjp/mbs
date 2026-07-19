@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ElementType } from 'react';
-import { Ban, BarChart3, Calendar, CreditCard, Download, Eye, FileText, Printer, Search, ShoppingCart, TrendingUp, Wallet } from 'lucide-react';
+import { Ban, BarChart3, Calendar, CreditCard, Download, Eye, FileText, Printer, RotateCcw, Search, ShoppingCart, TrendingUp, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -12,6 +12,29 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { formatPhone, normalizePhoneForLink } from '../utils/formatContact';
 import { printCompactReceipt } from '../utils/receiptPrinter';
+
+type SaleReturnDocument = {
+  id: number;
+  sale_id: number;
+  client_id: number | null;
+  compensation_method: 'cash_refund' | 'store_credit' | 'reduce_debt';
+  reason: string;
+  refund_total: number;
+  restocked_quantity: number;
+  damaged_quantity: number;
+  return_date: string;
+  processed_by_name: string;
+  created_at: string;
+  sale_return_items?: Array<{
+    id: number;
+    product_name: string;
+    quantity: number;
+    stock_condition: 'restock' | 'damaged';
+    unit_price: number;
+    discount_amount: number;
+    refund_amount: number;
+  }> | null;
+};
 
 type Venta = {
   id: number;
@@ -55,6 +78,7 @@ type Venta = {
       stock?: number | null;
     } | null;
   }> | null;
+  sale_returns?: SaleReturnDocument[] | null;
 };
 
 type ReceiptSnapshotItem = {
@@ -176,6 +200,27 @@ const invoicesCopy = {
     quantity: 'Cantidad',
     price: 'Precio',
     thanks: 'Gracias por su compra.',
+    returns: 'Devoluciones vinculadas',
+    returnedAmount: 'Importe devuelto',
+    netAfterReturns: 'Total neto después de devoluciones',
+    returnedToStock: 'Al stock',
+    returnedDamaged: 'Averiado',
+    returnDocuments: 'Comprobantes de devolución',
+    returnDocumentsText: 'Notas vinculadas a sus facturas originales',
+    returnDocument: 'Comprobante',
+    originalInvoice: 'Factura original',
+    originalInvoiceHint: 'La factura original permanece intacta y este comprobante documenta su ajuste.',
+    compensationMethod: 'Compensación',
+    cashRefund: 'Reembolso de dinero',
+    storeCredit: 'Saldo a favor',
+    reduceDebt: 'Reducción de deuda',
+    processedBy: 'Procesado por',
+    reason: 'Motivo',
+    stockDisposition: 'Destino de inventario',
+    noReturnDocuments: 'No hay comprobantes de devolución',
+    returnReceipt: 'Comprobante de devolución',
+    printReturnReceipt: 'Imprimir comprobante',
+    close: 'Cerrar',
     loadError: 'Error al cargar las facturas',
     detailError: 'Error al cargar el detalle de factura',
     printBlocked: 'El navegador bloqueó la ventana de impresión',
@@ -290,6 +335,27 @@ const invoicesCopy = {
     quantity: 'Quantity',
     price: 'Price',
     thanks: 'Thank you for your purchase.',
+    returns: 'Linked returns',
+    returnedAmount: 'Returned amount',
+    netAfterReturns: 'Net total after returns',
+    returnedToStock: 'To stock',
+    returnedDamaged: 'Damaged',
+    returnDocuments: 'Return receipts',
+    returnDocumentsText: 'Credit notes linked to their original invoices',
+    returnDocument: 'Receipt',
+    originalInvoice: 'Original invoice',
+    originalInvoiceHint: 'The original invoice remains unchanged and this receipt documents its adjustment.',
+    compensationMethod: 'Compensation',
+    cashRefund: 'Cash refund',
+    storeCredit: 'Store credit',
+    reduceDebt: 'Debt reduction',
+    processedBy: 'Processed by',
+    reason: 'Reason',
+    stockDisposition: 'Inventory disposition',
+    noReturnDocuments: 'No return receipts found',
+    returnReceipt: 'Return receipt',
+    printReturnReceipt: 'Print return receipt',
+    close: 'Close',
     loadError: 'Error loading invoices',
     detailError: 'Error loading invoice details',
     printBlocked: 'The browser blocked the print window',
@@ -541,6 +607,7 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingItems, setLoadingItems] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReturnDocument, setSelectedReturnDocument] = useState<{ returnRecord: SaleReturnDocument; sale: Venta } | null>(null);
   const [isInvoiceModalVisible, setIsInvoiceModalVisible] = useState(false);
   const [pendingInvoiceId, setPendingInvoiceId] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -739,9 +806,84 @@ export default function InvoicesPage() {
     return filteredVentas.slice(start, start + rowsPerPage);
   }, [filteredVentas, currentPage]);
 
+  const returnDocuments = useMemo(() => {
+    return ventas
+      .flatMap((sale) => (sale.sale_returns || []).map((returnRecord) => ({ returnRecord, sale })))
+      .sort((left, right) => new Date(right.returnRecord.created_at).getTime() - new Date(left.returnRecord.created_at).getTime());
+  }, [ventas]);
+
   const money = useCallback((value: number | null | undefined) => {
     return `${getCurrencyFromBusiness(negocio)} ${formatNumber(value)}`;
   }, [negocio]);
+
+  function getReturnCompensationLabel(method: SaleReturnDocument['compensation_method']) {
+    if (method === 'store_credit') return t.storeCredit;
+    if (method === 'reduce_debt') return t.reduceDebt;
+    return t.cashRefund;
+  }
+
+  function printReturnDocument(returnRecord: SaleReturnDocument, sale: Venta) {
+    const printWindow = window.open('', '_blank', 'width=760,height=900');
+    if (!printWindow) {
+      showToast(t.printBlocked, 'error');
+      return;
+    }
+
+    const itemRows = (returnRecord.sale_return_items || []).map((item) => `
+      <tr>
+        <td>${escapeHtml(item.product_name)}</td>
+        <td class="right">${formatNumber(item.quantity)}</td>
+        <td>${item.stock_condition === 'restock' ? escapeHtml(t.returnedToStock) : escapeHtml(t.returnedDamaged)}</td>
+        <td class="right">${money(item.refund_amount)}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>DEV-${String(returnRecord.id).padStart(4, '0')}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; padding: 30px; }
+            .header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 3px solid #111; padding-bottom: 18px; }
+            h1 { margin: 0 0 5px; font-size: 25px; }
+            .muted { color: #666; font-size: 13px; }
+            .code { font-size: 24px; font-weight: 900; color: #8a6a16; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
+            .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+            .label { color: #8a6a16; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .12em; }
+            .value { margin-top: 5px; font-weight: 800; }
+            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
+            th { background: #f7f4ec; color: #8a6a16; text-transform: uppercase; font-size: 10px; }
+            .right { text-align: right; }
+            .total { margin: 22px 0 0 auto; width: 280px; border-radius: 12px; background: #111; color: #fff; padding: 16px; display: flex; justify-content: space-between; font-size: 19px; font-weight: 900; }
+            .notice { margin-top: 24px; padding: 12px; background: #fff8df; border: 1px solid #ead38b; border-radius: 10px; font-size: 12px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div><h1>${escapeHtml(negocio?.nombre || 'MatMax Business Suite')}</h1><div class="muted">${escapeHtml(t.returnReceipt)}</div></div>
+            <div class="right"><div class="code">DEV-${String(returnRecord.id).padStart(4, '0')}</div><div class="muted">${escapeHtml(returnRecord.return_date)}</div></div>
+          </div>
+          <div class="grid">
+            <div class="box"><div class="label">${escapeHtml(t.originalInvoice)}</div><div class="value">${formatInvoiceCode(sale.id)}</div></div>
+            <div class="box"><div class="label">${escapeHtml(t.client)}</div><div class="value">${escapeHtml(getVentaClientName(sale, t.generalClient))}</div></div>
+            <div class="box"><div class="label">${escapeHtml(t.compensationMethod)}</div><div class="value">${escapeHtml(getReturnCompensationLabel(returnRecord.compensation_method))}</div></div>
+            <div class="box"><div class="label">${escapeHtml(t.processedBy)}</div><div class="value">${escapeHtml(returnRecord.processed_by_name)}</div></div>
+          </div>
+          <div class="box"><div class="label">${escapeHtml(t.reason)}</div><div class="value">${escapeHtml(returnRecord.reason)}</div></div>
+          <table><thead><tr><th>${escapeHtml(t.product)}</th><th class="right">${escapeHtml(t.quantity)}</th><th>${escapeHtml(t.stockDisposition)}</th><th class="right">${escapeHtml(t.returnedAmount)}</th></tr></thead><tbody>${itemRows}</tbody></table>
+          <div class="total"><span>${escapeHtml(t.returnedAmount)}</span><span>${money(returnRecord.refund_total)}</span></div>
+          <div class="notice">${escapeHtml(t.originalInvoice)} ${formatInvoiceCode(sale.id)} · ${escapeHtml(t.originalInvoiceHint || '')}</div>
+          <script>window.onload = () => { window.print(); };</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
 
   const selectedInvoiceTotal = useMemo(() => {
     return money(selectedVenta?.total || 0);
@@ -798,7 +940,7 @@ export default function InvoicesPage() {
 
       let ventasQuery = supabase
         .from('ventas')
-        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
+        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)), sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))')
         .eq('negocio_id', currentNegocioId);
 
       if (isSeller && user.id) {
@@ -897,7 +1039,7 @@ export default function InvoicesPage() {
     try {
       let invoiceQuery = supabase
         .from('ventas')
-        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))')
+        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)), sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))')
         .eq('negocio_id', currentNegocioId)
         .eq('id', Number(invoiceId));
 
@@ -1985,6 +2127,52 @@ export default function InvoicesPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><RotateCcw size={20} /></div>
+            <div><h2 className="text-xl font-serif font-bold text-[#050505] sm:text-2xl">{t.returnDocuments}</h2><p className="mt-1 text-sm font-semibold text-[#71717a]">{t.returnDocumentsText}</p></div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {returnDocuments.map(({ returnRecord, sale }) => (
+              <div key={returnRecord.id} className="grid gap-3 rounded-2xl border border-[#e9e2d3] bg-[#fffdf8] p-4 shadow-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center">
+                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.returnDocument}</p><p className="mt-1 font-black text-[#050505]">DEV-{String(returnRecord.id).padStart(4, '0')}</p><p className="mt-1 text-xs font-semibold text-[#71717a]">{returnRecord.return_date}</p></div>
+                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.originalInvoice}</p><p className="mt-1 font-black text-[#050505]">{formatInvoiceCode(sale.id)}</p><p className="mt-1 truncate text-xs font-semibold text-[#71717a]">{getVentaClientName(sale, t.generalClient)}</p></div>
+                <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.compensationMethod}</p><p className="mt-1 text-sm font-black text-[#050505]">{getReturnCompensationLabel(returnRecord.compensation_method)}</p><p className="mt-1 text-lg font-black text-amber-800">-{money(returnRecord.refund_total)}</p></div>
+                <button type="button" onClick={() => setSelectedReturnDocument({ returnRecord, sale })} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#050505] px-4 text-sm font-black text-[#f4c542] shadow-[0_12px_24px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5"><Eye size={16} />{t.view}</button>
+              </div>
+            ))}
+            {returnDocuments.length === 0 && <div className="rounded-2xl bg-[#fbfaf7] py-10 text-center font-semibold text-[#71717a]">{t.noReturnDocuments}</div>}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Modal isOpen={!!selectedReturnDocument} onClose={() => setSelectedReturnDocument(null)} title={t.returnReceipt}>
+        {selectedReturnDocument && (
+          <div className="space-y-5">
+            <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-[#fffdf8] p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e9e2d3] pb-4">
+                <div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.returnReceipt}</p><h3 className="mt-1 text-3xl font-black text-[#050505]">DEV-{String(selectedReturnDocument.returnRecord.id).padStart(4, '0')}</h3></div>
+                <div className="text-right"><p className="font-black text-[#050505]">{selectedReturnDocument.returnRecord.return_date}</p><p className="mt-1 text-sm font-semibold text-[#71717a]">{t.originalInvoice}: {formatInvoiceCode(selectedReturnDocument.sale.id)}</p></div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl border border-[#f1ebdf] bg-white p-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.client}</p><p className="mt-1 font-black text-[#050505]">{getVentaClientName(selectedReturnDocument.sale, t.generalClient)}</p></div>
+                <div className="rounded-2xl border border-[#f1ebdf] bg-white p-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.compensationMethod}</p><p className="mt-1 font-black text-[#050505]">{getReturnCompensationLabel(selectedReturnDocument.returnRecord.compensation_method)}</p></div>
+                <div className="rounded-2xl border border-[#f1ebdf] bg-white p-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.processedBy}</p><p className="mt-1 font-black text-[#050505]">{selectedReturnDocument.returnRecord.processed_by_name}</p></div>
+                <div className="rounded-2xl border border-[#f1ebdf] bg-white p-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.returnedAmount}</p><p className="mt-1 text-xl font-black text-amber-800">{money(selectedReturnDocument.returnRecord.refund_total)}</p></div>
+              </div>
+              <div className="mt-4 rounded-2xl border border-[#f1ebdf] bg-white p-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.reason}</p><p className="mt-1 font-semibold text-[#050505]">{selectedReturnDocument.returnRecord.reason}</p></div>
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-white">
+                <table className="w-full min-w-[620px] text-sm"><thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]"><tr><th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.product}</th><th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.quantity}</th><th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.stockDisposition}</th><th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.returnedAmount}</th></tr></thead><tbody className="divide-y divide-[#f1ebdf]">{(selectedReturnDocument.returnRecord.sale_return_items || []).map((item) => <tr key={item.id}><td className="px-4 py-3 font-black text-[#050505]">{item.product_name}</td><td className="px-4 py-3 text-right font-semibold text-[#71717a]">{formatNumber(item.quantity)}</td><td className="px-4 py-3 font-semibold text-[#71717a]">{item.stock_condition === 'restock' ? t.returnedToStock : t.returnedDamaged}</td><td className="px-4 py-3 text-right font-black text-[#050505]">{money(item.refund_amount)}</td></tr>)}</tbody></table>
+              </div>
+            </div>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button type="button" variant="secondary" onClick={() => setSelectedReturnDocument(null)}>{t.close}</Button><Button type="button" onClick={() => printReturnDocument(selectedReturnDocument.returnRecord, selectedReturnDocument.sale)}><Printer size={18} />{t.printReturnReceipt}</Button></div>
+          </div>
+        )}
+      </Modal>
+
       <Modal
         isOpen={isModalOpen}
         onClose={closeInvoiceModal}
@@ -2127,6 +2315,42 @@ export default function InvoicesPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              )}
+
+              {(selectedVenta.sale_returns || []).length > 0 && (
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-800">{t.returns}</p>
+                    <p className="font-black text-amber-900">
+                      {t.returnedAmount}: {money((selectedVenta.sale_returns || []).reduce((sum, item) => sum + Number(item.refund_total || 0), 0))}
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {(selectedVenta.sale_returns || []).map((returnRecord) => (
+                      <div key={returnRecord.id} className="rounded-2xl border border-amber-200/70 bg-white/80 p-3">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="font-black text-[#050505]">DEV-{String(returnRecord.id).padStart(4, '0')} · {returnRecord.reason}</p>
+                          <p className="font-black text-amber-800">-{money(returnRecord.refund_total)}</p>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                          {new Date(returnRecord.created_at).toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} · {t.returnedToStock}: {formatNumber(returnRecord.restocked_quantity)} · {t.returnedDamaged}: {formatNumber(returnRecord.damaged_quantity)}
+                        </p>
+                        <div className="mt-2 space-y-1">
+                          {(returnRecord.sale_return_items || []).map((item) => (
+                            <div key={item.id} className="flex items-center justify-between gap-3 text-xs font-semibold text-[#71717a]">
+                              <span>{formatNumber(item.quantity)} × {item.product_name}</span>
+                              <span className="font-black text-[#050505]">{money(item.refund_amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-amber-200 pt-3 font-black text-amber-900">
+                    <span>{t.netAfterReturns}</span>
+                    <span>{money(Math.max(0, Number(selectedVenta.total || 0) - (selectedVenta.sale_returns || []).reduce((sum, item) => sum + Number(item.refund_total || 0), 0)))}</span>
+                  </div>
                 </div>
               )}
 

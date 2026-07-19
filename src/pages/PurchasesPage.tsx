@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ElementType, FormEvent } from 'react';
-import { Calculator, DollarSign, Package, Plus, RefreshCw, Search, ShoppingBag, Sparkles, Truck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Calculator, DollarSign, Package, PackageOpen, Plus, RefreshCw, Search, ShoppingBag, Sparkles, Truck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -42,6 +42,25 @@ type Compra = {
   } | null;
 };
 
+type InventoryTransformation = {
+  id: number;
+  negocio_id: string;
+  source_product_id: number | null;
+  destination_product_id: number | null;
+  source_product_name: string;
+  destination_product_name: string;
+  source_quantity: number;
+  units_per_source: number;
+  total_units: number;
+  damaged_quantity: number;
+  destination_quantity: number;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  source_product?: Producto | null;
+  destination_product?: Producto | null;
+};
+
 
 const purchasesCopy = {
   es: {
@@ -52,6 +71,36 @@ const purchasesCopy = {
     sellerSubtitle: 'Acceso restringido al módulo de compras',
     adminSubtitle: 'Registra compras y actualiza el inventario automáticamente',
     newPurchase: 'Nueva Compra',
+    transformStock: 'Descomponer stock',
+    transformStockTitle: 'Descomponer inventario',
+    transformStockDescription: 'Convierte empaques completos en unidades sueltas y registra las unidades averiadas como merma.',
+    sourceProduct: 'Producto de origen',
+    destinationProduct: 'Producto de destino',
+    selectSourceProduct: 'Selecciona el producto empacado',
+    selectDestinationProduct: 'Selecciona el producto por unidad',
+    packagesToOpen: 'Cantidad de empaques a abrir',
+    unitsPerPackage: 'Unidades dentro de cada empaque',
+    damagedUnits: 'Unidades averiadas',
+    notes: 'Motivo u observación',
+    notesPlaceholder: 'Ej. Dos galones con envase roto',
+    containedUnits: 'Unidades contenidas',
+    usableUnits: 'Unidades aprovechables',
+    shrinkage: 'Merma',
+    stockPreview: 'Vista previa del movimiento',
+    before: 'Antes',
+    after: 'Después',
+    transformConfirmTitle: 'Confirmar transformación',
+    transformConfirmText: 'Transformar stock',
+    transformConfirmMessage: 'Esta operación descontará el producto empacado y agregará únicamente las unidades aprovechables al producto de destino.',
+    transformSuccess: 'Inventario transformado y merma registrada correctamente',
+    transformError: 'Error al transformar el inventario',
+    sameProductError: 'Selecciona productos de origen y destino diferentes',
+    insufficientStockError: 'La cantidad a abrir supera el stock disponible',
+    invalidTransformationError: 'Completa cantidades válidas y deja al menos una unidad aprovechable',
+    transformationHistory: 'Historial de transformaciones',
+    transformationHistoryDescription: 'Descomposiciones y mermas registradas recientemente',
+    noTransformations: 'Todavía no hay transformaciones de inventario',
+    transformationNotificationTitle: 'Inventario transformado',
     totalPurchases: 'Total Compras',
     purchases: 'Compras',
     units: 'Unidades',
@@ -122,6 +171,36 @@ const purchasesCopy = {
     sellerSubtitle: 'Restricted access to the purchases module',
     adminSubtitle: 'Register purchases and update inventory automatically',
     newPurchase: 'New Purchase',
+    transformStock: 'Break down stock',
+    transformStockTitle: 'Break down inventory',
+    transformStockDescription: 'Convert full packages into loose units and record damaged units as shrinkage.',
+    sourceProduct: 'Source product',
+    destinationProduct: 'Destination product',
+    selectSourceProduct: 'Select the packaged product',
+    selectDestinationProduct: 'Select the unit product',
+    packagesToOpen: 'Packages to open',
+    unitsPerPackage: 'Units inside each package',
+    damagedUnits: 'Damaged units',
+    notes: 'Reason or notes',
+    notesPlaceholder: 'Ex. Two gallons with broken containers',
+    containedUnits: 'Contained units',
+    usableUnits: 'Usable units',
+    shrinkage: 'Shrinkage',
+    stockPreview: 'Movement preview',
+    before: 'Before',
+    after: 'After',
+    transformConfirmTitle: 'Confirm transformation',
+    transformConfirmText: 'Transform stock',
+    transformConfirmMessage: 'This operation will deduct the packaged product and add only usable units to the destination product.',
+    transformSuccess: 'Inventory transformed and shrinkage recorded successfully',
+    transformError: 'Error transforming inventory',
+    sameProductError: 'Select different source and destination products',
+    insufficientStockError: 'The quantity to open exceeds available stock',
+    invalidTransformationError: 'Enter valid quantities and leave at least one usable unit',
+    transformationHistory: 'Transformation history',
+    transformationHistoryDescription: 'Recently recorded breakdowns and shrinkage',
+    noTransformations: 'There are no inventory transformations yet',
+    transformationNotificationTitle: 'Inventory transformed',
     totalPurchases: 'Total Purchases',
     purchases: 'Purchases',
     units: 'Units',
@@ -265,11 +344,14 @@ export default function PurchasesPage() {
   const [negocioId, setNegocioId] = useState<string | null>(null);
   const [products, setProducts] = useState<Producto[]>([]);
   const [purchases, setPurchases] = useState<Compra[]>([]);
+  const [transformations, setTransformations] = useState<InventoryTransformation[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Compra[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTransformationModalOpen, setIsTransformationModalOpen] = useState(false);
+  const [savingTransformation, setSavingTransformation] = useState(false);
   const [missingNegocio, setMissingNegocio] = useState(false);
   const [currencySettings, setCurrencySettings] = useState<CurrencySettings>(DEFAULT_CURRENCY);
   const [currentPage, setCurrentPage] = useState(1);
@@ -305,6 +387,15 @@ export default function PurchasesPage() {
     costo: ''
   });
 
+  const [transformationData, setTransformationData] = useState({
+    source_product_id: '',
+    destination_product_id: '',
+    source_quantity: '',
+    units_per_source: '',
+    damaged_quantity: '0',
+    notes: ''
+  });
+
   useEffect(() => {
     const search = searchTerm.toLowerCase().trim();
 
@@ -328,6 +419,46 @@ export default function PurchasesPage() {
   const selectedProduct = useMemo(() => {
     return products.find((product) => product.id.toString() === formData.producto_id) || null;
   }, [products, formData.producto_id]);
+
+  const sourceTransformationProduct = useMemo(() => {
+    return products.find((product) => product.id.toString() === transformationData.source_product_id) || null;
+  }, [products, transformationData.source_product_id]);
+
+  const destinationTransformationProduct = useMemo(() => {
+    return products.find((product) => product.id.toString() === transformationData.destination_product_id) || null;
+  }, [products, transformationData.destination_product_id]);
+
+  const transformationPreview = useMemo(() => {
+    const sourceQuantity = Number(transformationData.source_quantity || 0);
+    const unitsPerSource = Number(transformationData.units_per_source || 0);
+    const damagedQuantity = Number(transformationData.damaged_quantity || 0);
+    const totalUnits = sourceQuantity * unitsPerSource;
+    const destinationQuantity = totalUnits - damagedQuantity;
+
+    return {
+      sourceQuantity,
+      unitsPerSource,
+      damagedQuantity,
+      totalUnits,
+      destinationQuantity,
+      sourceStockAfter: Number(sourceTransformationProduct?.stock || 0) - sourceQuantity,
+      destinationStockAfter: Number(destinationTransformationProduct?.stock || 0) + destinationQuantity
+    };
+  }, [destinationTransformationProduct?.stock, sourceTransformationProduct?.stock, transformationData]);
+
+  const isTransformationValid = Boolean(
+    sourceTransformationProduct &&
+    destinationTransformationProduct &&
+    sourceTransformationProduct.id !== destinationTransformationProduct.id &&
+    Number.isFinite(transformationPreview.sourceQuantity) &&
+    Number.isFinite(transformationPreview.unitsPerSource) &&
+    Number.isFinite(transformationPreview.damagedQuantity) &&
+    transformationPreview.sourceQuantity > 0 &&
+    transformationPreview.unitsPerSource > 0 &&
+    transformationPreview.damagedQuantity >= 0 &&
+    transformationPreview.destinationQuantity > 0 &&
+    transformationPreview.sourceQuantity <= Number(sourceTransformationProduct.stock || 0)
+  );
 
   const formTotal = useMemo(() => {
     return Number(formData.cantidad || 0) * Number(formData.costo || 0);
@@ -391,6 +522,7 @@ export default function PurchasesPage() {
       if (!canManagePurchases) {
         setProducts([]);
         setPurchases([]);
+        setTransformations([]);
         setFilteredPurchases([]);
         setCurrencySettings(DEFAULT_CURRENCY);
         setMissingNegocio(false);
@@ -400,6 +532,7 @@ export default function PurchasesPage() {
       if (!user) {
         setProducts([]);
         setPurchases([]);
+        setTransformations([]);
         setFilteredPurchases([]);
         setCurrencySettings(DEFAULT_CURRENCY);
         setMissingNegocio(false);
@@ -412,19 +545,26 @@ export default function PurchasesPage() {
       if (!currentNegocioId) {
         setProducts([]);
         setPurchases([]);
+        setTransformations([]);
         setFilteredPurchases([]);
         setCurrencySettings(DEFAULT_CURRENCY);
         setMissingNegocio(true);
         return;
       }
 
-      const [productsResult, purchasesResult, businessResult] = await Promise.all([
+      const [productsResult, purchasesResult, transformationsResult, businessResult] = await Promise.all([
         supabase
           .rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
           .order('nombre', { ascending: true }),
         supabase
           .rpc('get_compras_for_business', { p_negocio_id: currentNegocioId })
           .order('created_at', { ascending: false }),
+        supabase
+          .from('inventory_transformations')
+          .select('id, negocio_id, source_product_id, destination_product_id, source_product_name, destination_product_name, source_quantity, units_per_source, total_units, damaged_quantity, destination_quantity, notes, created_by, created_at')
+          .eq('negocio_id', currentNegocioId)
+          .order('created_at', { ascending: false })
+          .limit(20),
         supabase
           .from('negocios')
           .select('*')
@@ -434,6 +574,7 @@ export default function PurchasesPage() {
 
       if (productsResult.error) throw productsResult.error;
       if (purchasesResult.error) throw purchasesResult.error;
+      if (transformationsResult.error) throw transformationsResult.error;
       if (businessResult.error) throw businessResult.error;
 
       const loadedProducts = (productsResult.data || []) as Producto[];
@@ -447,8 +588,15 @@ export default function PurchasesPage() {
         };
       });
 
+      const normalizedTransformations = ((transformationsResult.data || []) as InventoryTransformation[]).map((transformation) => ({
+        ...transformation,
+        source_product: transformation.source_product_id ? productsById.get(transformation.source_product_id) || null : null,
+        destination_product: transformation.destination_product_id ? productsById.get(transformation.destination_product_id) || null : null
+      }));
+
       setProducts(loadedProducts);
       setPurchases(normalizedPurchases);
+      setTransformations(normalizedTransformations);
       setFilteredPurchases(normalizedPurchases);
       setCurrencySettings(normalizeCurrencySettings(businessResult.data));
       setMissingNegocio(false);
@@ -477,6 +625,158 @@ export default function PurchasesPage() {
       cantidad: '',
       costo: ''
     });
+  }
+
+  function resetTransformationForm() {
+    setTransformationData({
+      source_product_id: '',
+      destination_product_id: '',
+      source_quantity: '',
+      units_per_source: '',
+      damaged_quantity: '0',
+      notes: ''
+    });
+  }
+
+  async function handleTransformationSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (!canManagePurchases || savingTransformation) return;
+
+    if (!negocioId || !user?.id) {
+      showToast(t.noBusiness, 'error');
+      return;
+    }
+
+    if (!sourceTransformationProduct || !destinationTransformationProduct) {
+      showToast(t.productNotFound, 'error');
+      return;
+    }
+
+    if (sourceTransformationProduct.id === destinationTransformationProduct.id) {
+      showToast(t.sameProductError, 'error');
+      return;
+    }
+
+    const {
+      sourceQuantity,
+      unitsPerSource,
+      damagedQuantity,
+      totalUnits,
+      destinationQuantity,
+      sourceStockAfter,
+      destinationStockAfter
+    } = transformationPreview;
+
+    if (
+      !Number.isFinite(sourceQuantity) ||
+      !Number.isFinite(unitsPerSource) ||
+      !Number.isFinite(damagedQuantity) ||
+      sourceQuantity <= 0 ||
+      unitsPerSource <= 0 ||
+      damagedQuantity < 0 ||
+      destinationQuantity <= 0
+    ) {
+      showToast(t.invalidTransformationError, 'error');
+      return;
+    }
+
+    if (sourceQuantity > Number(sourceTransformationProduct.stock || 0)) {
+      showToast(t.insufficientStockError, 'error');
+      return;
+    }
+
+    setIsTransformationModalOpen(false);
+
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+
+    const confirmed = await showConfirm({
+      title: t.transformConfirmTitle,
+      message: `${t.transformConfirmMessage} ${sourceTransformationProduct.nombre}: ${Number(sourceTransformationProduct.stock || 0).toLocaleString('en-US')} → ${sourceStockAfter.toLocaleString('en-US')}. ${destinationTransformationProduct.nombre}: ${Number(destinationTransformationProduct.stock || 0).toLocaleString('en-US')} → ${destinationStockAfter.toLocaleString('en-US')}. ${t.shrinkage}: ${damagedQuantity.toLocaleString('en-US')}.`,
+      confirmText: t.transformConfirmText,
+      cancelText: t.cancel,
+      variant: 'warning'
+    });
+
+    if (!confirmed) {
+      setIsTransformationModalOpen(true);
+      return;
+    }
+
+    try {
+      setSavingTransformation(true);
+
+      const { data, error } = await supabase.rpc('transform_inventory', {
+        p_source_product_id: sourceTransformationProduct.id,
+        p_destination_product_id: destinationTransformationProduct.id,
+        p_source_quantity: sourceQuantity,
+        p_units_per_source: unitsPerSource,
+        p_damaged_quantity: damagedQuantity,
+        p_notes: transformationData.notes.trim() || null
+      });
+
+      if (error) throw error;
+
+      const result = (data || {}) as Record<string, unknown>;
+      const transformationId = Number(result.id || 0);
+
+      await logAudit({
+        negocio_id: negocioId,
+        user_id: user.id,
+        user_name: loggedUserName,
+        user_email: loggedUserEmail || undefined,
+        user_role: loggedUserRole || undefined,
+        action: 'TRANSFORM_INVENTORY',
+        module: 'PURCHASES',
+        record_id: transformationId || undefined,
+        description: `${loggedUserName} transformó ${sourceQuantity} ${sourceTransformationProduct.unidad || ''} de ${sourceTransformationProduct.nombre} en ${destinationQuantity} ${destinationTransformationProduct.unidad || ''} de ${destinationTransformationProduct.nombre}`,
+        old_data: {
+          source_product_id: sourceTransformationProduct.id,
+          source_stock: Number(sourceTransformationProduct.stock || 0),
+          destination_product_id: destinationTransformationProduct.id,
+          destination_stock: Number(destinationTransformationProduct.stock || 0)
+        },
+        new_data: {
+          source_stock: sourceStockAfter,
+          destination_stock: destinationStockAfter,
+          source_quantity: sourceQuantity,
+          units_per_source: unitsPerSource,
+          total_units: totalUnits,
+          damaged_quantity: damagedQuantity,
+          destination_quantity: destinationQuantity,
+          notes: transformationData.notes.trim() || null
+        }
+      });
+
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          negocio_id: negocioId,
+          user_id: null,
+          audience: 'admin',
+          title: t.transformationNotificationTitle,
+          message: `${loggedUserName}: ${sourceQuantity.toLocaleString('en-US')} ${sourceTransformationProduct.nombre} → ${destinationQuantity.toLocaleString('en-US')} ${destinationTransformationProduct.nombre}. ${t.shrinkage}: ${damagedQuantity.toLocaleString('en-US')}.`,
+          type: damagedQuantity > 0 ? 'warning' : 'info',
+          category: 'inventory',
+          link: 'purchases',
+          read: false
+        });
+
+      if (notificationError) {
+        console.warn('Inventory transformation notification was not created:', notificationError);
+      }
+
+      showToast(t.transformSuccess, 'success');
+      resetTransformationForm();
+      await loadData();
+    } catch (error) {
+      console.error('Error transforming inventory:', error);
+      showToast(t.transformError, 'error');
+    } finally {
+      setSavingTransformation(false);
+    }
   }
 
   function openCompleteCostModal(purchase: Compra) {
@@ -814,17 +1114,31 @@ export default function PurchasesPage() {
             )}
 
             {canManagePurchases && (
-              <Button
-                type="button"
-                className="w-full gap-2 rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.16)]"
-                onClick={() => {
-                  resetForm();
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus className="shrink-0" size={20} />
-                {t.newPurchase}
-              </Button>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
+                <Button
+                  type="button"
+                  className="w-full gap-2 rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.16)]"
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Plus className="shrink-0" size={20} />
+                  {t.newPurchase}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full gap-2 rounded-2xl border border-[#f4c542]/50 bg-[#fff9e8] text-[#050505] shadow-[0_14px_34px_rgba(138,106,22,0.1)] hover:-translate-y-0.5"
+                  onClick={() => {
+                    resetTransformationForm();
+                    setIsTransformationModalOpen(true);
+                  }}
+                >
+                  <PackageOpen className="shrink-0 text-[#8a6a16]" size={20} />
+                  {t.transformStock}
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -1108,6 +1422,220 @@ export default function PurchasesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16]">
+              <PackageOpen size={21} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-black text-[#050505]">{t.transformationHistory}</h2>
+              <p className="mt-1 text-sm font-semibold text-[#71717a]">{t.transformationHistoryDescription}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {transformations.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#e9e2d3] bg-[#fbfaf7] px-5 py-8 text-center text-sm font-bold text-[#71717a]">
+              {t.noTransformations}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {transformations.map((transformation) => (
+                <div
+                  key={transformation.id}
+                  className="rounded-2xl border border-[#e9e2d3] bg-white p-4 shadow-[0_10px_30px_rgba(15,15,15,0.04)]"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542]">
+                        <PackageOpen size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 text-sm font-black text-[#050505]">
+                          <span>{Number(transformation.source_quantity).toLocaleString('en-US')} {transformation.source_product?.nombre || transformation.source_product_name || t.deletedProduct}</span>
+                          <ArrowRight className="shrink-0 text-[#8a6a16]" size={16} />
+                          <span>{Number(transformation.destination_quantity).toLocaleString('en-US')} {transformation.destination_product?.nombre || transformation.destination_product_name || t.deletedProduct}</span>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                          {new Date(transformation.created_at).toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}
+                          {transformation.notes ? ` · ${transformation.notes}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`inline-flex w-fit items-center gap-2 rounded-xl px-3 py-2 text-xs font-black ${Number(transformation.damaged_quantity) > 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <AlertTriangle size={15} />
+                      {t.shrinkage}: {Number(transformation.damaged_quantity).toLocaleString('en-US')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Modal
+        isOpen={isTransformationModalOpen}
+        onClose={() => {
+          if (savingTransformation) return;
+          setIsTransformationModalOpen(false);
+          resetTransformationForm();
+        }}
+        title={t.transformStockTitle}
+      >
+        <form onSubmit={handleTransformationSubmit} className="space-y-5">
+          <div className="flex items-start gap-3 rounded-2xl border border-[#f4c542]/35 bg-[#fff9e8] p-4 text-sm font-semibold text-[#52525b]">
+            <PackageOpen className="mt-0.5 shrink-0 text-[#8a6a16]" size={20} />
+            <p>{t.transformStockDescription}</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Select
+              label={t.sourceProduct}
+              value={transformationData.source_product_id}
+              onChange={(e) => setTransformationData({
+                ...transformationData,
+                source_product_id: e.target.value,
+                destination_product_id: e.target.value === transformationData.destination_product_id
+                  ? ''
+                  : transformationData.destination_product_id
+              })}
+              options={[
+                { value: '', label: t.selectSourceProduct },
+                ...products.map((product) => ({
+                  value: product.id.toString(),
+                  label: `${product.nombre} · ${t.currentStock}: ${Number(product.stock || 0).toLocaleString('en-US')} ${product.unidad || ''}`
+                }))
+              ]}
+            />
+
+            <Select
+              label={t.destinationProduct}
+              value={transformationData.destination_product_id}
+              onChange={(e) => setTransformationData({ ...transformationData, destination_product_id: e.target.value })}
+              options={[
+                { value: '', label: t.selectDestinationProduct },
+                ...products
+                  .filter((product) => product.id.toString() !== transformationData.source_product_id)
+                  .map((product) => ({
+                    value: product.id.toString(),
+                    label: `${product.nombre} · ${t.currentStock}: ${Number(product.stock || 0).toLocaleString('en-US')} ${product.unidad || ''}`
+                  }))
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input
+              label={t.packagesToOpen}
+              type="number"
+              min="0"
+              step="0.01"
+              value={transformationData.source_quantity}
+              onChange={(e) => setTransformationData({ ...transformationData, source_quantity: e.target.value })}
+              error={sourceTransformationProduct && transformationPreview.sourceQuantity > Number(sourceTransformationProduct.stock || 0)
+                ? t.insufficientStockError
+                : undefined}
+              required
+            />
+            <Input
+              label={t.unitsPerPackage}
+              type="number"
+              min="0"
+              step="0.01"
+              value={transformationData.units_per_source}
+              onChange={(e) => setTransformationData({ ...transformationData, units_per_source: e.target.value })}
+              required
+            />
+            <Input
+              label={t.damagedUnits}
+              type="number"
+              min="0"
+              step="0.01"
+              value={transformationData.damaged_quantity}
+              onChange={(e) => setTransformationData({ ...transformationData, damaged_quantity: e.target.value })}
+              error={transformationPreview.totalUnits > 0 && transformationPreview.destinationQuantity <= 0
+                ? t.invalidTransformationError
+                : undefined}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-2.5 block text-[11px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">
+              {t.notes}
+            </label>
+            <textarea
+              rows={3}
+              value={transformationData.notes}
+              onChange={(e) => setTransformationData({ ...transformationData, notes: e.target.value })}
+              placeholder={t.notesPlaceholder}
+              className="w-full resize-none rounded-2xl border-2 border-[#e9e2d3] bg-white/96 px-4 py-3.5 text-[15px] font-semibold text-[#050505] shadow-[0_10px_30px_rgba(15,15,15,0.05)] outline-none transition placeholder:text-[#a1a1aa] focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/25"
+            />
+          </div>
+
+          {(sourceTransformationProduct || destinationTransformationProduct) && (
+            <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-[#fbfaf7] p-4 sm:p-5">
+              <p className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.stockPreview}</p>
+
+              <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                <div className="rounded-2xl border border-[#e9e2d3] bg-white p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#71717a]">{t.sourceProduct}</p>
+                  <p className="mt-1 text-base font-black text-[#050505]">{sourceTransformationProduct?.nombre || '—'}</p>
+                  <p className="mt-3 text-sm font-semibold text-[#71717a]">
+                    {t.before}: <strong className="text-[#050505]">{Number(sourceTransformationProduct?.stock || 0).toLocaleString('en-US')}</strong>
+                    {' → '}
+                    {t.after}: <strong className={transformationPreview.sourceStockAfter < 0 ? 'text-red-600' : 'text-[#050505]'}>{transformationPreview.sourceStockAfter.toLocaleString('en-US')}</strong>
+                  </p>
+                </div>
+
+                <ArrowRight className="mx-auto rotate-90 text-[#8a6a16] lg:rotate-0" size={22} />
+
+                <div className="rounded-2xl border border-[#e9e2d3] bg-white p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#71717a]">{t.destinationProduct}</p>
+                  <p className="mt-1 text-base font-black text-[#050505]">{destinationTransformationProduct?.nombre || '—'}</p>
+                  <p className="mt-3 text-sm font-semibold text-[#71717a]">
+                    {t.before}: <strong className="text-[#050505]">{Number(destinationTransformationProduct?.stock || 0).toLocaleString('en-US')}</strong>
+                    {' → '}
+                    {t.after}: <strong className="text-[#050505]">{transformationPreview.destinationStockAfter.toLocaleString('en-US')}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#71717a]">
+                  {t.containedUnits}: <strong className="text-[#050505]">{transformationPreview.totalUnits.toLocaleString('en-US')}</strong>
+                </div>
+                <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  {t.shrinkage}: <strong>{transformationPreview.damagedQuantity.toLocaleString('en-US')}</strong>
+                </div>
+                <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                  {t.usableUnits}: <strong>{Math.max(0, transformationPreview.destinationQuantity).toLocaleString('en-US')}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsTransformationModalOpen(false);
+                resetTransformationForm();
+              }}
+              disabled={savingTransformation}
+            >
+              {t.cancel}
+            </Button>
+            <Button type="submit" disabled={savingTransformation || !isTransformationValid}>
+              {savingTransformation ? t.saving : t.transformConfirmText}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal
         isOpen={isModalOpen}

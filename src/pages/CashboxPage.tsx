@@ -9,6 +9,7 @@ import {
   DollarSign,
   RefreshCw,
   Receipt,
+  RotateCcw,
   ShoppingCart,
   Users,
   Wallet
@@ -56,6 +57,28 @@ interface Pago {
     nombre: string;
   } | null | Array<{
     nombre: string;
+  }>;
+}
+
+interface SaleReturn {
+  id: number;
+  sale_id: number;
+  refund_total: number;
+  compensation_method: 'cash_refund' | 'store_credit' | 'reduce_debt';
+  reason: string;
+  processed_by_name: string;
+  return_date: string;
+  created_at: string;
+  ventas?: {
+    id: number;
+    tipo_pago: 'Contado' | 'Crédito' | null;
+    cliente_nombre: string | null;
+    clientes?: { nombre: string } | null | Array<{ nombre: string }>;
+  } | null | Array<{
+    id: number;
+    tipo_pago: 'Contado' | 'Crédito' | null;
+    cliente_nombre: string | null;
+    clientes?: { nombre: string } | null | Array<{ nombre: string }>;
   }>;
 }
 
@@ -178,6 +201,17 @@ function getPaymentClientName(pago: Pago | null | undefined, fallback: string) {
   return clientes?.nombre || fallback;
 }
 
+function getReturnSale(returnRecord: SaleReturn) {
+  return Array.isArray(returnRecord.ventas) ? returnRecord.ventas[0] || null : returnRecord.ventas || null;
+}
+
+function getReturnClientName(returnRecord: SaleReturn, fallback: string) {
+  const sale = getReturnSale(returnRecord);
+  const clients = sale?.clientes;
+  if (Array.isArray(clients)) return clients[0]?.nombre || sale?.cliente_nombre || fallback;
+  return clients?.nombre || sale?.cliente_nombre || fallback;
+}
+
 function getSaleTime(venta: Venta | null | undefined, locale: string) {
   const source = venta?.created_at || venta?.fecha;
   if (!source) return '-';
@@ -204,6 +238,16 @@ const cashboxCopy = {
     receivedPayments: 'Pagos Recibidos',
     cancelledSales: 'Ventas Anuladas',
     cancelledAmount: 'Monto Anulado',
+    returns: 'Devoluciones',
+    cashRefunds: 'Reembolsos de caja',
+    returnMovements: 'Movimientos por devoluciones',
+    originalSale: 'Venta original',
+    processedBy: 'Procesado por',
+    reason: 'Motivo',
+    cashOutflow: 'Salida de efectivo',
+    storeCreditAdjustment: 'Saldo a favor · sin salida de efectivo',
+    debtReductionAdjustment: 'Reducción de deuda · sin salida de efectivo',
+    noReturns: 'No hay devoluciones registradas este día',
     discountsGiven: 'Descuentos Otorgados',
     seller: 'Vendedor',
     discount: 'Descuento',
@@ -251,6 +295,16 @@ const cashboxCopy = {
     receivedPayments: 'Received Payments',
     cancelledSales: 'Cancelled Sales',
     cancelledAmount: 'Cancelled Amount',
+    returns: 'Returns',
+    cashRefunds: 'Cash refunds',
+    returnMovements: 'Return movements',
+    originalSale: 'Original sale',
+    processedBy: 'Processed by',
+    reason: 'Reason',
+    cashOutflow: 'Cash outflow',
+    storeCreditAdjustment: 'Store credit · no cash outflow',
+    debtReductionAdjustment: 'Debt reduction · no cash outflow',
+    noReturns: 'No returns recorded for this day',
     discountsGiven: 'Discounts Given',
     seller: 'Seller',
     discount: 'Discount',
@@ -308,6 +362,7 @@ export default function CashboxPage() {
 
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
+  const [saleReturns, setSaleReturns] = useState<SaleReturn[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
 
@@ -322,6 +377,7 @@ export default function CashboxPage() {
     if (!userProfile?.negocio_id) {
       setVentas([]);
       setPagos([]);
+      setSaleReturns([]);
       setProductos([]);
       setClientes([]);
       setCurrencySettings(DEFAULT_CURRENCY);
@@ -343,7 +399,7 @@ export default function CashboxPage() {
         ventasQuery = ventasQuery.eq('vendedor_id', user.id);
       }
 
-      const [ventasResult, productosResult, clientesResult, businessResult] = await Promise.all([
+      const [ventasResult, productosResult, clientesResult, businessResult, returnsResult] = await Promise.all([
         ventasQuery,
 
         supabase
@@ -362,13 +418,20 @@ export default function CashboxPage() {
           .from('negocios')
           .select('*')
           .eq('id', userProfile.negocio_id)
-          .maybeSingle()
+          .maybeSingle(),
+
+        supabase
+          .from('sale_returns')
+          .select('id, sale_id, refund_total, compensation_method, reason, processed_by_name, return_date, created_at, ventas(id, tipo_pago, cliente_nombre, clientes(nombre))')
+          .eq('negocio_id', userProfile.negocio_id)
+          .eq('return_date', selectedDate)
       ]);
 
       if (ventasResult.error) throw ventasResult.error;
       if (productosResult.error) throw productosResult.error;
       if (clientesResult.error) throw clientesResult.error;
       if (businessResult.error) throw businessResult.error;
+      if (returnsResult.error) throw returnsResult.error;
 
       const loadedVentas = (ventasResult.data || []) as Venta[];
       const ventaIds = loadedVentas.map((venta) => venta.id);
@@ -384,6 +447,7 @@ export default function CashboxPage() {
         if (ventaIds.length === 0) {
           setVentas([]);
           setPagos([]);
+          setSaleReturns([]);
           setProductos((productosResult.data || []) as Producto[]);
           setClientes((clientesResult.data || []) as Cliente[]);
           setCurrencySettings(normalizeCurrencySettings(businessResult.data));
@@ -424,6 +488,7 @@ export default function CashboxPage() {
 
       setVentas(loadedVentas);
       setPagos((pagosResult.data || []) as Pago[]);
+      setSaleReturns((returnsResult.data || []) as unknown as SaleReturn[]);
       setProductos((productosResult.data || []) as Producto[]);
       setClientes((clientesResult.data || []) as Cliente[]);
       setCurrencySettings(normalizeCurrencySettings(businessResult.data));
@@ -570,10 +635,25 @@ export default function CashboxPage() {
       .filter((p) => !p.venta_id)
       .reduce((sum, p) => sum + Number(p.monto || 0), 0);
 
-    const totalVentas = ventasActivas.reduce((sum, v) => sum + Number(v.total || 0), 0);
+    const returnSaleType = (returnRecord: SaleReturn) => {
+      const relatedSale = returnRecord.ventas;
+      return Array.isArray(relatedSale) ? relatedSale[0]?.tipo_pago : relatedSale?.tipo_pago;
+    };
+    const devoluciones = saleReturns.reduce((sum, item) => sum + Number(item.refund_total || 0), 0);
+    const devolucionesContado = saleReturns
+      .filter((item) => returnSaleType(item) === 'Contado')
+      .reduce((sum, item) => sum + Number(item.refund_total || 0), 0);
+    const devolucionesCredito = saleReturns
+      .filter((item) => returnSaleType(item) === 'Crédito')
+      .reduce((sum, item) => sum + Number(item.refund_total || 0), 0);
+    const reembolsosCaja = saleReturns
+      .filter((item) => item.compensation_method === 'cash_refund')
+      .reduce((sum, item) => sum + Number(item.refund_total || 0), 0);
+
+    const totalVentas = ventasActivas.reduce((sum, v) => sum + Number(v.total || 0), 0) - devoluciones;
     const totalAnulado = ventasAnuladas.reduce((sum, v) => sum + Number(v.total || 0), 0);
     const descuentosOtorgados = ventasActivas.reduce((sum, v) => sum + getSaleDiscountAmount(v), 0);
-    const netoCaja = ventasContado + pagosRecibidos;
+    const netoCaja = ventasContado + pagosRecibidos - reembolsosCaja;
 
     const productosBajoStock = productos.filter(
       (p) => Number(p.stock || 0) <= Number(p.minimo || 0)
@@ -584,9 +664,11 @@ export default function CashboxPage() {
     ).length;
 
     return {
-      ventasContado,
-      ventasCredito,
+      ventasContado: ventasContado - devolucionesContado,
+      ventasCredito: ventasCredito - devolucionesCredito,
       pagosRecibidos,
+      devoluciones,
+      reembolsosCaja,
       totalVentas,
       totalAnulado,
       descuentosOtorgados,
@@ -596,7 +678,7 @@ export default function CashboxPage() {
       productosBajoStock,
       clientesConDeuda
     };
-  }, [ventas, pagos, productos, clientes]);
+  }, [ventas, pagos, productos, clientes, saleReturns]);
 
   const pagosDeuda = pagos.filter((pago) => !pago.venta_id);
 
@@ -745,6 +827,16 @@ export default function CashboxPage() {
           icon={Wallet}
           iconClass="bg-[#050505] text-[#f4c542]"
         />
+
+        {!isSeller && (
+          <MetricCard
+            title={`${t.returns} · ${t.cashRefunds} ${formatMoney(metrics.reembolsosCaja, currencySettings)}`}
+            value={`-${formatMoney(metrics.devoluciones, currencySettings)}`}
+            icon={RotateCcw}
+            iconClass="bg-amber-100 text-amber-800"
+            valueClass="text-amber-700"
+          />
+        )}
 
         {!isSeller && (
           <MetricCard
@@ -976,6 +1068,47 @@ export default function CashboxPage() {
           </CardContent>
         </Card>
       </div>
+
+      {!isSeller && (
+        <Card>
+          <CardHeader>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><RotateCcw className="h-5 w-5 shrink-0" /></div>
+              <div><h2 className="text-xl font-serif font-bold text-[#050505] sm:text-2xl">{t.returnMovements}</h2><p className="mt-1 text-sm font-semibold text-[#71717a]">{t.returns}: {formatMoney(metrics.devoluciones, currencySettings)} · {t.cashRefunds}: {formatMoney(metrics.reembolsosCaja, currencySettings)}</p></div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-[#fffdf8]">
+              <table className="w-full min-w-[1080px]">
+                <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]"><tr><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">ID</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.originalSale}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.client}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.time}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.transaction}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.processedBy}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.reason}</th><th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.amount}</th></tr></thead>
+                <tbody className="divide-y divide-[#f1ebdf]">
+                  {saleReturns.map((returnRecord) => {
+                    const isCashOutflow = returnRecord.compensation_method === 'cash_refund';
+                    const movementLabel = isCashOutflow
+                      ? t.cashOutflow
+                      : returnRecord.compensation_method === 'store_credit'
+                        ? t.storeCreditAdjustment
+                        : t.debtReductionAdjustment;
+                    return (
+                      <tr key={returnRecord.id} className="transition hover:bg-[#fff9e8]">
+                        <td className="px-4 py-3 font-black text-[#050505]">DEV-{String(returnRecord.id).padStart(4, '0')}</td>
+                        <td className="px-4 py-3 font-black text-[#050505]">{formatSaleCode(returnRecord.sale_id)}</td>
+                        <td className="px-4 py-3 font-semibold text-[#71717a]">{getReturnClientName(returnRecord, t.generalClient)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#71717a]">{new Date(returnRecord.created_at).toLocaleTimeString(language === 'es' ? 'es-ES' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td className="px-4 py-3"><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${isCashOutflow ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{movementLabel}</span></td>
+                        <td className="max-w-[180px] truncate px-4 py-3 font-semibold text-[#71717a]">{returnRecord.processed_by_name}</td>
+                        <td className="max-w-[240px] truncate px-4 py-3 font-semibold text-[#71717a]" title={returnRecord.reason}>{returnRecord.reason}</td>
+                        <td className={`whitespace-nowrap px-4 py-3 text-right font-black ${isCashOutflow ? 'text-red-600' : 'text-amber-800'}`}>{isCashOutflow ? '-' : ''}{formatMoney(returnRecord.refund_total, currencySettings)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {saleReturns.length === 0 && <div className="bg-[#fbfaf7] py-10 text-center font-semibold text-[#71717a]">{t.noReturns}</div>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!isSeller && (
         <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">

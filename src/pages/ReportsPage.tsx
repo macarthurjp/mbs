@@ -79,6 +79,18 @@ type Pago = {
   clientes?: { nombre: string } | null | Array<{ nombre: string }>;
 };
 
+type SaleReturn = {
+  id: number;
+  sale_id: number;
+  refund_total: number;
+  return_date: string;
+  sale_return_items?: Array<{
+    product_id: number | null;
+    quantity: number;
+    refund_amount: number;
+  }> | null;
+};
+
 type ReportType = 'sales' | 'products' | 'clients' | 'payments';
 type DetailReport = 'orderSummary' | 'revenueSummary' | 'paymentDevice' | 'inventory' | 'salesFunnel' | 'clients' | null;
 
@@ -359,6 +371,7 @@ export default function ReportsPage() {
   const isSeller = roleFlags.isSeller;
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ventaItems, setVentaItems] = useState<VentaItem[]>([]);
+  const [saleReturns, setSaleReturns] = useState<SaleReturn[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -388,11 +401,20 @@ export default function ReportsPage() {
   const activeVentaIds = useMemo(() => new Set(activeVentas.map((venta) => venta.id)), [activeVentas]);
 
   const summary = useMemo(() => {
-    const totalVentas = activeVentas.reduce((sum, venta) => sum + Number(venta.total || 0), 0);
+    const saleById = new Map(activeVentas.map((venta) => [venta.id, venta]));
+    const activeReturns = saleReturns.filter((returnRecord) => saleById.has(returnRecord.sale_id));
+    const returnedTotal = activeReturns.reduce((sum, returnRecord) => sum + Number(returnRecord.refund_total || 0), 0);
+    const returnedCash = activeReturns
+      .filter((returnRecord) => saleById.get(returnRecord.sale_id)?.tipo_pago === 'Contado')
+      .reduce((sum, returnRecord) => sum + Number(returnRecord.refund_total || 0), 0);
+    const returnedCredit = activeReturns
+      .filter((returnRecord) => saleById.get(returnRecord.sale_id)?.tipo_pago === 'Crédito')
+      .reduce((sum, returnRecord) => sum + Number(returnRecord.refund_total || 0), 0);
+    const totalVentas = activeVentas.reduce((sum, venta) => sum + Number(venta.total || 0), 0) - returnedTotal;
     const totalAnulado = cancelledVentas.reduce((sum, venta) => sum + Number(venta.total || 0), 0);
     const totalNeto = totalVentas;
-    const totalContado = activeVentas.filter((venta) => venta.tipo_pago === 'Contado').reduce((sum, venta) => sum + Number(venta.total || 0), 0);
-    const totalCredito = activeVentas.filter((venta) => venta.tipo_pago === 'Crédito').reduce((sum, venta) => sum + Number(venta.total || 0), 0);
+    const totalContado = activeVentas.filter((venta) => venta.tipo_pago === 'Contado').reduce((sum, venta) => sum + Number(venta.total || 0), 0) - returnedCash;
+    const totalCredito = activeVentas.filter((venta) => venta.tipo_pago === 'Crédito').reduce((sum, venta) => sum + Number(venta.total || 0), 0) - returnedCredit;
     const totalPendiente = activeVentas.reduce((sum, venta) => sum + Number(venta.saldo_pendiente || 0), 0);
     const totalPagos = pagos.reduce((sum, pago) => sum + Number(pago.monto || 0), 0);
     const totalDescuentos = activeVentas.reduce((sum, venta) => sum + getSaleDiscountAmount(venta), 0);
@@ -431,7 +453,7 @@ export default function ReportsPage() {
       productosBajoStock: productos.filter((producto) => Number(producto.stock || 0) <= Number(producto.minimo || 0)).length,
       clientesConDeuda: clientes.filter((cliente) => Number(cliente.saldo || 0) > 0).length
     };
-  }, [activeVentas, cancelledVentas, ventaItems, productos, clientes, pagos, productCosts]);
+  }, [activeVentas, cancelledVentas, ventaItems, productos, clientes, pagos, productCosts, saleReturns]);
 
   const productosMasVendidos = useMemo(() => {
     const grouped = new Map<number, { nombre: string; cantidad: number; total: number }>();
@@ -442,8 +464,18 @@ export default function ReportsPage() {
       current.total += Number(item.total || 0);
       grouped.set(item.producto_id, current);
     });
+    saleReturns.forEach((returnRecord) => {
+      if (!activeVentaIds.has(returnRecord.sale_id)) return;
+      (returnRecord.sale_return_items || []).forEach((item) => {
+        if (!item.product_id) return;
+        const current = grouped.get(item.product_id);
+        if (!current) return;
+        current.cantidad = Math.max(0, current.cantidad - Number(item.quantity || 0));
+        current.total = Math.max(0, current.total - Number(item.refund_amount || 0));
+      });
+    });
     return Array.from(grouped.values()).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
-  }, [ventaItems, activeVentaIds, t.unnamedProduct]);
+  }, [ventaItems, activeVentaIds, saleReturns, t.unnamedProduct]);
 
   const clientesConDeuda = useMemo(() => clientes.filter((cliente) => Number(cliente.saldo || 0) > 0).sort((a, b) => Number(b.saldo || 0) - Number(a.saldo || 0)), [clientes]);
   const productosBajoStock = useMemo(() => productos.filter((producto) => Number(producto.stock || 0) <= Number(producto.minimo || 0)).sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0)), [productos]);
@@ -451,19 +483,29 @@ export default function ReportsPage() {
   const weeklySales = useMemo(() => {
     const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
     const values = new Array(7).fill(0);
+    const saleDayById = new Map<number, number>();
     activeVentas.forEach((venta) => {
       const day = new Date(`${venta.fecha}T00:00:00`).getDay();
       const index = day === 0 ? 6 : day - 1;
       values[index] += Number(venta.total || 0);
+      saleDayById.set(venta.id, index);
+    });
+    saleReturns.forEach((returnRecord) => {
+      const index = saleDayById.get(returnRecord.sale_id);
+      if (index === undefined) return;
+      values[index] -= Number(returnRecord.refund_total || 0);
     });
     const max = Math.max(...values, 1);
     return labels.map((label, index) => ({ label, value: values[index], height: Math.max(12, (values[index] / max) * 100) }));
-  }, [activeVentas]);
+  }, [activeVentas, saleReturns]);
 
   const paymentCashPercent = summary.totalVentas > 0 ? Math.round((summary.totalContado / summary.totalVentas) * 100) : 0;
   const paymentCreditPercent = Math.max(0, 100 - paymentCashPercent);
   const avgSale = summary.cantidadVentas > 0 ? summary.totalVentas / summary.cantidadVentas : 0;
-  const soldUnits = ventaItems.filter((item) => !isCancelledItem(item)).reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+  const returnedUnits = saleReturns
+    .filter((returnRecord) => activeVentaIds.has(returnRecord.sale_id))
+    .reduce((sum, returnRecord) => sum + (returnRecord.sale_return_items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0);
+  const soldUnits = Math.max(0, ventaItems.filter((item) => !isCancelledItem(item)).reduce((sum, item) => sum + Number(item.cantidad || 0), 0) - returnedUnits);
 
   const loadReportsData = useCallback(async () => {
     try {
@@ -471,6 +513,7 @@ export default function ReportsPage() {
       if (!user?.id) {
         setVentas([]);
         setVentaItems([]);
+        setSaleReturns([]);
         setProductos([]);
         setClientes([]);
         setPagos([]);
@@ -484,6 +527,7 @@ export default function ReportsPage() {
       if (!currentNegocioId) {
         setVentas([]);
         setVentaItems([]);
+        setSaleReturns([]);
         setProductos([]);
         setClientes([]);
         setPagos([]);
@@ -541,6 +585,7 @@ export default function ReportsPage() {
         if (ventaIds.length === 0) {
           setVentas([]);
           setVentaItems([]);
+          setSaleReturns([]);
           setProductos((productosResult.data || []) as unknown as Producto[]);
           setClientes((clientesResult.data || []) as unknown as Cliente[]);
           setPagos([]);
@@ -555,6 +600,21 @@ export default function ReportsPage() {
       const pagosResult = await pagosQuery;
 
       if (pagosResult.error) throw pagosResult.error;
+      let returnsQuery = supabase
+        .from('sale_returns')
+        .select('id, sale_id, refund_total, return_date, sale_return_items(product_id, quantity, refund_amount)')
+        .eq('negocio_id', currentNegocioId)
+        .gte('return_date', isSeller ? today : filters.from)
+        .lte('return_date', isSeller ? today : filters.to)
+        .order('return_date', { ascending: false });
+
+      if (isSeller && ventaIds.length > 0) {
+        returnsQuery = returnsQuery.in('sale_id', ventaIds);
+      }
+
+      const returnsResult = await returnsQuery;
+      if (returnsResult.error) throw returnsResult.error;
+
       let itemsData: VentaItem[] = [];
       if (ventaIds.length > 0) {
         const itemsResult = await supabase
@@ -567,6 +627,7 @@ export default function ReportsPage() {
 
       setVentas(loadedVentasData);
       setVentaItems(itemsData);
+      setSaleReturns((returnsResult.data || []) as unknown as SaleReturn[]);
       setProductos((productosResult.data || []) as unknown as Producto[]);
       setClientes((clientesResult.data || []) as unknown as Cliente[]);
       setPagos((pagosResult.data || []) as unknown as Pago[]);

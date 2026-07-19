@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Package, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Package, Sparkles, TrendingDown, TrendingUp, RotateCcw, History, Eye, FileText } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -44,6 +44,64 @@ type Cliente = {
   direccion: string | null;
   limite_credito: number | null;
   saldo: number | null;
+};
+
+type ReturnSaleItem = {
+  id: number;
+  venta_id: number | null;
+  producto_id: number | null;
+  cantidad: number;
+  precio: number;
+  total: number;
+  productos?: {
+    nombre: string | null;
+    unidad: string | null;
+  } | null;
+};
+
+type ReturnSale = {
+  id: number;
+  fecha: string;
+  created_at?: string | null;
+  cliente_id: number | null;
+  cliente_nombre?: string | null;
+  subtotal: number | null;
+  total: number | null;
+  tipo_pago: 'Contado' | 'Crédito' | null;
+  saldo_pendiente: number | null;
+  estado?: string | null;
+  clientes?: { nombre: string | null } | null;
+  venta_items?: ReturnSaleItem[] | null;
+};
+
+type SaleReturnHistory = {
+  id: number;
+  sale_id: number;
+  compensation_method: 'cash_refund' | 'store_credit' | 'reduce_debt';
+  reason: string;
+  refund_total: number;
+  restocked_quantity: number;
+  damaged_quantity: number;
+  created_at: string;
+  sale_return_items?: Array<{
+    id: number;
+    sale_item_id: number;
+    product_name: string;
+    quantity: number;
+    stock_condition: 'restock' | 'damaged';
+    refund_amount: number;
+  }> | null;
+};
+
+type ReturnResult = {
+  return_id: number;
+  sale_id: number;
+  refund_total: number;
+  restocked_quantity: number;
+  damaged_quantity: number;
+  compensation_method: 'cash_refund' | 'store_credit' | 'reduce_debt';
+  sale_pending_balance: number;
+  client_balance: number | null;
 };
 
 type CartItem = {
@@ -177,6 +235,49 @@ const salesCopy = {
     confirmText: 'Registrar venta',
     cancelText: 'Cancelar',
     successSale: 'Venta registrada correctamente. Puedes imprimir el recibo.',
+    returns: 'Devoluciones',
+    returnsTitle: 'Devolución parcial de venta',
+    returnsHint: 'Selecciona la venta original, indica las unidades devueltas y cómo compensar al cliente. La factura original no se modifica.',
+    returnSearch: 'Buscar por número de venta, cliente o fecha...',
+    recentSales: 'Ventas recientes',
+    selectSale: 'Selecciona una venta para continuar',
+    sold: 'Vendidas',
+    alreadyReturned: 'Ya devueltas',
+    availableToReturn: 'Disponibles',
+    returnQuantity: 'Cantidad a devolver',
+    productCondition: 'Estado del producto',
+    returnToStock: 'Buen estado · regresar al stock',
+    damagedReturn: 'Averiado · registrar como merma',
+    compensation: 'Compensación al cliente',
+    cashRefund: 'Reembolso de dinero',
+    storeCredit: 'Saldo a favor',
+    reduceDebt: 'Reducir deuda pendiente',
+    returnReason: 'Motivo de la devolución',
+    returnReasonPlaceholder: 'Ej. El cliente redujo la cantidad de su pedido',
+    returnSummary: 'Resumen de la devolución',
+    refundTotal: 'Importe a compensar',
+    unitsToStock: 'Unidades al stock',
+    damagedUnits: 'Unidades averiadas',
+    processReturn: 'Procesar devolución',
+    processingReturn: 'Procesando...',
+    confirmReturnTitle: 'Confirmar devolución',
+    confirmReturnMessage: 'Se registrará la devolución sin modificar la factura original.',
+    returnSuccess: 'Devolución registrada correctamente',
+    returnLoadError: 'No se pudieron cargar las ventas para devolución',
+    returnSaveError: 'No se pudo procesar la devolución',
+    selectReturnItems: 'Indica al menos una cantidad para devolver',
+    reasonRequired: 'Escribe un motivo de al menos 3 caracteres',
+    returnHistory: 'Historial de devoluciones',
+    noReturns: 'Todavía no hay devoluciones registradas',
+    returnedOn: 'Devuelta el',
+    noReturnPermission: 'Solo propietarios y administradores pueden procesar devoluciones',
+    viewOriginalInvoice: 'Ver factura original',
+    hideOriginalInvoice: 'Ocultar factura',
+    originalInvoice: 'Factura original',
+    originalInvoiceHint: 'Esta factura permanece intacta. La devolución se registra como un movimiento vinculado.',
+    invoicePaymentStatus: 'Estado del pago',
+    paid: 'Pagada',
+    pending: 'Pendiente',
     active: 'Activa',
     cancelled: 'Anulada',
     saveError: 'Error al registrar la venta',
@@ -278,6 +379,49 @@ const salesCopy = {
     confirmText: 'Register sale',
     cancelText: 'Cancel',
     successSale: 'Sale registered successfully. You can print the receipt.',
+    returns: 'Returns',
+    returnsTitle: 'Partial sale return',
+    returnsHint: 'Select the original sale, enter the returned units and how to compensate the client. The original invoice remains unchanged.',
+    returnSearch: 'Search by sale number, client, or date...',
+    recentSales: 'Recent sales',
+    selectSale: 'Select a sale to continue',
+    sold: 'Sold',
+    alreadyReturned: 'Already returned',
+    availableToReturn: 'Available',
+    returnQuantity: 'Quantity to return',
+    productCondition: 'Product condition',
+    returnToStock: 'Good condition · return to stock',
+    damagedReturn: 'Damaged · record as shrinkage',
+    compensation: 'Client compensation',
+    cashRefund: 'Cash refund',
+    storeCredit: 'Store credit',
+    reduceDebt: 'Reduce pending debt',
+    returnReason: 'Return reason',
+    returnReasonPlaceholder: 'Ex. The client reduced the order quantity',
+    returnSummary: 'Return summary',
+    refundTotal: 'Compensation amount',
+    unitsToStock: 'Units to stock',
+    damagedUnits: 'Damaged units',
+    processReturn: 'Process return',
+    processingReturn: 'Processing...',
+    confirmReturnTitle: 'Confirm return',
+    confirmReturnMessage: 'The return will be recorded without changing the original invoice.',
+    returnSuccess: 'Return recorded successfully',
+    returnLoadError: 'Sales available for return could not be loaded',
+    returnSaveError: 'The return could not be processed',
+    selectReturnItems: 'Enter at least one quantity to return',
+    reasonRequired: 'Enter a reason with at least 3 characters',
+    returnHistory: 'Return history',
+    noReturns: 'No returns have been recorded yet',
+    returnedOn: 'Returned on',
+    noReturnPermission: 'Only owners and administrators can process returns',
+    viewOriginalInvoice: 'View original invoice',
+    hideOriginalInvoice: 'Hide invoice',
+    originalInvoice: 'Original invoice',
+    originalInvoiceHint: 'This invoice remains unchanged. The return is recorded as a linked transaction.',
+    invoicePaymentStatus: 'Payment status',
+    paid: 'Paid',
+    pending: 'Pending',
     active: 'Active',
     cancelled: 'Cancelled',
     saveError: 'Error registering the sale',
@@ -482,6 +626,7 @@ export function SalesPage() {
   const isSeller = roleFlags.isSeller;
   const isSuperAdmin = roleFlags.isSuperAdmin;
   const canCreateSale = isOwner || isAdmin || isSeller || isSuperAdmin;
+  const canManageReturns = isOwner || isAdmin || isSuperAdmin;
   const { showToast, showConfirm } = useNotification();
 
   const [negocioId, setNegocioId] = useState<string | null>(null);
@@ -506,6 +651,18 @@ export function SalesPage() {
   const [saving, setSaving] = useState(false);
   const [missingNegocio, setMissingNegocio] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [returnSales, setReturnSales] = useState<ReturnSale[]>([]);
+  const [returnHistory, setReturnHistory] = useState<SaleReturnHistory[]>([]);
+  const [loadingReturns, setLoadingReturns] = useState(false);
+  const [savingReturn, setSavingReturn] = useState(false);
+  const [returnSearch, setReturnSearch] = useState('');
+  const [selectedReturnSaleId, setSelectedReturnSaleId] = useState<number | null>(null);
+  const [returnQuantities, setReturnQuantities] = useState<Record<number, string>>({});
+  const [returnConditions, setReturnConditions] = useState<Record<number, 'restock' | 'damaged'>>({});
+  const [returnCompensation, setReturnCompensation] = useState<'cash_refund' | 'store_credit' | 'reduce_debt'>('cash_refund');
+  const [returnReason, setReturnReason] = useState('');
+  const [showReturnInvoicePreview, setShowReturnInvoicePreview] = useState(false);
   const { language } = useLanguage();
   const t = salesCopy[language];
   const profileData = userProfile as Record<string, unknown> | null | undefined;
@@ -520,6 +677,58 @@ export function SalesPage() {
 
   const loggedUserEmail = String(profileData?.email || user?.email || '');
   const loggedUserRole = roleFlags.role;
+
+  const returnedQuantityBySaleItem = useMemo(() => {
+    const quantities = new Map<number, number>();
+    returnHistory.forEach((returnRecord) => {
+      (returnRecord.sale_return_items || []).forEach((item) => {
+        quantities.set(item.sale_item_id, (quantities.get(item.sale_item_id) || 0) + Number(item.quantity || 0));
+      });
+    });
+    return quantities;
+  }, [returnHistory]);
+
+  const filteredReturnSales = useMemo(() => {
+    const search = returnSearch.trim().toLowerCase();
+    if (!search) return returnSales;
+
+    return returnSales.filter((sale) => {
+      const clientName = sale.clientes?.nombre || sale.cliente_nombre || t.generalClientShort;
+      return formatSaleCode(sale.id).toLowerCase().includes(search)
+        || String(sale.id).includes(search)
+        || clientName.toLowerCase().includes(search)
+        || String(sale.fecha || '').includes(search);
+    });
+  }, [returnSales, returnSearch, t.generalClientShort]);
+
+  const selectedReturnSale = useMemo(
+    () => returnSales.find((sale) => sale.id === selectedReturnSaleId) || null,
+    [returnSales, selectedReturnSaleId]
+  );
+
+  const selectedReturnSummary = useMemo(() => {
+    if (!selectedReturnSale) {
+      return { refundTotal: 0, restockedQuantity: 0, damagedQuantity: 0 };
+    }
+
+    const subtotalValue = Number(selectedReturnSale.subtotal || 0);
+    const discountFactor = subtotalValue > 0
+      ? Math.max(0, Number(selectedReturnSale.total || 0) / subtotalValue)
+      : 1;
+
+    return (selectedReturnSale.venta_items || []).reduce((summary, item) => {
+      const quantity = Math.max(0, Number(returnQuantities[item.id] || 0));
+      if (!quantity) return summary;
+
+      summary.refundTotal += Math.round(quantity * Number(item.precio || 0) * discountFactor * 100) / 100;
+      if ((returnConditions[item.id] || 'restock') === 'restock') {
+        summary.restockedQuantity += quantity;
+      } else {
+        summary.damagedQuantity += quantity;
+      }
+      return summary;
+    }, { refundTotal: 0, restockedQuantity: 0, damagedQuantity: 0 });
+  }, [returnConditions, returnQuantities, selectedReturnSale]);
 
   const filteredProducts = useMemo(() => {
     const search = searchTerm.toLowerCase().trim();
@@ -646,6 +855,192 @@ export function SalesPage() {
   useEffect(() => {
     loadData();
   }, [loadData, roleFlags.role]);
+
+  const loadReturnData = useCallback(async () => {
+    if (!negocioId || !canManageReturns) return;
+
+    try {
+      setLoadingReturns(true);
+
+      const [salesResult, historyResult] = await Promise.all([
+        supabase
+          .from('ventas')
+          .select('id, fecha, created_at, cliente_id, cliente_nombre, subtotal, total, tipo_pago, saldo_pendiente, estado, clientes(nombre), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad))')
+          .eq('negocio_id', negocioId)
+          .order('created_at', { ascending: false })
+          .limit(75),
+        supabase
+          .from('sale_returns')
+          .select('id, sale_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, created_at, sale_return_items(id, sale_item_id, product_name, quantity, stock_condition, refund_amount)')
+          .eq('negocio_id', negocioId)
+          .order('created_at', { ascending: false })
+          .limit(100)
+      ]);
+
+      if (salesResult.error) throw salesResult.error;
+      if (historyResult.error) throw historyResult.error;
+
+      setReturnSales(
+        ((salesResult.data || []) as unknown as ReturnSale[]).filter((sale) => !isCancelledSale(sale.estado))
+      );
+      setReturnHistory((historyResult.data || []) as unknown as SaleReturnHistory[]);
+    } catch (error) {
+      console.error('Error loading sale returns:', error);
+      showToast(t.returnLoadError, 'error');
+    } finally {
+      setLoadingReturns(false);
+    }
+  }, [canManageReturns, negocioId, showToast, t.returnLoadError]);
+
+  function openReturnModal() {
+    if (!canManageReturns) {
+      showToast(t.noReturnPermission, 'error');
+      return;
+    }
+
+    setIsReturnModalOpen(true);
+    setSelectedReturnSaleId(null);
+    setReturnSearch('');
+    setReturnQuantities({});
+    setReturnConditions({});
+    setReturnReason('');
+    setShowReturnInvoicePreview(false);
+    void loadReturnData();
+  }
+
+  function closeReturnModal() {
+    if (savingReturn) return;
+    setIsReturnModalOpen(false);
+    setSelectedReturnSaleId(null);
+    setReturnQuantities({});
+    setReturnConditions({});
+    setReturnReason('');
+    setShowReturnInvoicePreview(false);
+  }
+
+  function chooseReturnSale(sale: ReturnSale) {
+    setSelectedReturnSaleId(sale.id);
+    setReturnQuantities({});
+    setReturnConditions(
+      Object.fromEntries((sale.venta_items || []).map((item) => [item.id, 'restock'])) as Record<number, 'restock' | 'damaged'>
+    );
+    setReturnCompensation(Number(sale.saldo_pendiente || 0) > 0 ? 'reduce_debt' : 'cash_refund');
+    setReturnReason('');
+    setShowReturnInvoicePreview(false);
+  }
+
+  async function processReturn() {
+    if (!user?.id || !negocioId || !selectedReturnSale) return;
+
+    let hasInvalidQuantity = false;
+    const items = (selectedReturnSale.venta_items || []).flatMap((item) => {
+      const quantity = Number(returnQuantities[item.id] || 0);
+      const alreadyReturned = returnedQuantityBySaleItem.get(item.id) || 0;
+      const available = Math.max(0, Number(item.cantidad || 0) - alreadyReturned);
+
+      if (!Number.isFinite(quantity) || quantity <= 0) return [];
+      if (quantity > available) {
+        hasInvalidQuantity = true;
+        showToast(`${item.productos?.nombre || t.product}: ${t.availableToReturn} ${formatCurrency(available)}`, 'error');
+        return [];
+      }
+
+      return [{
+        sale_item_id: item.id,
+        quantity,
+        stock_condition: returnConditions[item.id] || 'restock'
+      }];
+    });
+
+    if (hasInvalidQuantity) return;
+
+    if (items.length === 0 || selectedReturnSummary.refundTotal <= 0) {
+      showToast(t.selectReturnItems, 'error');
+      return;
+    }
+
+    if (returnReason.trim().length < 3) {
+      showToast(t.reasonRequired, 'error');
+      return;
+    }
+
+    const confirmed = await showConfirm({
+      title: t.confirmReturnTitle,
+      message: `${t.confirmReturnMessage} ${t.refundTotal}: ${formatMoney(selectedReturnSummary.refundTotal, currencySettings)}.`,
+      confirmText: t.processReturn,
+      cancelText: t.cancelText,
+      variant: 'warning'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setSavingReturn(true);
+
+      const { data, error } = await supabase.rpc('process_partial_sale_return', {
+        p_sale_id: selectedReturnSale.id,
+        p_items: items,
+        p_compensation_method: returnCompensation,
+        p_reason: returnReason.trim()
+      });
+
+      if (error) throw error;
+
+      const result = data as unknown as ReturnResult;
+      const clientName = selectedReturnSale.clientes?.nombre || selectedReturnSale.cliente_nombre || t.generalClientShort;
+
+      await logAudit({
+        negocio_id: negocioId,
+        user_id: user.id,
+        user_name: loggedUserName,
+        user_email: loggedUserEmail || undefined,
+        user_role: loggedUserRole || undefined,
+        action: 'PROCESS_PARTIAL_SALE_RETURN',
+        module: 'SALES',
+        record_id: result.return_id,
+        description: `Devolución parcial de ${formatSaleCode(selectedReturnSale.id)} procesada por ${loggedUserName}`,
+        new_data: {
+          return_id: result.return_id,
+          sale_id: selectedReturnSale.id,
+          client: clientName,
+          compensation_method: returnCompensation,
+          refund_total: result.refund_total,
+          restocked_quantity: result.restocked_quantity,
+          damaged_quantity: result.damaged_quantity,
+          reason: returnReason.trim(),
+          items
+        }
+      });
+
+      const notificationPayload = {
+        negocio_id: negocioId,
+        user_id: null,
+        audience: 'admin',
+        title: language === 'es' ? 'Devolución de venta registrada' : 'Sale return recorded',
+        message: language === 'es'
+          ? `${formatSaleCode(selectedReturnSale.id)}: devolución por ${formatMoney(result.refund_total, currencySettings)} procesada por ${loggedUserName}.`
+          : `${formatSaleCode(selectedReturnSale.id)}: ${formatMoney(result.refund_total, currencySettings)} return processed by ${loggedUserName}.`,
+        type: 'warning',
+        category: 'sales',
+        link: `invoices?sale=${selectedReturnSale.id}`,
+        read: false
+      };
+
+      const { error: notificationError } = await supabase.from('notifications').insert(notificationPayload);
+      if (notificationError) console.warn('Sale return notification was not created:', notificationError);
+
+      showToast(`${t.returnSuccess}: ${formatMoney(result.refund_total, currencySettings)}`, 'success');
+      setReturnQuantities({});
+      setReturnReason('');
+      await Promise.all([loadData(), loadReturnData()]);
+    } catch (error) {
+      console.error('Error processing sale return:', error);
+      const message = error instanceof Error ? error.message : t.returnSaveError;
+      showToast(message || t.returnSaveError, 'error');
+    } finally {
+      setSavingReturn(false);
+    }
+  }
 
   function addToCart(product: Producto) {
     const stock = Number(product.stock || 0);
@@ -1215,6 +1610,14 @@ export function SalesPage() {
             <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
               {isSeller ? t.sellerSubtitle : t.adminSubtitle}
             </p>
+            {canManageReturns && (
+              <div className="mt-5">
+                <Button type="button" variant="secondary" onClick={openReturnModal}>
+                  <RotateCcw className="mr-2" size={18} />
+                  {t.returns}
+                </Button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3 rounded-[1.5rem] border border-[#e9e2d3] bg-white/75 p-3 shadow-sm backdrop-blur-xl sm:min-w-[320px]">
             <div className="rounded-2xl bg-[#fbfaf7] px-4 py-3"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.products}</p><p className="mt-1 text-2xl font-black text-[#050505]">{products.length.toLocaleString('en-US')}</p></div>
@@ -1448,6 +1851,238 @@ export function SalesPage() {
           </div>
         </aside>
       </div>
+
+      <Modal isOpen={isReturnModalOpen} onClose={closeReturnModal} title={t.returnsTitle}>
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-[#eadfca] bg-[#fff9e8] px-4 py-3 text-sm font-semibold leading-relaxed text-[#71717a]">
+            {t.returnsHint}
+          </div>
+
+          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
+            <section className="min-w-0 space-y-4 rounded-[1.5rem] border border-[#e9e2d3] bg-[#fbfaf7] p-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8a6a16]">{t.recentSales}</p>
+                <div className="relative mt-3">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a1a1aa]" size={18} />
+                  <Input value={returnSearch} onChange={(event) => setReturnSearch(event.target.value)} placeholder={t.returnSearch} className="pl-11" />
+                </div>
+              </div>
+
+              <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                {loadingReturns && <div className="rounded-2xl bg-white p-5 text-center text-sm font-bold text-[#71717a]">{t.loading}</div>}
+                {!loadingReturns && filteredReturnSales.map((sale) => {
+                  const clientName = sale.clientes?.nombre || sale.cliente_nombre || t.generalClientShort;
+                  const totalAvailable = (sale.venta_items || []).reduce((sum, item) => {
+                    const returned = returnedQuantityBySaleItem.get(item.id) || 0;
+                    return sum + Math.max(0, Number(item.cantidad || 0) - returned);
+                  }, 0);
+
+                  return (
+                    <button
+                      key={sale.id}
+                      type="button"
+                      onClick={() => chooseReturnSale(sale)}
+                      disabled={totalAvailable <= 0}
+                      className={`w-full rounded-2xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45 ${selectedReturnSaleId === sale.id ? 'border-[#f4c542] bg-[#fff4c7] shadow-sm' : 'border-[#e9e2d3] bg-white hover:border-[#f4c542]/50 hover:bg-[#fffdf8]'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-black text-[#050505]">{formatSaleCode(sale.id)}</span>
+                        <span className="text-sm font-black text-[#8a6a16]">{formatMoney(sale.total, currencySettings)}</span>
+                      </div>
+                      <p className="mt-1 truncate text-sm font-semibold text-[#71717a]">{clientName}</p>
+                      <div className="mt-2 flex items-center justify-between gap-2 text-xs font-bold text-[#71717a]">
+                        <span>{sale.fecha}</span>
+                        <span>{t.availableToReturn}: {formatCurrency(totalAvailable)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+                {!loadingReturns && filteredReturnSales.length === 0 && (
+                  <div className="rounded-2xl bg-white p-6 text-center text-sm font-bold text-[#71717a]">{t.selectSale}</div>
+                )}
+              </div>
+            </section>
+
+            <section className="min-w-0 space-y-5">
+              {!selectedReturnSale && (
+                <div className="flex min-h-[280px] items-center justify-center rounded-[1.5rem] border border-dashed border-[#d9ceb8] bg-white/70 p-8 text-center">
+                  <div><RotateCcw className="mx-auto mb-3 text-[#8a6a16]" size={30} /><p className="font-black text-[#71717a]">{t.selectSale}</p></div>
+                </div>
+              )}
+
+              {selectedReturnSale && (
+                <>
+                  <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-white p-5 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#f1ebdf] pb-4">
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8a6a16]">{t.sale}</p>
+                        <h3 className="mt-1 text-2xl font-black text-[#050505]">{formatSaleCode(selectedReturnSale.id)}</h3>
+                        <p className="mt-1 text-sm font-semibold text-[#71717a]">{selectedReturnSale.clientes?.nombre || selectedReturnSale.cliente_nombre || t.generalClientShort}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-[#8a6a16]">{formatMoney(selectedReturnSale.total, currencySettings)}</p>
+                        <p className="mt-1 text-xs font-bold text-[#71717a]">{selectedReturnSale.fecha}</p>
+                        <button
+                          type="button"
+                          onClick={() => setShowReturnInvoicePreview((current) => !current)}
+                          className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-2 text-xs font-black text-[#050505] transition-all hover:border-[#f4c542]/60 hover:bg-[#fff9e8]"
+                        >
+                          <Eye size={15} />
+                          {showReturnInvoicePreview ? t.hideOriginalInvoice : t.viewOriginalInvoice}
+                        </button>
+                      </div>
+                    </div>
+
+                    {showReturnInvoicePreview && (
+                      <div className="mt-4 overflow-hidden rounded-2xl border border-[#d9ceb8] bg-[#fbfaf7] shadow-inner">
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#e9e2d3] bg-[#050505] px-4 py-4 text-white">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f4c542] text-[#050505]"><FileText size={19} /></div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f4c542]">{t.originalInvoice}</p>
+                              <p className="mt-1 text-lg font-black text-white">{formatSaleCode(selectedReturnSale.id)}</p>
+                            </div>
+                          </div>
+                          <div className="text-right text-xs font-semibold text-white/65">
+                            <p>{selectedReturnSale.fecha}</p>
+                            <p className="mt-1">{selectedReturnSale.clientes?.nombre || selectedReturnSale.cliente_nombre || t.generalClientShort}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 border-b border-[#e9e2d3] p-4 sm:grid-cols-3">
+                          <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.paymentType}</p><p className="mt-1 text-sm font-black text-[#050505]">{selectedReturnSale.tipo_pago === 'Crédito' ? t.credit : t.cash}</p></div>
+                          <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.invoicePaymentStatus}</p><p className={`mt-1 text-sm font-black ${Number(selectedReturnSale.saldo_pendiente || 0) > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>{Number(selectedReturnSale.saldo_pendiente || 0) > 0 ? t.pending : t.paid}</p></div>
+                          <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.remainingDebt}</p><p className="mt-1 text-sm font-black text-[#050505]">{formatMoney(selectedReturnSale.saldo_pendiente, currencySettings)}</p></div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[520px] text-sm">
+                            <thead className="border-b border-[#e9e2d3] bg-white"><tr><th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.product}</th><th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.quantityShort}</th><th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.price}</th><th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.total}</th></tr></thead>
+                            <tbody className="divide-y divide-[#f1ebdf]">
+                              {(selectedReturnSale.venta_items || []).map((item) => (
+                                <tr key={`invoice-${item.id}`}><td className="px-4 py-3 font-black text-[#050505]">{item.productos?.nombre || t.product}</td><td className="px-4 py-3 text-right font-semibold text-[#71717a]">{formatCurrency(item.cantidad)}</td><td className="px-4 py-3 text-right font-semibold text-[#71717a]">{formatMoney(item.precio, currencySettings)}</td><td className="px-4 py-3 text-right font-black text-[#050505]">{formatMoney(item.total, currencySettings)}</td></tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="grid gap-2 border-t border-[#e9e2d3] bg-white p-4 text-sm sm:ml-auto sm:w-72">
+                          <div className="flex justify-between gap-4 text-[#71717a]"><span>{t.subtotal}</span><span className="font-black text-[#050505]">{formatMoney(selectedReturnSale.subtotal, currencySettings)}</span></div>
+                          <div className="flex justify-between gap-4 text-red-600"><span>{t.discount}</span><span className="font-black">-{formatMoney(Math.max(0, Number(selectedReturnSale.subtotal || 0) - Number(selectedReturnSale.total || 0)), currencySettings)}</span></div>
+                          <div className="flex justify-between gap-4 border-t border-[#e9e2d3] pt-2 text-lg font-black text-[#8a6a16]"><span>{t.total}</span><span>{formatMoney(selectedReturnSale.total, currencySettings)}</span></div>
+                        </div>
+
+                        <p className="border-t border-[#e9e2d3] bg-[#fff9e8] px-4 py-3 text-xs font-bold leading-relaxed text-[#71717a]">{t.originalInvoiceHint}</p>
+                      </div>
+                    )}
+
+                    <div className="mt-4 space-y-3">
+                      {(selectedReturnSale.venta_items || []).map((item) => {
+                        const soldQuantity = Number(item.cantidad || 0);
+                        const alreadyReturned = returnedQuantityBySaleItem.get(item.id) || 0;
+                        const availableQuantity = Math.max(0, soldQuantity - alreadyReturned);
+                        const currentQuantity = returnQuantities[item.id] || '';
+
+                        return (
+                          <div key={item.id} className={`rounded-2xl border p-4 ${availableQuantity > 0 ? 'border-[#e9e2d3] bg-[#fffdf8]' : 'border-[#f1ebdf] bg-[#f6f4ee] opacity-65'}`}>
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="break-words font-black text-[#050505]">{item.productos?.nombre || t.product}</p>
+                                <p className="mt-1 text-xs font-bold text-[#71717a]">
+                                  {t.sold}: {formatCurrency(soldQuantity)} · {t.alreadyReturned}: {formatCurrency(alreadyReturned)} · {t.availableToReturn}: {formatCurrency(availableQuantity)}
+                                </p>
+                              </div>
+                              <span className="shrink-0 text-sm font-black text-[#8a6a16]">{formatMoney(item.precio, currencySettings)} {t.each}</span>
+                            </div>
+
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <Input
+                                label={t.returnQuantity}
+                                type="number"
+                                min="0"
+                                max={String(availableQuantity)}
+                                step="1"
+                                value={currentQuantity}
+                                disabled={availableQuantity <= 0}
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  const numericValue = Number(value);
+                                  setReturnQuantities((current) => ({
+                                    ...current,
+                                    [item.id]: value === '' ? '' : String(Math.min(Math.max(0, numericValue), availableQuantity))
+                                  }));
+                                }}
+                              />
+                              <Select
+                                label={t.productCondition}
+                                value={returnConditions[item.id] || 'restock'}
+                                disabled={availableQuantity <= 0 || !currentQuantity || Number(currentQuantity) <= 0}
+                                onChange={(event) => setReturnConditions((current) => ({
+                                  ...current,
+                                  [item.id]: event.target.value as 'restock' | 'damaged'
+                                }))}
+                                options={[
+                                  { value: 'restock', label: t.returnToStock },
+                                  { value: 'damaged', label: t.damagedReturn }
+                                ]}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 rounded-[1.5rem] border border-[#e9e2d3] bg-white p-5 sm:grid-cols-2">
+                    <Select
+                      label={t.compensation}
+                      value={returnCompensation}
+                      onChange={(event) => setReturnCompensation(event.target.value as 'cash_refund' | 'store_credit' | 'reduce_debt')}
+                      options={Number(selectedReturnSale.saldo_pendiente || 0) > 0
+                        ? [{ value: 'reduce_debt', label: `${t.reduceDebt} · ${formatMoney(selectedReturnSale.saldo_pendiente, currencySettings)}` }]
+                        : [
+                            { value: 'cash_refund', label: t.cashRefund },
+                            ...(selectedReturnSale.cliente_id ? [{ value: 'store_credit', label: t.storeCredit }] : [])
+                          ]}
+                    />
+                    <Input label={t.returnReason} value={returnReason} onChange={(event) => setReturnReason(event.target.value)} placeholder={t.returnReasonPlaceholder} />
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-[#050505] p-5 text-white">
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#f4c542]">{t.returnSummary}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-white/60">{t.refundTotal}</p><p className="mt-1 text-xl font-black text-white">{formatMoney(selectedReturnSummary.refundTotal, currencySettings)}</p></div>
+                      <div className="rounded-2xl bg-emerald-500/15 p-4"><p className="text-xs font-bold text-emerald-200">{t.unitsToStock}</p><p className="mt-1 text-xl font-black text-emerald-300">{formatCurrency(selectedReturnSummary.restockedQuantity)}</p></div>
+                      <div className="rounded-2xl bg-red-500/15 p-4"><p className="text-xs font-bold text-red-200">{t.damagedUnits}</p><p className="mt-1 text-xl font-black text-red-300">{formatCurrency(selectedReturnSummary.damagedQuantity)}</p></div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <Button type="button" variant="secondary" onClick={closeReturnModal} disabled={savingReturn}>{t.cancelText}</Button>
+                    <Button type="button" onClick={processReturn} disabled={savingReturn || selectedReturnSummary.refundTotal <= 0}>
+                      <RotateCcw className="mr-2" size={18} />
+                      {savingReturn ? t.processingReturn : t.processReturn}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+
+          <section className="rounded-[1.5rem] border border-[#e9e2d3] bg-white p-5">
+            <div className="mb-4 flex items-center gap-2"><History size={18} className="text-[#8a6a16]" /><h3 className="font-black text-[#050505]">{t.returnHistory}</h3></div>
+            <div className="space-y-2">
+              {returnHistory.slice(0, 8).map((returnRecord) => (
+                <div key={returnRecord.id} className="flex flex-col gap-2 rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div><p className="font-black text-[#050505]">{formatSaleCode(returnRecord.sale_id)} · {returnRecord.reason}</p><p className="mt-1 text-xs font-semibold text-[#71717a]">{t.returnedOn} {new Date(returnRecord.created_at).toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}</p></div>
+                  <div className="text-left sm:text-right"><p className="font-black text-[#8a6a16]">{formatMoney(returnRecord.refund_total, currencySettings)}</p><p className="mt-1 text-xs font-bold text-[#71717a]">{t.unitsToStock}: {formatCurrency(returnRecord.restocked_quantity)} · {t.damagedUnits}: {formatCurrency(returnRecord.damaged_quantity)}</p></div>
+                </div>
+              ))}
+              {!loadingReturns && returnHistory.length === 0 && <p className="rounded-2xl bg-[#fbfaf7] p-5 text-center text-sm font-bold text-[#71717a]">{t.noReturns}</p>}
+            </div>
+          </section>
+        </div>
+      </Modal>
 
       <Modal isOpen={!!lastReceipt} onClose={() => setLastReceipt(null)} title={t.saleRegistered}>
         {lastReceipt && (

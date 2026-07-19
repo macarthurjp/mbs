@@ -561,6 +561,20 @@ function formatInvoiceCode(id: number) {
   return `FAC-${id.toString().padStart(6, '0')}`;
 }
 
+const INVOICE_SELECT_BASE =
+  '*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock))';
+const INVOICE_SELECT_WITH_RETURNS = `${INVOICE_SELECT_BASE}, sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))`;
+
+function isMissingReturnsSchema(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+
+  const record = error as Record<string, unknown>;
+  const code = String(record.code || '');
+  const message = `${String(record.message || '')} ${String(record.details || '')}`.toLowerCase();
+
+  return ['42P01', 'PGRST200', 'PGRST205'].includes(code) && message.includes('sale_return');
+}
+
 function getInvoiceGrossProfit(venta: Venta | null | undefined, costMap: Map<number, number>) {
   return (venta?.venta_items || []).reduce((sum, item) => {
     const total = Number(item.total ?? Number(item.cantidad || 0) * Number(item.precio || 0));
@@ -938,17 +952,21 @@ export default function InvoicesPage() {
         return;
       }
 
-      let ventasQuery = supabase
-        .from('ventas')
-        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)), sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))')
-        .eq('negocio_id', currentNegocioId);
+      const fetchVentas = async (includeReturns: boolean) => {
+        let query = supabase
+          .from('ventas')
+          .select(includeReturns ? INVOICE_SELECT_WITH_RETURNS : INVOICE_SELECT_BASE)
+          .eq('negocio_id', currentNegocioId);
 
-      if (isSeller && user.id) {
-        ventasQuery = ventasQuery.eq('vendedor_id', user.id);
-      }
+        if (isSeller && user.id) {
+          query = query.eq('vendedor_id', user.id);
+        }
 
-      const [ventasResult, negocioResult, costMapResult] = await Promise.all([
-        ventasQuery.order('created_at', { ascending: false }),
+        return query.order('created_at', { ascending: false });
+      };
+
+      let [ventasResult, negocioResult, costMapResult] = await Promise.all([
+        fetchVentas(true),
         supabase
           .from('negocios')
           .select('*')
@@ -958,6 +976,10 @@ export default function InvoicesPage() {
           ? supabase.rpc('get_productos_for_business', { p_negocio_id: currentNegocioId })
           : Promise.resolve({ data: [], error: null })
       ]);
+
+      if (ventasResult.error && isMissingReturnsSchema(ventasResult.error)) {
+        ventasResult = await fetchVentas(false);
+      }
 
       if (ventasResult.error) throw ventasResult.error;
       if (negocioResult.error) throw negocioResult.error;
@@ -1037,17 +1059,25 @@ export default function InvoicesPage() {
     if (!currentNegocioId) return;
 
     try {
-      let invoiceQuery = supabase
-        .from('ventas')
-        .select('*, clientes(nombre, telefono, direccion, email), venta_items(id, venta_id, producto_id, cantidad, precio, total, productos(nombre, unidad, stock)), sale_returns(id, sale_id, client_id, compensation_method, reason, refund_total, restocked_quantity, damaged_quantity, return_date, processed_by_name, created_at, sale_return_items(id, product_name, quantity, stock_condition, unit_price, discount_amount, refund_amount))')
-        .eq('negocio_id', currentNegocioId)
-        .eq('id', Number(invoiceId));
+      const fetchInvoice = async (includeReturns: boolean) => {
+        let query = supabase
+          .from('ventas')
+          .select(includeReturns ? INVOICE_SELECT_WITH_RETURNS : INVOICE_SELECT_BASE)
+          .eq('negocio_id', currentNegocioId)
+          .eq('id', Number(invoiceId));
 
-      if (isSeller && user?.id) {
-        invoiceQuery = invoiceQuery.eq('vendedor_id', user.id);
+        if (isSeller && user?.id) {
+          query = query.eq('vendedor_id', user.id);
+        }
+
+        return query.maybeSingle();
+      };
+
+      let { data, error } = await fetchInvoice(true);
+
+      if (error && isMissingReturnsSchema(error)) {
+        ({ data, error } = await fetchInvoice(false));
       }
-
-      const { data, error } = await invoiceQuery.maybeSingle();
 
       if (error) throw error;
 

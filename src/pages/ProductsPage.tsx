@@ -1323,7 +1323,7 @@ export function ProductsPage() {
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.stock}</p>
                       <span
-                        className={`mt-1 inline-flex max-w-full whitespace-nowrap rounded-full px-2.5 py-1 text-xs xl:text-sm font-black tabular-nums ${
+                        className={`mt-1 inline-block max-w-full whitespace-normal break-words rounded-2xl px-2.5 py-1 text-xs xl:text-sm font-black leading-tight tabular-nums ${
                           isLowStock
                             ? 'bg-red-50 text-red-700'
                             : 'bg-emerald-50 text-emerald-700'

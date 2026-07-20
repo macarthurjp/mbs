@@ -76,7 +76,27 @@ async function verifyStripeSignature(body: string, signatureHeader: string, webh
 }
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
+  if (error instanceof Error) return error.message;
+
+  // Supabase/Postgrest errors are plain objects ({ message, details, hint,
+  // code }), not Error instances — String(error) on those collapses to the
+  // useless "[object Object]", losing the actual failure reason.
+  if (error && typeof error === 'object') {
+    const maybeError = error as { message?: unknown; details?: unknown; code?: unknown };
+    if (typeof maybeError.message === 'string' && maybeError.message) {
+      const details = typeof maybeError.details === 'string' && maybeError.details ? ` (${maybeError.details})` : '';
+      const code = typeof maybeError.code === 'string' && maybeError.code ? ` [${maybeError.code}]` : '';
+      return `${maybeError.message}${details}${code}`;
+    }
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+
+  return String(error);
 }
 
 function toStringOrNull(value: unknown) {
@@ -90,23 +110,23 @@ function normalizeStripePlan(value: unknown, fallback: string | null = 'basic') 
   return fallback;
 }
 
-function getPlanFromSubscription(subscription) {
-  const metadataPlan = normalizeStripePlan(subscription.metadata?.plan, null);
-  if (metadataPlan) return metadataPlan;
-
-  const priceId = subscription.items?.data?.[0]?.price?.id || '';
-
+// Price ID reflects what Stripe is actually billing right now (e.g. after a
+// self-service plan switch in the billing portal, which never touches
+// metadata) and must win over metadata, which is only ever set once at
+// checkout-session creation and can go stale.
+function getPlanFromPriceId(priceId: string) {
   if (priceId && priceId === Deno.env.get('STRIPE_PRICE_BASIC')) return 'basic';
   if (priceId && priceId === Deno.env.get('STRIPE_PRICE_PRO')) return 'pro';
   if (priceId && priceId === Deno.env.get('STRIPE_PRICE_PREMIUM')) return 'premium';
-
   return null;
 }
 
-function getPlanFromInvoice(invoice) {
-  const metadataPlan = normalizeStripePlan(invoice.metadata?.plan, null);
-  if (metadataPlan) return metadataPlan;
+function getPlanFromSubscription(subscription) {
+  const priceId = subscription.items?.data?.[0]?.price?.id || '';
+  return getPlanFromPriceId(priceId) || normalizeStripePlan(subscription.metadata?.plan, null);
+}
 
+function getPlanFromInvoice(invoice) {
   const firstLine = invoice.lines?.data?.[0];
   const priceId =
     firstLine?.price?.id ||
@@ -114,11 +134,7 @@ function getPlanFromInvoice(invoice) {
     firstLine?.pricing?.price_details?.price ||
     '';
 
-  if (priceId && priceId === Deno.env.get('STRIPE_PRICE_BASIC')) return 'basic';
-  if (priceId && priceId === Deno.env.get('STRIPE_PRICE_PRO')) return 'pro';
-  if (priceId && priceId === Deno.env.get('STRIPE_PRICE_PREMIUM')) return 'premium';
-
-  return null;
+  return getPlanFromPriceId(priceId) || normalizeStripePlan(invoice.metadata?.plan, null);
 }
 
 // Stripe API versions from 2025+ moved `invoice.subscription` to
@@ -252,7 +268,7 @@ async function markEventAsFailed(supabase, event, error) {
   await supabase
     .from('stripe_webhook_events')
     .update({
-      processing_error: error instanceof Error ? error.message : String(error),
+      processing_error: getErrorMessage(error),
     })
     .eq('id', event.id);
 }
@@ -289,13 +305,33 @@ async function activateBusinessFromCheckoutSession(supabase, session) {
   if (businessError) throw businessError;
   if (!updatedBusiness) throw new Error('Business not found during checkout activation');
 
+  // Only attach/promote the checkout-completer as this business's owner when
+  // they're genuinely the new owner claiming their own business (no business
+  // yet, or already this one) — never a platform admin who created this
+  // checkout on someone else's behalf (create-checkout-session explicitly
+  // allows that). Without this guard a superadmin helping a customer check
+  // out would silently get demoted to 'dueño' of the customer's business.
   if (userId) {
-    const { error: userError } = await supabase
+    const { data: existingUsuario, error: existingUsuarioError } = await supabase
       .from('usuarios')
-      .update({ negocio_id: negocioId, rol: 'dueño', is_active: true })
-      .eq('id', userId);
+      .select('negocio_id, rol')
+      .eq('id', userId)
+      .maybeSingle();
 
-    if (userError) throw userError;
+    if (existingUsuarioError) throw existingUsuarioError;
+
+    const existingRole = String(existingUsuario?.rol || '').trim().toLowerCase().replace('-', '_');
+    const isPlatformAdmin = existingRole === 'superadmin' || existingRole === 'super_admin';
+    const ownsNoOtherBusiness = !existingUsuario?.negocio_id || existingUsuario.negocio_id === negocioId;
+
+    if (!isPlatformAdmin && ownsNoOtherBusiness) {
+      const { error: userError } = await supabase
+        .from('usuarios')
+        .update({ negocio_id: negocioId, rol: 'dueño', is_active: true })
+        .eq('id', userId);
+
+      if (userError) throw userError;
+    }
   }
 
   // Update suscripciones

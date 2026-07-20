@@ -1796,7 +1796,7 @@ export default function InvoicesPage() {
                       title={`${item.label}: ${money(item.value)}`}
                     />
                   </div>
-                  <div className="min-w-0 text-center">
+                  <div className="w-full min-w-0 text-center">
                     <p className={`truncate text-[10px] font-black uppercase tracking-[0.12em] ${item.labelClass}`}>{item.label}</p>
                     <p className={`truncate text-xs font-black tabular-nums ${item.valueClass}`}>{money(item.value)}</p>
                   </div>

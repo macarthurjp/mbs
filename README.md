@@ -153,7 +153,7 @@ Qué cubren:
 - `lint`: reglas de ESLint, hooks de React, imports y tipado básico.
 - `typecheck`: validación completa de TypeScript.
 - `build`: compilación de producción con Vite.
-- `test:e2e`: pruebas Playwright de landing, login, recuperación, navegación, flujo básico de venta, aislamiento entre negocios (multi-tenant) y permisos por rol.
+- `test:e2e`: pruebas Playwright de landing, login, dashboard autenticado, recuperación, navegación, flujo básico de venta, aislamiento entre negocios (multi-tenant), permisos por rol y protección contra escalamiento de privilegios.
 
 Qué no cubren:
 

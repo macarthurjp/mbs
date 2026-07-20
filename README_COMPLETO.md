@@ -194,10 +194,12 @@ npm run build
 vercel --prod
 ```
 
-### Opción 2: Netlify
+### Opción 2: Cloudflare Pages (hosting actual de producción)
+Despliegue automático en cada push a `main` vía GitHub (proyecto `mbs`, salida `dist/`, comando `npm run build`). Dominio: `app.matmaxsuite.com`.
 ```bash
 npm run build
-netlify deploy --prod --dir=dist
+# o manualmente vía Wrangler:
+npx wrangler pages deploy dist
 ```
 
 ### Opción 3: Servidor Propio

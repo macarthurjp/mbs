@@ -9,7 +9,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'retain-on-failure',
-    headless: !!process.env.CI,
+    headless: !!process.env.CI || process.env.PLAYWRIGHT_HEADLESS === '1',
     launchOptions: {
       slowMo: process.env.CI ? 0 : 250,
     },
@@ -23,7 +23,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --port 5173',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI || process.env.PLAYWRIGHT_REUSE_SERVER === '1',
     timeout: 60_000,
   },
 });

@@ -20,6 +20,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { CompactPagination } from '../components/ui/CompactPagination';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -363,6 +364,17 @@ export function UsersPage() {
   const getUserDisplayName = useCallback((user: Usuario) => {
     return user.full_name || user.username || user.email || getBusinessDisplayName(user);
   }, [getBusinessDisplayName]);
+
+  const getSecondaryUserIdentity = useCallback((user: Usuario) => {
+    const username = String(user.username || '').trim();
+    const email = String(user.email || '').trim();
+
+    if (!username || username.toLowerCase() === email.toLowerCase()) {
+      return '';
+    }
+
+    return username;
+  }, []);
 
   const getRoleOrder = useCallback((user: Usuario) => {
     const role = getUserRole(user);
@@ -1148,17 +1160,29 @@ export function UsersPage() {
                             <div key={item.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-3 transition hover:bg-[#fffdf8] sm:gap-3 sm:px-4 sm:py-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_auto]">
                               <div className="min-w-0">
                                 <p className="break-words font-black text-[#050505]">{getUserDisplayName(item)}</p>
-                                {item.email && <p className="mt-1 break-words text-sm font-semibold text-[#71717a]">{formatEmail(item.email)}</p>}
-                                <p className="mt-1 text-xs font-semibold text-[#a1a1aa]">
-                                  {item.username || formatEmail(item.email, '') || getBusinessDisplayName(item)}
-                                </p>
                               </div>
 
                               <div className="flex min-w-0 items-center justify-end lg:justify-start">
                                 {renderRoleBadge(item.rol)}
                               </div>
 
-                              <div className="col-span-2 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
+                              <div className="col-span-2 min-w-0 lg:col-span-1 lg:col-start-1">
+                                {item.email && (
+                                  <p
+                                    className="break-words text-sm font-semibold leading-relaxed text-[#71717a] [overflow-wrap:anywhere]"
+                                    title={formatEmail(item.email)}
+                                  >
+                                    {formatEmail(item.email)}
+                                  </p>
+                                )}
+                                {getSecondaryUserIdentity(item) && (
+                                  <p className="mt-1 break-words text-xs font-semibold text-[#a1a1aa] [overflow-wrap:anywhere]">
+                                    {getSecondaryUserIdentity(item)}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="col-span-2 flex flex-wrap items-center justify-end gap-2 lg:col-span-1 lg:col-start-3 lg:row-start-1">
                                 {!canDeleteUser(item) && isProtectedUser(item) ? (
                                   <div className="rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-xs font-black text-[#8a6a16]">
                                     {getProtectedLabel(item)}
@@ -1276,21 +1300,26 @@ export function UsersPage() {
 
               <div className="space-y-3 lg:hidden">
                 {visibleUsers.map((item) => (
-                  <div key={item.id} className="relative overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 shadow-[0_14px_34px_rgba(15,15,15,0.06)]">
+                  <div key={item.id} className="relative overflow-hidden rounded-[1.35rem] border border-[#e9e2d3] bg-white p-3 shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:rounded-[1.5rem] sm:p-4">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_38%)]" />
-                    <div className="relative z-10 space-y-4">
+                    <div className="relative z-10 space-y-3 sm:space-y-4">
                       <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.user}</p>
-                          <p className="mt-1 line-clamp-2 break-words text-lg font-black text-[#050505]">{getUserDisplayName(item)}</p>
-                          {item.email && <p className="mt-1 break-words text-sm font-semibold text-[#71717a]">{formatEmail(item.email)}</p>}
+                          <p className="mt-1 line-clamp-2 break-words text-base font-black leading-snug text-[#050505] sm:text-lg">{getUserDisplayName(item)}</p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end">
                           {renderRoleBadge(item.rol)}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
+                      {item.email && (
+                        <p className="max-w-full truncate text-sm font-semibold text-[#71717a]" title={formatEmail(item.email)}>
+                          {formatEmail(item.email)}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 rounded-xl border border-[#f1ebdf] bg-[#fffdf8] p-3 sm:rounded-2xl">
                         <div className="min-w-0">
                           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.business}</p>
                           <p className="mt-1 line-clamp-2 break-words text-sm font-black text-[#050505]">{getBusinessDisplayName(item)}</p>
@@ -1301,16 +1330,16 @@ export function UsersPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
                         {!canDeleteUser(item) && isProtectedUser(item) ? (
-                          <div className="rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-center text-xs font-black text-[#8a6a16]">
+                          <div className="col-span-2 rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-center text-xs font-black text-[#8a6a16]">
                             {getProtectedLabel(item)}
                           </div>
                         ) : (
                           <>
                             <button
                               onClick={() => openEditModal(item)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-black text-blue-600 transition-all hover:-translate-y-0.5 hover:bg-blue-100"
+                              className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-black text-blue-600 transition-all hover:-translate-y-0.5 hover:bg-blue-100"
                               type="button"
                             >
                               <Edit2 className="shrink-0" size={16} />
@@ -1320,7 +1349,7 @@ export function UsersPage() {
                             {canDeleteUser(item) && (
                               <button
                                 onClick={() => handleDelete(item.id, getUserDisplayName(item))}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-black text-red-600 transition-all hover:-translate-y-0.5 hover:bg-red-100"
+                                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-black text-red-600 transition-all hover:-translate-y-0.5 hover:bg-red-100"
                                 type="button"
                               >
                                 <Trash2 className="shrink-0" size={16} />
@@ -1336,18 +1365,18 @@ export function UsersPage() {
               </div>
 
               {filteredUsers.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3 border-t border-[#f1ebdf] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-black text-[#71717a]">
-                    {t.page} {safeCurrentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')} · {pageStartIndex + 1}-{pageEndIndex} {t.of} {filteredUsers.length.toLocaleString('en-US')}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>
-                      {t.previous}
-                    </Button>
-                    <Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>
-                      {t.next}
-                    </Button>
-                  </div>
+                <div className="mt-4 border-t border-[#f1ebdf] pt-4">
+                  <CompactPagination
+                    currentPage={safeCurrentPage}
+                    totalPages={totalPages}
+                    start={pageStartIndex + 1}
+                    end={pageEndIndex}
+                    total={filteredUsers.length}
+                    onPageChange={setCurrentPage}
+                    previousLabel={t.previous}
+                    nextLabel={t.next}
+                    ofLabel={t.of}
+                  />
                 </div>
               )}
             </>

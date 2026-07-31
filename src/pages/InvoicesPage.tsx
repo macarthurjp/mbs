@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
+import { CompactPagination } from '../components/ui/CompactPagination';
 import { formatPhone, normalizePhoneForLink } from '../utils/formatContact';
 import { printCompactReceipt } from '../utils/receiptPrinter';
 
@@ -167,6 +168,7 @@ const invoicesCopy = {
     next: 'Siguiente',
     page: 'Página',
     searchPlaceholder: 'Buscar por número, cliente, fecha o tipo de pago...',
+    searchPlaceholderMobile: 'Buscar facturas...',
     history: 'Historial de facturas',
     availableSales: 'ventas disponibles para facturar',
     invoice: 'Factura',
@@ -302,6 +304,7 @@ const invoicesCopy = {
     next: 'Next',
     page: 'Page',
     searchPlaceholder: 'Search by number, client, date, or payment type...',
+    searchPlaceholderMobile: 'Search invoices...',
     history: 'Invoice history',
     availableSales: 'sales available for invoicing',
     invoice: 'Invoice',
@@ -1642,7 +1645,7 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-8">
+    <div className="w-full min-w-0 space-y-5 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-8 sm:pb-6">
       <div className="relative min-w-0 overflow-hidden rounded-[1.6rem] border border-[#e9e2d3] bg-white/75 p-4 shadow-matmax-soft backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.12),transparent_38%)]" />
         <div className="relative z-10 flex min-w-0 flex-col justify-between gap-5 xl:flex-row xl:items-start">
@@ -1760,12 +1763,14 @@ export default function InvoicesPage() {
           />
         )}
         {canViewProfit && (
-          <MetricCard
-            title={t.grossProfit}
-            value={money(invoiceMetrics.grossProfit)}
-            icon={TrendingUp}
-            iconClass="bg-emerald-50 text-emerald-700"
-          />
+          <div className="col-span-2 xl:col-span-1">
+            <MetricCard
+              title={t.grossProfit}
+              value={money(invoiceMetrics.grossProfit)}
+              icon={TrendingUp}
+              iconClass="bg-emerald-50 text-emerald-700"
+            />
+          </div>
         )}
       </div>
 
@@ -1778,7 +1783,7 @@ export default function InvoicesPage() {
                 <BarChart3 className="h-4 w-4 shrink-0" />
                 {t.monthlySummary}
               </div>
-              <h2 className="text-2xl font-black tracking-tight text-[#050505] sm:text-3xl">
+              <h2 className="whitespace-normal break-normal text-[clamp(1.65rem,7vw,2.25rem)] font-black leading-tight tracking-tight text-[#050505] sm:text-3xl">
                 {money(monthlySummary.total)}
               </h2>
               <p className="mt-1 text-sm font-bold uppercase tracking-[0.14em] text-[#71717a]">
@@ -1813,7 +1818,10 @@ export default function InvoicesPage() {
             <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
             <Input
               type="text"
-              placeholder={t.searchPlaceholder}
+              placeholder={t.searchPlaceholderMobile}
+              aria-label={t.searchPlaceholder}
+              data-testid="invoice-search"
+              data-desktop-placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -1869,7 +1877,7 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="rounded-[1.6rem] border border-[#e9e2d3] bg-white/92 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-5">
+      <div className="rounded-[1.4rem] border border-[#e9e2d3] bg-white/92 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">
             {t.quickFilters}
@@ -1894,7 +1902,7 @@ export default function InvoicesPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <FilterButton
             active={dateFilter === 'all'}
             onClick={() => {
@@ -1932,7 +1940,7 @@ export default function InvoicesPage() {
                 setDateFilter('month');
               }
             }}
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 transition-all ${
+            className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-full border px-3 py-2 transition-all sm:w-auto sm:justify-start sm:px-4 ${
               dateFilter === 'month'
                 ? 'border-[#050505] bg-[#050505] text-[#f4c542] shadow-[0_12px_28px_rgba(0,0,0,0.18)]'
                 : 'border-[#e9e2d3] bg-white text-[#71717a] hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'
@@ -1954,7 +1962,7 @@ export default function InvoicesPage() {
                 setSelectedMonth(e.target.value || getLocalDateString(new Date()).slice(0, 7));
                 setDateFilter('month');
               }}
-              className={`w-[126px] cursor-pointer rounded-full border-0 bg-transparent text-xs font-black outline-none [color-scheme:light] ${
+              className={`box-border min-w-0 max-w-[8rem] flex-1 cursor-pointer rounded-full border-0 bg-transparent text-right text-xs font-black outline-none [color-scheme:light] sm:w-[126px] sm:flex-none sm:text-left ${
                 dateFilter === 'month' ? 'text-[#f4c542]' : 'text-[#71717a]'
               }`}
             />
@@ -2049,10 +2057,10 @@ export default function InvoicesPage() {
             {visibleVentas.map((venta) => (
               <div
                 key={venta.id}
-                className="relative overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 shadow-[0_14px_34px_rgba(15,15,15,0.06)]"
+                className="relative overflow-hidden rounded-[1.35rem] border border-[#e9e2d3] bg-white p-3 shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:p-4"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_38%)]" />
-                <div className="relative z-10 space-y-4">
+                <div className="relative z-10 space-y-3">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">
@@ -2062,7 +2070,7 @@ export default function InvoicesPage() {
                         {formatInvoiceCode(venta.id)}
                       </p>
                       <p className="mt-1 text-xs font-bold text-[#71717a]">
-                        {venta.fecha} · {getVentaTime(venta, language === 'es' ? 'es-ES' : 'en-US')}
+                        {new Date(`${venta.fecha}T00:00:00`).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })} · {getVentaTime(venta, language === 'es' ? 'es-ES' : 'en-US')}
                       </p>
                     </div>
 
@@ -2094,13 +2102,13 @@ export default function InvoicesPage() {
                     {!isSeller && (
                       <div className="min-w-0 rounded-2xl border border-red-100 bg-red-50 px-3 py-2">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-red-700">{t.discount}</p>
-                        <p className="mt-1 truncate text-sm font-black tabular-nums text-red-700">-{money(getVentaDiscountAmount(venta))}</p>
+                        <p className="mt-1 whitespace-normal break-normal text-[clamp(0.72rem,3.1vw,0.875rem)] font-black leading-tight tabular-nums text-red-700">-{money(getVentaDiscountAmount(venta))}</p>
                       </div>
                     )}
                     {canManageFinancials && (
                       <div className="min-w-0 rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-right">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.total}</p>
-                        <p className={`mt-1 truncate text-base font-black tabular-nums ${isCancelledInvoice(venta) ? 'text-red-600 line-through' : 'text-[#8a6a16]'}`}>
+                        <p className={`mt-1 whitespace-normal break-normal text-[clamp(0.72rem,3.1vw,1rem)] font-black leading-tight tabular-nums ${isCancelledInvoice(venta) ? 'text-red-600 line-through' : 'text-[#8a6a16]'}`}>
                           {isCancelledInvoice(venta) ? `-${money(venta.total)}` : money(venta.total)}
                         </p>
                       </div>
@@ -2126,29 +2134,21 @@ export default function InvoicesPage() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-[#f1ebdf] pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-black text-[#71717a]">
-              {filteredVentas.length === 0 ? t.noInvoices : `${t.page} ${currentPage.toLocaleString('en-US')} / ${totalPages.toLocaleString('en-US')}`}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              >
-                {t.previous}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              >
-                {t.next}
-              </Button>
+          {filteredVentas.length > 0 && (
+            <div className="mt-4 border-t border-[#f1ebdf] pt-4">
+              <CompactPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                start={(currentPage - 1) * rowsPerPage + 1}
+                end={Math.min(currentPage * rowsPerPage, filteredVentas.length)}
+                total={filteredVentas.length}
+                onPageChange={setCurrentPage}
+                previousLabel={t.previous}
+                nextLabel={t.next}
+                ofLabel={language === 'es' ? 'de' : 'of'}
+              />
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -2479,7 +2479,7 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition-all duration-300 ${
+      className={`rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 sm:px-4 sm:text-xs sm:tracking-[0.12em] ${
         active
           ? 'border-[#050505] bg-[#050505] text-[#f4c542] shadow-[0_12px_28px_rgba(0,0,0,0.18)]'
           : 'border-[#e9e2d3] bg-white text-[#71717a] hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-[#fff9e8] hover:text-[#050505]'
@@ -2501,17 +2501,19 @@ function MetricCard({
   icon: ElementType;
   iconClass: string;
 }) {
+  const isMoneyValue = /[A-Z]{2,4}\s*-?[\d,.]+/.test(value);
+
   return (
-    <div className="group flex min-w-0 items-center justify-between gap-3 rounded-[1.6rem] border border-[#e9e2d3] bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,15,15,0.1)] sm:gap-4 sm:rounded-[2rem] sm:p-6 xl:gap-3 2xl:gap-4">
-      <div className="min-w-0 flex-1 pr-2 sm:pr-3">
-        <p className="mb-3 text-[11px] font-black uppercase leading-snug tracking-[0.18em] text-[#8a6a16] sm:tracking-[0.22em]">
+    <div className="group relative min-h-[9rem] min-w-0 overflow-hidden rounded-[1.4rem] border border-[#e9e2d3] bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,15,15,0.1)] sm:flex sm:min-h-0 sm:items-center sm:justify-between sm:gap-4 sm:rounded-[2rem] sm:p-6 xl:gap-3 2xl:gap-4">
+      <div className="min-w-0 pt-11 sm:flex-1 sm:pt-0 sm:pr-3">
+        <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.12em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:leading-snug sm:tracking-[0.22em]">
           {title}
         </p>
-        <p className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[clamp(1.4rem,2vw,2.3rem)] font-black leading-[1.08] tracking-tight tabular-nums text-[#050505] sm:text-[clamp(1.7rem,2.2vw,2.6rem)] xl:text-[clamp(1.6rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.9rem,2.2vw,2.8rem)]">
+        <p className={`max-w-full font-black leading-[1.02] tracking-[-0.035em] tabular-nums text-[#050505] ${isMoneyValue ? 'whitespace-nowrap text-[clamp(0.78rem,3.25vw,1.05rem)]' : 'whitespace-normal break-normal text-[clamp(1.45rem,7vw,2.15rem)]'} sm:text-[clamp(1.55rem,2.2vw,2.6rem)] sm:tracking-tight xl:text-[clamp(1.45rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.8rem,2.2vw,2.8rem)]`}>
           {value}
         </p>
       </div>
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.14)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:h-14 sm:w-14 sm:rounded-[1.2rem] xl:h-12 xl:w-12 2xl:h-14 2xl:w-14 ${iconClass}`}>
+      <div className={`absolute right-3 top-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.14)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.2rem] xl:h-12 xl:w-12 2xl:h-14 2xl:w-14 ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6 xl:h-5 xl:w-5 2xl:h-6 2xl:w-6" />
       </div>
     </div>

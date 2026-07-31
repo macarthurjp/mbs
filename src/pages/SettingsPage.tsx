@@ -2229,18 +2229,18 @@ if (cleanEmail !== oldProfileEmail) {
         <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_22px_65px_rgba(15,15,15,0.06)] backdrop-blur-2xl">
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSaveBusiness} className="space-y-5">
-            <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="w-fit rounded-2xl bg-[#050505] p-3 text-[#f4c542] shadow-matmax-dark">
-                <Building2 className="shrink-0" size={26} />
+            <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-matmax-dark sm:h-auto sm:w-auto sm:rounded-2xl sm:p-3">
+                <Building2 className="shrink-0" size={22} />
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="mb-5 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-4 flex min-w-0 flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <h3 className="mb-2 text-2xl font-black tracking-tight text-[#050505]">
+                    <h3 className="mb-1.5 text-xl font-black tracking-tight text-[#050505] sm:mb-2 sm:text-2xl">
                       {t.businessData}
                     </h3>
-                    <p className="text-sm text-[#71717a]">
+                    <p className="text-xs leading-relaxed text-[#71717a] sm:text-sm">
                       {t.businessDataDescription}
                     </p>
                   </div>
@@ -2278,26 +2278,26 @@ if (cleanEmail !== oldProfileEmail) {
                 </div>
 
                 {!isEditingBusiness && (
-                  <div className="grid min-w-0 grid-cols-1 gap-4 rounded-[2rem] border border-[#e9e2d3] bg-[#fbfaf7] p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-[1.35rem] border border-[#e9e2d3] bg-white/85 p-4">
+                  <div className="grid min-w-0 grid-cols-2 gap-3 rounded-[1.4rem] border border-[#e9e2d3] bg-[#fbfaf7] p-3 shadow-sm sm:gap-4 sm:rounded-[2rem] sm:p-4 xl:grid-cols-4">
+                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.businessName}</p>
                       <p className="mt-2 break-words text-base font-black text-[#050505]">{businessForm.nombre || '—'}</p>
                     </div>
-                    <div className="rounded-[1.35rem] border border-[#e9e2d3] bg-white/85 p-4">
+                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.currency}</p>
                       <p className="mt-2 text-base font-black text-[#050505]">{businessForm.moneda || '—'}</p>
                     </div>
-                    <div className="rounded-[1.35rem] border border-[#e9e2d3] bg-white/85 p-4">
+                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.exchangeRateSettings}</p>
-                      <p className="mt-2 text-base font-black text-[#050505]">{businessForm.moneda_secundaria || '—'} · {businessForm.tasa_cambio || '—'}</p>
+                      <p className="mt-2 whitespace-nowrap text-sm font-black text-[#050505] sm:text-base">{businessForm.moneda_secundaria || '—'} · {businessForm.tasa_cambio || '—'}</p>
                     </div>
-                    <div className="rounded-[1.35rem] border border-[#e9e2d3] bg-white/85 p-4">
+                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.businessEmail}</p>
-                      <p className="mt-2 break-words text-base font-black text-[#050505]">
+                      <p className="mt-2 max-w-full whitespace-nowrap text-[clamp(0.68rem,2.75vw,0.875rem)] font-black leading-snug tracking-[-0.01em] text-[#050505] sm:whitespace-normal sm:break-all sm:text-base" title={`${businessForm.email_alias || getDefaultEmailAlias(businessForm.nombre)}@${SAAS_EMAIL_DOMAIN}`}>
                         {(businessForm.email_alias || getDefaultEmailAlias(businessForm.nombre))}@{SAAS_EMAIL_DOMAIN}
                       </p>
                     </div>
-                    <p className="sm:col-span-2 xl:col-span-4 text-sm font-semibold leading-relaxed text-[#71717a]">
+                    <p className="col-span-2 hidden rounded-xl bg-white/55 px-3 py-2 text-sm font-semibold leading-relaxed text-[#71717a] sm:block xl:col-span-4">
                       {t.businessCollapsedHint}
                     </p>
                   </div>

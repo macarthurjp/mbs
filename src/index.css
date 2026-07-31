@@ -59,6 +59,23 @@
     background-color: #ffffff;
   }
 
+  /* Safari/iOS assigns date controls an intrinsic width that can overflow
+     responsive cards. Keep every date field constrained by its parent. */
+  input[type='date'] {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  input[type='date']::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
   button,
   a,
   input,

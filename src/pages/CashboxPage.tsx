@@ -717,65 +717,65 @@ export default function CashboxPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#141414] bg-[#050505] p-4 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-6 xl:p-7">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#141414] bg-[#050505] p-3 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-6 xl:p-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_44%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/70 to-transparent" />
-        <div className="relative z-10 grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,460px)] xl:items-stretch">
-          <div className="flex min-w-0 flex-col justify-between gap-6 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5 shadow-inner backdrop-blur-2xl sm:p-6">
+        <div className="relative z-10 grid min-w-0 grid-cols-1 gap-3 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,460px)] xl:items-stretch">
+          <div className="flex min-w-0 flex-col justify-between gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-inner backdrop-blur-2xl sm:gap-6 sm:p-6">
             <div className="min-w-0">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f4c542]/30 bg-[#f4c542]/10 px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#f4c542] shadow-sm backdrop-blur-xl">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#f4c542]/30 bg-[#f4c542]/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#f4c542] shadow-sm backdrop-blur-xl sm:mb-4 sm:px-3.5 sm:text-[11px] sm:tracking-[0.22em]">
                 <Receipt size={14} />
                 Cashbox Control
               </div>
-              <h1 className="mb-3 text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">
+              <h1 className="mb-2 text-3xl font-black tracking-tight text-white sm:mb-3 sm:text-5xl xl:text-6xl">
                 {t.title}
               </h1>
-              <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-white/58 sm:text-base">
+              <p className="max-w-3xl text-xs font-bold uppercase leading-relaxed tracking-[0.14em] text-white/58 sm:text-base sm:tracking-[0.18em]">
                 {t.subtitle}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.06] p-3 sm:rounded-2xl sm:p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f4c542]">{t.cash}</p>
-                <p className="mt-2 break-words text-xl font-black text-white">{formatMoney(metrics.ventasContado, currencySettings)}</p>
+                <p className="mt-2 whitespace-normal break-normal text-[11px] font-black leading-tight text-white sm:text-xl">{formatMoney(metrics.ventasContado, currencySettings)}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f4c542]">{t.receivedPayments}</p>
-                <p className="mt-2 break-words text-xl font-black text-white">{formatMoney(metrics.pagosRecibidos, currencySettings)}</p>
+              <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.06] p-3 sm:rounded-2xl sm:p-4">
+                <p className="line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.1em] text-[#f4c542] sm:text-[10px] sm:tracking-[0.18em]">{t.receivedPayments}</p>
+                <p className="mt-2 whitespace-normal break-normal text-[11px] font-black leading-tight text-white sm:text-xl">{formatMoney(metrics.pagosRecibidos, currencySettings)}</p>
               </div>
               {!isSeller && (
-                <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-200">{t.cancelledAmount}</p>
-                  <p className="mt-2 break-words text-xl font-black text-red-100">-{formatMoney(metrics.totalAnulado, currencySettings)}</p>
+                <div className="min-w-0 rounded-xl border border-red-400/20 bg-red-500/10 p-3 sm:rounded-2xl sm:p-4">
+                  <p className="line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.1em] text-red-200 sm:text-[10px] sm:tracking-[0.18em]">{t.cancelledAmount}</p>
+                  <p className="mt-2 whitespace-normal break-normal text-[11px] font-black leading-tight text-red-100 sm:text-xl">-{formatMoney(metrics.totalAnulado, currencySettings)}</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-3">
-            <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#f4c542]/30 bg-[#f4c542] p-5 text-[#050505] shadow-[0_20px_54px_rgba(244,197,66,0.18)]">
-              <div className="relative flex min-w-0 items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_16px_36px_rgba(0,0,0,0.22)]">
+          <div className="grid min-w-0 grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2 sm:gap-3 xl:grid-cols-1">
+            <div className="relative min-w-0 overflow-hidden rounded-[1.25rem] border border-[#f4c542]/30 bg-[#f4c542] p-3 text-[#050505] shadow-[0_20px_54px_rgba(244,197,66,0.18)] sm:rounded-[1.5rem] sm:p-5">
+              <div className="relative flex min-w-0 items-center gap-3 sm:gap-4">
+                <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_16px_36px_rgba(0,0,0,0.22)] sm:flex">
                   <Wallet className="h-6 w-6 shrink-0" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#6b4d00]">{t.netCashbox}</p>
-                  <p className="break-words text-3xl font-black leading-none sm:text-4xl">
+                  <p className="mb-1 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.12em] text-[#6b4d00] sm:text-[10px] sm:tracking-[0.22em]">{t.netCashbox}</p>
+                  <p className="whitespace-normal break-normal text-[clamp(1rem,4.2vw,2.25rem)] font-black leading-none sm:text-4xl">
                     {formatMoney(metrics.netoCaja, currencySettings)}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4 shadow-sm backdrop-blur-xl">
+            <div className="relative min-w-0 overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.06] p-3 shadow-sm backdrop-blur-xl sm:rounded-[1.5rem] sm:p-4">
               <div className="relative flex min-w-0 items-start gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#f4c542] shadow-[0_16px_36px_rgba(0,0,0,0.16)]">
+                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#f4c542] shadow-[0_16px_36px_rgba(0,0,0,0.16)] sm:flex">
                   <CalendarDays className="h-5 w-5 shrink-0" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.date}</p>
+                <div className="w-full min-w-0 flex-1 overflow-hidden">
+                  <p className="mb-2 text-[9px] font-black uppercase tracking-[0.12em] text-[#f4c542] sm:text-[10px] sm:tracking-[0.22em]">{t.date}</p>
                   <Input
                     type="date"
                     value={selectedDate}
@@ -785,6 +785,7 @@ export default function CashboxPage() {
                         setSelectedDate(e.target.value);
                       }
                     }}
+                    className="box-border w-full max-w-full min-w-0 appearance-none px-2 !py-2 text-[11px] [-webkit-appearance:none] sm:px-4 sm:!py-3.5 sm:text-[15px]"
                   />
                 </div>
               </div>
@@ -887,8 +888,27 @@ export default function CashboxPage() {
           </CardHeader>
 
           <CardContent>
-            <div className="overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-[#fffdf8]">
-              <table className="w-full min-w-[980px]">
+            <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] sm:overflow-x-auto">
+              <div className="divide-y divide-[#f1ebdf] sm:hidden">
+                {ventasActivas.map((venta) => (
+                  <div key={venta.id} className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-black text-[#050505]">{formatSaleCode(venta.id)}</p>
+                        <p className="line-clamp-2 text-sm font-semibold text-[#71717a]">{getSaleClientName(venta, t.generalClient)}</p>
+                      </div>
+                      <p className="shrink-0 whitespace-nowrap text-sm font-black text-[#8a6a16]">{formatMoney(venta.total, currencySettings)}</p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#71717a]">
+                      <span>{getSaleSeller(venta)}</span>
+                      <span>·</span>
+                      <span>{getSaleTime(venta, language === 'es' ? 'es-ES' : 'en-US')}</span>
+                      <span className="rounded-full bg-[#050505] px-2 py-1 text-[#f4c542]">{venta.tipo_pago === 'Contado' ? t.cash : t.credit}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <table className="hidden w-full min-w-[980px] sm:table">
                 <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">ID</th>
@@ -1037,8 +1057,19 @@ export default function CashboxPage() {
           </CardHeader>
 
           <CardContent>
-            <div className="overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-[#fffdf8]">
-              <table className="w-full min-w-[760px]">
+              <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] sm:overflow-x-auto">
+              <div className="divide-y divide-[#f1ebdf] sm:hidden">
+                {pagosDeuda.map((pago) => (
+                  <div key={pago.id} className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="font-black text-[#050505]">{formatPaymentCode(pago.id)}</p>
+                      <p className="truncate text-sm font-semibold text-[#71717a]">{getPaymentClientName(pago, t.clientFallback)}</p>
+                    </div>
+                    <p className="shrink-0 whitespace-nowrap text-sm font-black text-[#8a6a16]">{formatMoney(pago.monto, currencySettings)}</p>
+                  </div>
+                ))}
+              </div>
+              <table className="hidden w-full min-w-[760px] sm:table">
                 <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.16em] text-[#8a6a16]">ID</th>
@@ -1088,12 +1119,29 @@ export default function CashboxPage() {
           <CardHeader>
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-800"><RotateCcw className="h-5 w-5 shrink-0" /></div>
-              <div><h2 className="text-xl font-serif font-bold text-[#050505] sm:text-2xl">{t.returnMovements}</h2><p className="mt-1 text-sm font-semibold text-[#71717a]">{t.returns}: {formatMoney(metrics.devoluciones, currencySettings)} · {t.cashRefunds}: {formatMoney(metrics.reembolsosCaja, currencySettings)}</p></div>
+              <div className="min-w-0"><h2 className="text-xl font-serif font-bold leading-tight text-[#050505] sm:text-2xl">{t.returnMovements}</h2><p className="mt-1 text-xs font-semibold leading-relaxed text-[#71717a] sm:text-sm">{t.returns}: {formatMoney(metrics.devoluciones, currencySettings)} · {t.cashRefunds}: {formatMoney(metrics.reembolsosCaja, currencySettings)}</p></div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto rounded-2xl border border-[#f1ebdf] bg-[#fffdf8]">
-              <table className="w-full min-w-[1080px]">
+            <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] sm:overflow-x-auto">
+              <div className="divide-y divide-[#f1ebdf] sm:hidden">
+                {saleReturns.map((returnRecord) => {
+                  const isCashOutflow = returnRecord.compensation_method === 'cash_refund';
+                  return (
+                    <div key={returnRecord.id} className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-black text-[#050505]">DEV-{String(returnRecord.id).padStart(4, '0')}</p>
+                          <p className="text-sm font-semibold text-[#71717a]">{getReturnClientName(returnRecord, t.generalClient)}</p>
+                        </div>
+                        <p className={`shrink-0 whitespace-nowrap text-sm font-black ${isCashOutflow ? 'text-red-600' : 'text-amber-800'}`}>{isCashOutflow ? '-' : ''}{formatMoney(returnRecord.refund_total, currencySettings)}</p>
+                      </div>
+                      {returnRecord.reason && <p className="mt-2 line-clamp-2 text-xs font-semibold text-[#71717a]">{returnRecord.reason}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+              <table className="hidden w-full min-w-[1080px] sm:table">
                 <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]"><tr><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">ID</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.originalSale}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.client}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.time}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.transaction}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.processedBy}</th><th className="px-4 py-3 text-left text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.reason}</th><th className="px-4 py-3 text-right text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.amount}</th></tr></thead>
                 <tbody className="divide-y divide-[#f1ebdf]">
                   {saleReturns.map((returnRecord) => {
@@ -1143,7 +1191,7 @@ export default function CashboxPage() {
                 {productosEnAlerta.map((producto) => (
                   <div
                     key={producto.id}
-                    className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/30 hover:bg-white hover:shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:flex-row sm:items-center sm:justify-between"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/30 hover:bg-white hover:shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:p-4"
                   >
                     <div>
                       <p className="font-black text-[#050505]">
@@ -1155,7 +1203,7 @@ export default function CashboxPage() {
                       </p>
                     </div>
 
-                    <p className="rounded-full bg-red-100 px-3 py-1 text-sm font-black text-red-700">
+                    <p className="shrink-0 rounded-full bg-red-100 px-3 py-1 text-sm font-black text-red-700">
                       {t.stock}: {Number(producto.stock || 0).toLocaleString('en-US')}
                     </p>
                   </div>
@@ -1205,13 +1253,13 @@ export default function CashboxPage() {
                 {visibleClientesEnDeuda.map((cliente) => (
                   <div
                     key={cliente.id}
-                    className="flex min-w-0 flex-col gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/30 hover:bg-white hover:shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:flex-row sm:items-center sm:justify-between"
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/30 hover:bg-white hover:shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:p-4"
                   >
-                    <p className="font-black text-[#050505]">
+                    <p className="line-clamp-2 break-words font-black leading-snug text-[#050505]">
                       {cliente.nombre}
                     </p>
 
-                    <p className="rounded-full bg-red-100 px-3 py-1 text-sm font-black text-red-700">
+                    <p className="shrink-0 whitespace-nowrap rounded-full bg-red-100 px-3 py-1 text-sm font-black text-red-700">
                       {formatMoney(cliente.saldo, currencySettings)}
                     </p>
                   </div>
@@ -1245,19 +1293,19 @@ function MetricCard({
   valueClass?: string;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative min-h-[9.25rem] min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:flex sm:min-h-0 sm:items-center sm:justify-between sm:gap-4 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pt-11 sm:pt-0 sm:pr-2">
+        <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-4 tracking-[0.12em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
 
-        <p className={`max-w-full break-words text-[2rem] font-black leading-[0.95] tracking-tight tabular-nums sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem] ${valueClass}`}>
+        <p className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.55rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem] ${valueClass}`}>
           {value}
         </p>
       </div>
 
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${iconClass}`}>
+      <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
       </div>
     </div>

@@ -18,6 +18,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
+import { CompactPagination } from '../components/ui/CompactPagination';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -1209,7 +1210,7 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
@@ -1253,7 +1254,7 @@ export function ProductsPage() {
         </div>
       )}
 
-      <section className="rounded-[2rem] border border-[#e9e2d3]/80 bg-white/82 p-4 shadow-[0_18px_55px_rgba(15,15,15,0.055)] backdrop-blur-2xl sm:p-5">
+      <section className="rounded-[1.5rem] border border-[#e9e2d3]/80 bg-white/82 p-3 shadow-[0_18px_55px_rgba(15,15,15,0.055)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-5">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input type="text" placeholder={t.searchPlaceholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-11" />
@@ -1285,18 +1286,18 @@ export function ProductsPage() {
             const isLowStock = stock <= minimum;
 
             return (
-              <article key={product.id} className="group relative min-w-0 overflow-hidden rounded-[1.45rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)]">
+              <article key={product.id} className="group relative min-w-0 overflow-hidden rounded-[1.35rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-3 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)] sm:p-4">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="relative z-10 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="relative z-10 flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="flex min-w-0 flex-1 items-start gap-3 xl:max-w-[28%]">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)] sm:h-12 sm:w-12 sm:rounded-2xl">
                       <Barcode size={19} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16]">{formatProductCode(product.id)}</p>
-                      <h3 className="mt-1 break-words text-lg font-black leading-snug text-[#050505] xl:text-xl">{product.nombre}</h3>
+                      <h3 className="mt-1 line-clamp-2 break-words text-base font-black leading-snug text-[#050505] sm:text-lg xl:text-xl">{product.nombre}</h3>
                       {roleFlags.isOwner && (
-                        <p className="mt-1 break-words text-xs font-bold uppercase tracking-[0.12em] text-[#71717a]">
+                        <p className="mt-1 line-clamp-1 break-words text-[10px] font-bold uppercase tracking-[0.1em] text-[#71717a] sm:text-xs sm:tracking-[0.12em]">
                           {t.provider}: {product.proveedor || t.noProvider}
                         </p>
                       )}
@@ -1304,7 +1305,7 @@ export function ProductsPage() {
                   </div>
 
                   <div
-                    className={`grid min-w-0 flex-1 grid-cols-2 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner ${
+                    className={`grid min-w-0 flex-1 grid-cols-3 gap-x-2 gap-y-3 rounded-[1.15rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner sm:gap-3 sm:rounded-[1.25rem] ${
                       !roleFlags.isOwner
                         ? 'sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.5fr)_minmax(0,1fr)] xl:max-w-[68%]'
                         : 'sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.05fr)_minmax(0,1.4fr)_minmax(0,0.5fr)_minmax(0,1fr)] xl:max-w-[76%]'
@@ -1312,12 +1313,12 @@ export function ProductsPage() {
                   >
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.price}</p>
-                      <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#050505]" title={formatMoney(product.precio, currencySettings)}>{formatMoney(product.precio, currencySettings)}</p>
+                      <p className="mt-1 max-w-full whitespace-nowrap text-[11px] font-black leading-tight tracking-tight tabular-nums text-[#050505] sm:text-[clamp(0.85rem,1vw,1.05rem)]" title={formatMoney(product.precio, currencySettings)}>{formatMoney(product.precio, currencySettings)}</p>
                     </div>
                     {roleFlags.isOwner && (
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.cost}</p>
-                        <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.85rem,1vw,1.05rem)] font-black leading-tight tabular-nums text-[#71717a]" title={formatMoney(product.costo, currencySettings)}>{formatMoney(product.costo, currencySettings)}</p>
+                        <p className="mt-1 max-w-full whitespace-nowrap text-[11px] font-black leading-tight tracking-tight tabular-nums text-[#71717a] sm:text-[clamp(0.85rem,1vw,1.05rem)]" title={formatMoney(product.costo, currencySettings)}>{formatMoney(product.costo, currencySettings)}</p>
                       </div>
                     )}
                     <div className="min-w-0">
@@ -1337,7 +1338,7 @@ export function ProductsPage() {
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.minimum}</p>
                       <p className="mt-1 truncate text-[clamp(0.85rem,1vw,1.05rem)] font-black tabular-nums text-[#71717a]">{minimum.toLocaleString('en-US', { maximumFractionDigits: 2 })}</p>
                     </div>
-                    <div className="min-w-0 max-w-[132px]">
+                    <div className="col-span-2 min-w-0 max-w-none sm:col-span-1 sm:max-w-[132px]">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.lastUpdate}</p>
                       <p className="mt-1 max-w-full truncate text-[clamp(0.78rem,0.95vw,0.95rem)] font-black tabular-nums text-[#71717a]">
                         {formatProductDate(getProductLastUpdate(product), language)}
@@ -1347,13 +1348,13 @@ export function ProductsPage() {
 
                   {canManageProducts && (
                     <div className="flex shrink-0 items-center justify-end gap-2 opacity-90 transition-opacity group-hover:opacity-100 xl:min-w-[92px]">
-                      <button onClick={() => openAddStockModal(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100" type="button" aria-label={t.addStockAction}>
+                      <button onClick={() => openAddStockModal(product)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 sm:h-10 sm:w-10 sm:rounded-2xl" type="button" aria-label={t.addStockAction}>
                         <Plus size={17} />
                       </button>
-                      <button onClick={() => openEditModal(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] text-[#8a6a16] transition hover:-translate-y-0.5 hover:bg-[#ffeaa3]" type="button" aria-label={t.editProduct}>
+                      <button onClick={() => openEditModal(product)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] text-[#8a6a16] transition hover:-translate-y-0.5 hover:bg-[#ffeaa3] sm:h-10 sm:w-10 sm:rounded-2xl" type="button" aria-label={t.editProduct}>
                         <Edit2 size={17} />
                       </button>
-                      <button onClick={() => handleDelete(product.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100" type="button" aria-label={t.deleteTitle}>
+                      <button onClick={() => handleDelete(product.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:-translate-y-0.5 hover:bg-red-100 sm:h-10 sm:w-10 sm:rounded-2xl" type="button" aria-label={t.deleteTitle}>
                         <Trash2 size={17} />
                       </button>
                     </div>
@@ -1370,17 +1371,7 @@ export function ProductsPage() {
 
         {filteredProducts.length > PRODUCTS_PER_PAGE && (
           <div className="border-t border-[#f1ebdf] bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.page} {safeCurrentPage} {t.of} {totalPages}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1} className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-sm font-black text-[#71717a] shadow-sm transition hover:-translate-y-0.5 hover:border-[#f4c542]/50 hover:bg-[#fff9e8] hover:text-[#050505] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#71717a]">
-                  {t.previous}
-                </button>
-                <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages} className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-sm font-black text-[#71717a] shadow-sm transition hover:-translate-y-0.5 hover:border-[#f4c542]/50 hover:bg-[#fff9e8] hover:text-[#050505] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#71717a]">
-                  {t.next}
-                </button>
-              </div>
-            </div>
+            <CompactPagination currentPage={safeCurrentPage} totalPages={totalPages} start={pageStartIndex + 1} end={pageEndIndex} total={filteredProducts.length} onPageChange={setCurrentPage} previousLabel={t.previous} nextLabel={t.next} ofLabel={t.of} />
           </div>
         )}
       </section>
@@ -1608,14 +1599,14 @@ function ProductMetricCard({
   valueClass?: string;
 }) {
   return (
-    <div className="group relative min-w-0 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-5 2xl:p-6">
+    <div className="group relative min-h-[9.25rem] min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:rounded-[1.75rem] sm:p-5 2xl:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative z-10 flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="mb-4 max-w-[13rem] text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16] sm:text-[11px]">{title}</p>
-          <p className={`max-w-full break-words text-[clamp(1.45rem,1.85vw,2.15rem)] font-black leading-[0.95] tracking-tight tabular-nums ${valueClass}`}>{value}</p>
+        <div className="min-w-0 flex-1 overflow-hidden pt-11 sm:pt-0 sm:pr-2">
+          <p className="mb-2 line-clamp-2 max-w-[13rem] text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-4 sm:text-[11px] sm:tracking-[0.22em]">{title}</p>
+          <p className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.15rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[clamp(1.45rem,1.85vw,2.15rem)] sm:tracking-tight ${valueClass}`}>{value}</p>
         </div>
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.05rem] border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:h-12 sm:w-12 ${iconClass}`}>
+        <div className={`absolute right-0 top-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-12 sm:w-12 sm:rounded-[1.05rem] ${iconClass}`}>
           <Icon className="h-5 w-5 shrink-0" />
         </div>
       </div>

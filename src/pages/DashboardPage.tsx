@@ -907,7 +907,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
@@ -976,29 +976,30 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className={`grid min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 ${isSeller ? '2xl:grid-cols-2' : '2xl:grid-cols-4'}`}>
+      <div className={`grid min-w-0 grid-cols-2 gap-3 sm:gap-5 ${isSeller ? '2xl:grid-cols-2' : '2xl:grid-cols-4'}`}>
         <DashboardMetricCard
           title={isSeller ? t.todaySalesCount : t.todaySales}
           value={isSeller ? stats.cantidadVentasHoy.toLocaleString('en-US') : money(stats.ventasHoy)}
           subtitle={isSeller ? t.todaySalesSubtitle : t.todaySalesSubtitle}
           icon={ShoppingCart}
           iconClass="bg-[#050505] text-[#f4c542]"
+          compact
         />
         {!isSeller && (
-          <DashboardMetricCard title={t.cashToday} value={money(stats.ingresosContadoHoy)} subtitle={t.cashTodaySubtitle} icon={DollarSign} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
+          <DashboardMetricCard title={t.cashToday} value={money(stats.ingresosContadoHoy)} subtitle={t.cashTodaySubtitle} icon={DollarSign} iconClass="bg-[#fff4c7] text-[#8a6a16]" compact />
         )}
         {!isSeller && (
-          <DashboardMetricCard title={t.creditToday} value={money(stats.ventasCreditoHoy)} subtitle={t.creditTodaySubtitle} icon={CreditCard} iconClass="bg-[#f6f4ee] text-[#050505]" />
+          <DashboardMetricCard title={t.creditToday} value={money(stats.ventasCreditoHoy)} subtitle={t.creditTodaySubtitle} icon={CreditCard} iconClass="bg-[#f6f4ee] text-[#050505]" compact />
         )}
         {!isSeller && (
-          <DashboardMetricCard title={t.monthSales} value={money(stats.ventasMes)} subtitle={t.monthSalesSubtitle} icon={TrendingUp} iconClass="bg-[#050505] text-[#f4c542]" />
+          <DashboardMetricCard title={t.monthSales} value={money(stats.ventasMes)} subtitle={t.monthSalesSubtitle} icon={TrendingUp} iconClass="bg-[#050505] text-[#f4c542]" compact />
         )}
       </div>
 
       {!isSeller && (
-        <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
-          <DashboardMetricCard title={t.products} value={stats.totalProductos.toLocaleString('en-US')} subtitle={`${stats.productosBajoStock.toLocaleString('en-US')} ${t.productsLowStock}`} icon={Package} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
-          <DashboardMetricCard title={t.clients} value={stats.totalClientes.toLocaleString('en-US')} subtitle={`${stats.clientesConDeuda.toLocaleString('en-US')} ${t.clientsDebt}`} icon={Users} iconClass="bg-[#050505] text-[#f4c542]" />
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5">
+          <DashboardMetricCard title={t.products} value={stats.totalProductos.toLocaleString('en-US')} subtitle={`${stats.productosBajoStock.toLocaleString('en-US')} ${t.productsLowStock}`} icon={Package} iconClass="bg-[#fff4c7] text-[#8a6a16]" compact />
+          <DashboardMetricCard title={t.clients} value={stats.totalClientes.toLocaleString('en-US')} subtitle={`${stats.clientesConDeuda.toLocaleString('en-US')} ${t.clientsDebt}`} icon={Users} iconClass="bg-[#050505] text-[#f4c542]" compact />
         </div>
       )}
 
@@ -1023,17 +1024,17 @@ export function DashboardPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto pb-2">
-            <div className="flex h-72 min-w-[560px] items-end justify-between gap-3 md:h-80 md:gap-4">
+        <CardContent className="px-3 pb-4 sm:px-5 sm:pb-5">
+          <div className="min-w-0">
+            <div className="grid h-56 min-w-0 grid-cols-7 items-end gap-1 sm:h-72 sm:gap-3 md:h-80">
               {ventasUltimos7Dias.map((day) => {
                 const contadoHeight = maxChartValue > 0 ? (day.contado / maxChartValue) * 100 : 0;
                 const creditoHeight = maxChartValue > 0 ? (day.credito / maxChartValue) * 100 : 0;
 
                 return (
-                  <div key={day.date} className="flex flex-1 flex-col items-center gap-3">
-                    <div className="flex h-64 w-full items-end justify-center gap-2">
-                      <div className="relative h-full w-full overflow-hidden rounded-t-2xl border border-[#eee6d8] bg-[#f6f4ee] shadow-inner">
+                  <div key={day.date} className="flex min-w-0 flex-col items-center gap-2 sm:gap-3">
+                    <div className="flex h-40 w-full items-end justify-center sm:h-56 md:h-64">
+                      <div className="relative h-full w-full overflow-hidden rounded-t-lg border border-[#eee6d8] bg-[#f6f4ee] shadow-inner sm:rounded-t-2xl">
                         <div
                           className={`absolute bottom-0 left-0 rounded-t-2xl bg-gradient-to-t from-[#d9a900] to-[#f4c542] transition-all duration-500 ${isSeller ? 'w-full' : 'w-1/2'}`}
                           style={{ height: `${contadoHeight}%` }}
@@ -1048,9 +1049,9 @@ export function DashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <span className="block text-sm font-bold text-[#3f3f46]">{day.label}</span>
-                      {!isSeller && <span className="text-xs font-bold text-[#71717a]">{money(day.total)}</span>}
+                    <div className="min-w-0 text-center">
+                      <span className="block truncate text-[10px] font-black text-[#3f3f46] sm:text-sm">{day.label}</span>
+                      {!isSeller && <span className="hidden text-xs font-bold text-[#71717a] sm:block">{money(day.total)}</span>}
                     </div>
                   </div>
                 );
@@ -1072,14 +1073,14 @@ export function DashboardPage() {
                   key={venta.id}
                   type="button"
                   onClick={() => openInvoiceFromDashboard(venta.id)}
-                  className="group flex w-full min-w-0 items-center justify-between rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_20px_50px_rgba(15,15,15,0.10)]"
+                  className="group flex w-full min-w-0 flex-col items-stretch rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_20px_50px_rgba(15,15,15,0.10)] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                 >
-                  <div className="min-w-0 flex-1 overflow-hidden pr-3">
-                    <p className="truncate font-black text-[#050505] transition-colors duration-300 group-hover:text-[#8a6a16]">{formatSaleCode(venta.id)}</p>
-                    <p className="truncate text-sm font-medium text-[#71717a]">
+                  <div className="min-w-0 flex-1 sm:pr-3">
+                    <p className="font-black text-[#050505] transition-colors duration-300 group-hover:text-[#8a6a16]">{formatSaleCode(venta.id)}</p>
+                    <p className="mt-0.5 line-clamp-2 break-words text-sm font-medium leading-snug text-[#71717a]">
                       {getClientName(venta.clientes, t.generalClient)}{!isSeller ? ` · ${venta.tipo_pago === 'Contado' ? t.cash : t.credit}` : ''}
                     </p>
-                    <p className="truncate text-xs font-bold text-[#8a6a16]">
+                    <p className="mt-1 break-words text-xs font-bold leading-snug text-[#8a6a16]">
                       {t.seller}: {getSaleSeller(venta)} · {t.time}: {getSaleTime(venta, t.locale)}
                     </p>
                     {!isSeller && getSaleDiscountAmount(venta) > 0 && (
@@ -1089,7 +1090,7 @@ export function DashboardPage() {
                     )}
                   </div>
                   {!isSeller && (
-                    <p className="shrink-0 whitespace-nowrap text-lg font-black tabular-nums text-[#8a6a16]">
+                    <p className="mt-2 self-end whitespace-nowrap text-lg font-black tabular-nums text-[#8a6a16] sm:mt-0 sm:shrink-0">
                       {money(venta.total)}
                     </p>
                   )}
@@ -1111,9 +1112,9 @@ export function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 {productosBajoStock.map((producto) => (
-                  <div key={producto.id} className="flex min-w-0 items-center justify-between rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#e9e2d3] hover:bg-white hover:shadow-[0_16px_40px_rgba(15,15,15,0.08)]">
+                  <div key={producto.id} className="flex min-w-0 items-center justify-between rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#e9e2d3] hover:bg-white hover:shadow-[0_16px_40px_rgba(15,15,15,0.08)] sm:p-4">
                     <div className="min-w-0 flex-1 overflow-hidden pr-3">
-                      <p className="truncate font-black text-[#050505]">{producto.nombre}</p>
+                      <p className="line-clamp-2 break-words font-black leading-snug text-[#050505]">{producto.nombre}</p>
                       <p className="text-sm font-medium text-[#71717a]">
                         {t.minimum}: {Number(producto.minimo || 0).toLocaleString('en-US')}
                       </p>
@@ -1140,14 +1141,14 @@ export function DashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 {clientesConDeuda.map((cliente) => (
-                  <div key={cliente.id} className="flex min-w-0 items-center justify-between rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#e9e2d3] hover:bg-white hover:shadow-[0_16px_40px_rgba(15,15,15,0.08)]">
+                  <div key={cliente.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#e9e2d3] hover:bg-white hover:shadow-[0_16px_40px_rgba(15,15,15,0.08)] sm:p-4">
                     <div className="min-w-0 flex-1 overflow-hidden pr-3">
-                      <p className="truncate font-black text-[#050505]">{cliente.nombre}</p>
-                      <p className="text-sm font-medium text-[#71717a]">
+                      <p className="line-clamp-2 break-words font-black leading-snug text-[#050505]">{cliente.nombre}</p>
+                      <p className="mt-1 break-words text-xs font-medium leading-snug text-[#71717a] sm:text-sm">
                         {t.limit}: {money(cliente.limite_credito)}
                       </p>
                     </div>
-                    <p className="max-w-[50%] shrink-0 break-words rounded-full bg-red-100 px-3 py-1 text-right text-sm font-black tabular-nums text-red-700">
+                    <p className="shrink-0 whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-right text-xs font-black tabular-nums text-red-700 sm:px-3 sm:text-sm">
                       {money(cliente.saldo)}
                     </p>
                   </div>
@@ -1191,10 +1192,10 @@ function DashboardMetricCard({
         <p className={`mb-2 font-black uppercase text-[#8a6a16] ${compact ? 'line-clamp-2 text-[9px] leading-4 tracking-[0.14em] sm:truncate sm:text-[10px] sm:tracking-[0.18em]' : 'truncate text-[10px] tracking-[0.18em]'}`}>
           {title}
         </p>
-        <p className={`max-w-full whitespace-nowrap font-black leading-none tracking-tight text-[#050505] ${compact ? 'text-[1.65rem] sm:text-[2.15rem] 2xl:text-[2.35rem]' : 'text-[1.9rem] sm:text-[2.15rem] 2xl:text-[2.35rem]'}`}>
+        <p className={`max-w-full whitespace-nowrap font-black leading-none tracking-[-0.04em] text-[#050505] ${compact ? 'text-[clamp(1.05rem,4.55vw,2.35rem)] sm:text-[2.15rem] 2xl:text-[2.35rem]' : 'text-[1.9rem] sm:text-[2.15rem] 2xl:text-[2.35rem]'}`}>
           {value}
         </p>
-        <p className={`mt-2 truncate font-bold text-[#71717a] ${compact ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>
+        <p className={`mt-2 font-bold leading-snug text-[#71717a] ${compact ? 'line-clamp-2 text-[11px] sm:text-sm' : 'truncate text-sm'}`}>
           {subtitle}
         </p>
       </div>

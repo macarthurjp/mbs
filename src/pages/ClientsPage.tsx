@@ -4,6 +4,7 @@ import { AlertTriangle, CreditCard, Plus, Search, Edit2, Trash2, Users, Wallet, 
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
+import { CompactPagination } from '../components/ui/CompactPagination';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -44,6 +45,7 @@ const clientsCopy = {
     sellerReadOnly: 'Los vendedores no pueden eliminar clientes',
     newClient: 'Nuevo Cliente',
     searchPlaceholder: 'Buscar por nombre, teléfono, email o dirección...',
+    searchPlaceholderMobile: 'Buscar clientes...',
     client: 'Cliente',
     phone: 'Teléfono',
     email: 'Email',
@@ -100,6 +102,7 @@ const clientsCopy = {
     sellerReadOnly: 'Sellers cannot delete clients',
     newClient: 'New Client',
     searchPlaceholder: 'Search by name, phone, email, or address...',
+    searchPlaceholderMobile: 'Search clients...',
     client: 'Client',
     phone: 'Phone',
     email: 'Email',
@@ -514,7 +517,7 @@ export function ClientsPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
@@ -578,12 +581,13 @@ export function ClientsPage() {
         />
       </section>
 
-      <section className="rounded-[2rem] border border-[#e9e2d3]/80 bg-white/82 p-4 shadow-[0_18px_55px_rgba(15,15,15,0.055)] backdrop-blur-2xl sm:p-5">
+      <section className="rounded-[1.5rem] border border-[#e9e2d3]/80 bg-white/82 p-3 shadow-[0_18px_55px_rgba(15,15,15,0.055)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-5">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
             type="text"
-            placeholder={t.searchPlaceholder}
+            placeholder={t.searchPlaceholderMobile}
+            data-desktop-placeholder={t.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-11"
@@ -676,43 +680,43 @@ export function ClientsPage() {
 
         <div className="grid gap-3 p-3 lg:hidden">
           {visibleClients.map((client) => (
-            <article key={client.id} className="rounded-[1.5rem] border border-[#f1ebdf] bg-[#fffdf8]/95 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)]">
-              <div className="mb-4 flex items-start justify-between gap-3">
+            <article key={client.id} className="rounded-[1.35rem] border border-[#f1ebdf] bg-[#fffdf8]/95 p-3 shadow-[0_14px_34px_rgba(15,15,15,0.045)] sm:p-4">
+              <div className="relative mb-3 min-w-0 pr-20">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_12px_28px_rgba(0,0,0,0.18)]">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-[0_12px_28px_rgba(0,0,0,0.18)] sm:h-11 sm:w-11 sm:rounded-2xl">
                     <UserRound size={19} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="truncate font-black text-[#050505]">{client.nombre}</h3>
+                    <h3 className="line-clamp-2 break-words font-black leading-snug text-[#050505]">{client.nombre}</h3>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8a6a16]">{formatClientCode(client.id)}</p>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button onClick={() => openEditModal(client)} className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#f4c542]/30 bg-[#fff4c7] text-[#8a6a16]" type="button" aria-label={t.editClient}>
+                <div className="absolute right-0 top-0 flex shrink-0 items-center gap-1.5">
+                  <button onClick={() => openEditModal(client)} className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] text-[#8a6a16]" type="button" aria-label={t.editClient}>
                     <Edit2 size={16} />
                   </button>
                   {!isSeller && (
-                    <button onClick={() => handleDelete(client.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-600" type="button" aria-label={t.deleteTitle}>
+                    <button onClick={() => handleDelete(client.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600" type="button" aria-label={t.deleteTitle}>
                       <Trash2 size={16} />
                     </button>
                   )}
                 </div>
               </div>
 
-              <div className="grid gap-2 text-sm font-semibold text-[#71717a]">
-                <p className="flex min-w-0 items-center gap-2"><Phone size={15} className="shrink-0 text-[#8a6a16]" /><span className="truncate">{formatPhone(client.telefono)}</span></p>
-                <p className="flex min-w-0 items-center gap-2"><Mail size={15} className="shrink-0 text-[#8a6a16]" /><span className="truncate">{formatEmail(client.email)}</span></p>
-                <p className="flex min-w-0 items-center gap-2"><MapPin size={15} className="shrink-0 text-[#8a6a16]" /><span className="truncate">{client.direccion || '-'}</span></p>
+              <div className="grid gap-1.5 text-sm font-semibold text-[#71717a]">
+                <p className="flex min-w-0 items-start gap-2"><Phone size={15} className="mt-0.5 shrink-0 text-[#8a6a16]" /><span className="break-words">{formatPhone(client.telefono)}</span></p>
+                <p className="flex min-w-0 items-start gap-2"><Mail size={15} className="mt-0.5 shrink-0 text-[#8a6a16]" /><span className="break-words [overflow-wrap:anywhere]">{formatEmail(client.email)}</span></p>
+                <p className="flex min-w-0 items-start gap-2"><MapPin size={15} className="mt-0.5 shrink-0 text-[#8a6a16]" /><span className="line-clamp-2 break-words">{client.direccion || '-'}</span></p>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-[#f1ebdf] bg-white/80 p-3">
-                <div>
+              <div className="mt-3 grid grid-cols-2 gap-3 rounded-2xl border border-[#f1ebdf] bg-white/80 p-3">
+                <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.creditLimit}</p>
-                  <p className="mt-1 max-w-full break-words text-sm font-black tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
+                  <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.72rem,3.35vw,0.875rem)] font-black tracking-tight tabular-nums text-[#050505]">{formatMoney(client.limite_credito, currencySettings)}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.availableCredit}</p>
-                  <p className="mt-1 max-w-full break-words text-sm font-black tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
+                  <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.72rem,3.35vw,0.875rem)] font-black tracking-tight tabular-nums text-emerald-700">{formatMoney(getAvailableCredit(client), currencySettings)}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{Number(client.saldo || 0) < 0 ? t.creditBalance : t.balance}</p>
@@ -733,46 +737,7 @@ export function ClientsPage() {
 
         {filteredClients.length > CLIENTS_PER_PAGE && (
           <div className="border-t border-[#f1ebdf] bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8a6a16]">
-                {t.page} {safeCurrentPage} {t.of} {totalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={safeCurrentPage <= 1}
-                  className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-sm font-black text-[#71717a] shadow-sm transition hover:-translate-y-0.5 hover:border-[#f4c542]/50 hover:bg-[#fff9e8] hover:text-[#050505] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#71717a]"
-                >
-                  {t.previous}
-                </button>
-                <div className="flex items-center gap-1 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-1 shadow-sm">
-                  {Array.from({ length: totalPages }).slice(Math.max(0, safeCurrentPage - 3), Math.min(totalPages, safeCurrentPage + 2)).map((_, index) => {
-                    const pageNumber = Math.max(1, safeCurrentPage - 2) + index;
-                    if (pageNumber > totalPages) return null;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => setCurrentPage(pageNumber)}
-                        className={`h-9 min-w-9 rounded-xl px-3 text-sm font-black transition ${pageNumber === safeCurrentPage ? 'bg-[#050505] text-[#f4c542] shadow-[0_10px_24px_rgba(0,0,0,0.18)]' : 'text-[#71717a] hover:bg-white hover:text-[#050505]'}`}
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={safeCurrentPage >= totalPages}
-                  className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-sm font-black text-[#71717a] shadow-sm transition hover:-translate-y-0.5 hover:border-[#f4c542]/50 hover:bg-[#fff9e8] hover:text-[#050505] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:bg-white disabled:hover:text-[#71717a]"
-                >
-                  {t.next}
-                </button>
-              </div>
-            </div>
+            <CompactPagination currentPage={safeCurrentPage} totalPages={totalPages} start={pageStartIndex + 1} end={pageEndIndex} total={filteredClients.length} onPageChange={setCurrentPage} previousLabel={t.previous} nextLabel={t.next} ofLabel={t.of} />
           </div>
         )}
       </section>
@@ -881,27 +846,23 @@ function ClientMetricCard({
   iconClass: string;
   valueClass?: string;
 }) {
-  const isLongValue = value.length > 10;
-
   return (
-    <div className="group relative min-w-0 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative min-h-[9.25rem] min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-      <div className="relative z-10 flex min-w-0 items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="mb-4 max-w-[13rem] text-[10px] font-black uppercase tracking-[0.24em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 overflow-hidden pt-11 sm:pt-0 sm:pr-2">
+          <p className="mb-2 line-clamp-2 max-w-[13rem] text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-4 sm:text-[11px] sm:tracking-[0.24em]">
             {title}
           </p>
           <p
-            className={`max-w-full break-words font-black leading-[0.95] tracking-tight tabular-nums ${
-              isLongValue ? 'text-[2rem] sm:text-[2.35rem] xl:text-[2.15rem] 2xl:text-[2.45rem]' : 'text-4xl sm:text-[2.75rem] xl:text-[2.8rem] 2xl:text-5xl'
-            } ${valueClass}`}
+            className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.45rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[2.35rem] sm:tracking-tight xl:text-[2.15rem] 2xl:text-[2.45rem] ${valueClass}`}
           >
             {value}
           </p>
         </div>
 
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:h-14 sm:w-14 ${iconClass}`}>
+        <div className={`absolute right-0 top-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>
           <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
         </div>
       </div>

@@ -735,7 +735,7 @@ export default function AccountsReceivablePage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-5 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
@@ -760,7 +760,7 @@ export default function AccountsReceivablePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-[0.9fr_0.9fr_1.25fr]">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-[0.9fr_0.9fr_1.25fr]">
               <div className="rounded-2xl border border-[#e9e2d3] bg-white/75 p-4 shadow-sm backdrop-blur-xl">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.clientsWithDebt}</p>
                 <p className="mt-2 text-[2rem] font-black leading-none tracking-tight text-red-700 sm:text-[2.35rem] xl:text-[2rem]">
@@ -774,11 +774,11 @@ export default function AccountsReceivablePage() {
                 </p>
               </div>
               {canManageReceivables && (
-                <div className="rounded-2xl border border-[#e9e2d3] bg-white/80 p-4 shadow-sm backdrop-blur-xl sm:col-span-3 xl:col-span-1">
+                <div className="col-span-2 rounded-2xl border border-[#e9e2d3] bg-white/80 p-4 shadow-sm backdrop-blur-xl sm:col-span-3 xl:col-span-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.availableCredit}</p>
                   <p className="mt-2 flex min-w-0 items-baseline gap-2 text-[#050505]">
                     <span className="shrink-0 text-xl font-black leading-none sm:text-2xl">{currencySettings.symbol}</span>
-                    <span className="min-w-0 break-words text-[2rem] font-black leading-none tracking-tight tabular-nums sm:text-[2.35rem] xl:text-[2rem]">
+                    <span className="min-w-0 whitespace-nowrap text-[clamp(1.35rem,6vw,2rem)] font-black leading-none tracking-tight tabular-nums sm:text-[2.35rem] xl:text-[2rem]">
                       {formatCurrency(metrics.availableCredit)}
                     </span>
                   </p>
@@ -796,7 +796,7 @@ export default function AccountsReceivablePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.totalReceivable}</p>
-                  <p className="break-words text-3xl font-black leading-none text-white sm:text-4xl">
+                  <p className="whitespace-nowrap text-[clamp(1.35rem,6vw,2.25rem)] font-black leading-none text-white sm:text-4xl">
                     {formatMoney(metrics.totalReceivable, currencySettings)}
                   </p>
                 </div>
@@ -879,7 +879,7 @@ export default function AccountsReceivablePage() {
         </CardHeader>
 
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-3 sm:space-y-4">
             {filteredClients.map((client) => {
               const nextDueDate = getClientNextDueDate(client.id, creditSales);
               const maxDaysLate = getClientMaxDaysLate(client.id, creditSales);
@@ -887,21 +887,21 @@ export default function AccountsReceivablePage() {
               const overdueAmount = getClientOverdueAmount(client.id, creditSales);
 
               return (
-                <article key={client.id} className="group relative min-w-0 overflow-hidden rounded-[1.45rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)]">
+                <article key={client.id} className="group relative min-w-0 overflow-hidden rounded-[1.35rem] border border-[#ece5d7] bg-[#fffdf8]/92 p-3 shadow-[0_14px_34px_rgba(15,15,15,0.045)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-[#f4c542]/40 hover:bg-white hover:shadow-[0_22px_50px_rgba(15,15,15,0.08)] sm:rounded-[1.45rem] sm:p-4">
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="relative z-10 grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.75fr)_104px] xl:items-center">
+                  <div className="relative z-10 grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.75fr)_104px] xl:items-center xl:gap-4">
                     <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.18)] sm:h-12 sm:w-12 sm:rounded-2xl">
                         <Users size={19} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="break-words text-lg font-black leading-snug text-[#050505] xl:text-xl">{client.nombre}</h3>
+                        <h3 className="break-words text-base font-black leading-snug text-[#050505] sm:text-lg xl:text-xl">{client.nombre}</h3>
                         <p className="mt-1 break-words text-xs font-semibold leading-snug text-[#71717a]">{client.direccion || '-'}</p>
                       </div>
                     </div>
 
-                    <div className="grid min-w-0 w-full grid-cols-1 gap-3 rounded-[1.25rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner sm:grid-cols-2 2xl:grid-cols-[minmax(210px,1.2fr)_minmax(190px,0.9fr)_minmax(170px,0.9fr)_minmax(110px,0.55fr)_minmax(170px,0.85fr)] 2xl:gap-5">
-                      <div className="min-w-0">
+                    <div className="grid min-w-0 w-full grid-cols-2 gap-x-3 gap-y-3 rounded-[1.1rem] border border-[#f1ebdf] bg-white/82 p-3 shadow-inner sm:grid-cols-2 sm:rounded-[1.25rem] 2xl:grid-cols-[minmax(210px,1.2fr)_minmax(190px,0.9fr)_minmax(170px,0.9fr)_minmax(110px,0.55fr)_minmax(170px,0.85fr)] 2xl:gap-5">
+                      <div className="col-span-2 min-w-0 2xl:col-span-1">
                         <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.contact}</p>
                         <p className="mt-1 whitespace-nowrap font-semibold text-[#71717a]">{formatPhone(client.telefono)}</p>
                         <p className="truncate text-xs font-semibold leading-snug text-[#71717a]" title={client.email || ''}>
@@ -910,7 +910,7 @@ export default function AccountsReceivablePage() {
                       </div>
                       <div className="min-w-0">
                         <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.balance}</p>
-                        <p className="mt-1 max-w-full break-words font-black tabular-nums text-red-700">{formatMoney(client.saldo, currencySettings)}</p>
+                        <p className="mt-1 max-w-full whitespace-nowrap text-[clamp(0.78rem,3.5vw,1rem)] font-black tabular-nums text-red-700 sm:text-base">{formatMoney(client.saldo, currencySettings)}</p>
                         {overdueAmount > 0 && (
                           <p className="mt-1 max-w-full break-words text-[10px] font-black text-red-600">
                             {t.overdue}: {formatMoney(overdueAmount, currencySettings)}
@@ -919,7 +919,7 @@ export default function AccountsReceivablePage() {
                       </div>
                       <div className="min-w-0">
                         <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.dueDate}</p>
-                        <p className="mt-1 whitespace-nowrap font-black tabular-nums text-[#050505]">{nextDueDate || t.noDueDate}</p>
+                        <p className="mt-1 whitespace-nowrap text-sm font-black tabular-nums text-[#050505]">{nextDueDate ? new Date(`${nextDueDate}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : t.noDueDate}</p>
                       </div>
                       <div className="min-w-0">
                         <p className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.daysLate}</p>
@@ -935,22 +935,24 @@ export default function AccountsReceivablePage() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center justify-end gap-2 opacity-90 transition-opacity group-hover:opacity-100">
+                    <div className="flex min-w-0 shrink-0 items-center gap-2 opacity-90 transition-opacity group-hover:opacity-100 xl:justify-end">
                       <button
                         type="button"
                         onClick={() => openPaymentHistory(client)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#e9e2d3] bg-white text-[#71717a] shadow-[0_12px_24px_rgba(15,15,15,0.06)] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8] hover:text-[#050505]"
+                        className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-[#e9e2d3] bg-white px-3 text-xs font-black text-[#71717a] shadow-[0_12px_24px_rgba(15,15,15,0.06)] transition-all hover:-translate-y-0.5 hover:bg-[#fff9e8] hover:text-[#050505] xl:h-11 xl:w-11 xl:flex-none xl:rounded-2xl xl:px-0"
                         title={t.paymentHistory}
                       >
                         <History className="h-5 w-5 shrink-0" />
+                        <span className="truncate xl:hidden">{t.paymentHistory}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => openPaymentModal(client)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-[0_12px_24px_rgba(16,185,129,0.12)] transition-all hover:-translate-y-0.5 hover:bg-emerald-100"
+                        className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 text-xs font-black text-emerald-700 shadow-[0_12px_24px_rgba(16,185,129,0.12)] transition-all hover:-translate-y-0.5 hover:bg-emerald-100 xl:h-11 xl:w-11 xl:flex-none xl:rounded-2xl xl:px-0"
                         title={t.registerPayment}
                       >
                         <Banknote className="h-5 w-5 shrink-0" />
+                        <span className="truncate xl:hidden">{t.registerPayment}</span>
                       </button>
                     </div>
                   </div>
@@ -1226,19 +1228,25 @@ function MetricCard({
   iconClass: string;
   valueClass?: string;
 }) {
+  const isMoneyValue = /^[A-Z]{2,4}\s*-?[\d,.]+$/i.test(value.trim());
+
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative min-h-[9rem] min-w-0 overflow-hidden rounded-[1.45rem] border border-[#e9e2d3]/85 bg-white/90 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:flex sm:min-h-[10rem] sm:items-center sm:justify-between sm:gap-4 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 min-w-0 pt-12 sm:flex-1 sm:overflow-hidden sm:pt-0 sm:pr-2">
+        <p className="mb-2 line-clamp-2 pr-1 text-[9px] font-black uppercase leading-snug tracking-[0.16em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className={`max-w-full break-words text-[2rem] font-black leading-[0.95] tracking-tight tabular-nums sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem] ${valueClass}`}>
+        <p className={`max-w-full font-black leading-none tracking-tight tabular-nums ${
+          isMoneyValue
+            ? 'whitespace-nowrap text-[clamp(0.72rem,3.15vw,0.95rem)] sm:text-[clamp(1.15rem,2.2vw,2rem)] xl:text-[clamp(1.15rem,1.55vw,1.75rem)]'
+            : 'whitespace-nowrap text-[2rem] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]'
+        } ${valueClass}`}>
           {value}
         </p>
       </div>
 
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${iconClass}`}>
+      <div className={`absolute right-3 top-3 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] shadow-[0_14px_30px_rgba(15,15,15,0.10)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] sm:shadow-[0_18px_40px_rgba(15,15,15,0.12)] ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
       </div>
     </div>

@@ -1095,7 +1095,7 @@ function AppContent() {
 
             setSupportOpen(true);
           }}
-          className={`fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-4 z-50 h-12 w-12 items-center justify-center rounded-full bg-[#050505] text-[#f4c542] shadow-[0_18px_45px_rgba(0,0,0,0.25)] transition hover:-translate-y-1 hover:bg-[#111111] sm:right-5 sm:flex sm:h-14 sm:w-14 ${isSuperAdmin ? 'hidden' : 'flex'}`}
+          className={`fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-3 z-50 h-11 w-11 items-center justify-center rounded-full bg-[#050505] text-[#f4c542] shadow-[0_18px_45px_rgba(0,0,0,0.25)] transition hover:-translate-y-1 hover:bg-[#111111] sm:right-5 sm:flex sm:h-14 sm:w-14 ${isSuperAdmin ? 'hidden' : 'flex'}`}
           aria-label="Contact support"
           title="Contact support"
         >

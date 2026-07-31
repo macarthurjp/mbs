@@ -65,7 +65,7 @@ test.describe('Sales money flow', () => {
     const invoiceCode = `FAC-${String(saleId).padStart(6, '0')}`;
     // The search box matches the raw sale id (see InvoicesPage's
     // matchesSearch), not the formatted "FAC-000098" invoice code.
-    await page.getByPlaceholder('Buscar por número, cliente, fecha o tipo de pago...').fill(String(saleId));
+    await page.getByTestId('invoice-search').fill(String(saleId));
     await page.getByRole('button', { name: 'Ver' }).first().click();
 
     const reprintButton = page.getByRole('button', { name: 'Imprimir recibo' });

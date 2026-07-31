@@ -14,6 +14,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { CompactPagination } from '../components/ui/CompactPagination';
 
 type Producto = {
   id: number;
@@ -107,6 +108,7 @@ const purchasesCopy = {
     suppliers: 'Proveedores',
     averagePurchase: 'Promedio compra',
     searchPlaceholder: 'Buscar por proveedor, producto o fecha...',
+    searchPlaceholderMobile: 'Buscar compras...',
     history: 'Historial de compras',
     registeredPurchases: 'compras registradas',
     refresh: 'Actualizar',
@@ -207,6 +209,7 @@ const purchasesCopy = {
     suppliers: 'Suppliers',
     averagePurchase: 'Average purchase',
     searchPlaceholder: 'Search by supplier, product, or date...',
+    searchPlaceholderMobile: 'Search purchases...',
     history: 'Purchase history',
     registeredPurchases: 'registered purchases',
     refresh: 'Refresh',
@@ -1057,7 +1060,7 @@ export default function PurchasesPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
@@ -1079,17 +1082,17 @@ export default function PurchasesPage() {
 
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-3">
+          <div className="grid min-w-0 grid-cols-2 gap-3">
             {roleFlags.isOwner && (
-              <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#050505] bg-[#050505] p-5 text-white shadow-[0_24px_64px_rgba(0,0,0,0.18)]">
+              <div className="relative min-w-0 overflow-hidden rounded-[1.25rem] border border-[#050505] bg-[#050505] p-3 text-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] sm:rounded-[1.5rem] sm:p-5">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.2),transparent_38%)]" />
                 <div className="relative flex min-w-0 items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f4c542] text-[#050505] shadow-[0_16px_36px_rgba(244,197,66,0.2)]">
+                  <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f4c542] text-[#050505] shadow-[0_16px_36px_rgba(244,197,66,0.2)] sm:flex">
                     <ShoppingBag className="h-6 w-6 shrink-0" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.totalPurchases}</p>
-                    <p className="break-words text-3xl font-black leading-none text-white sm:text-4xl">
+                    <p className="whitespace-normal break-normal text-[clamp(1rem,4.2vw,2.25rem)] font-black leading-none text-white sm:text-4xl">
                       {formatMoney(metrics.totalCompras, currencySettings)}
                     </p>
                   </div>
@@ -1098,14 +1101,14 @@ export default function PurchasesPage() {
             )}
 
             {roleFlags.isOwner && (
-              <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white/78 p-4 shadow-sm backdrop-blur-xl">
+              <div className="relative min-w-0 overflow-hidden rounded-[1.25rem] border border-[#e9e2d3] bg-white/78 p-3 shadow-sm backdrop-blur-xl sm:rounded-[1.5rem] sm:p-4">
                 <div className="relative flex min-w-0 items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16] shadow-[0_16px_36px_rgba(138,106,22,0.14)]">
+                  <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16] shadow-[0_16px_36px_rgba(138,106,22,0.14)] sm:flex">
                     <Calculator className="h-5 w-5 shrink-0" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16]">{t.averagePurchase}</p>
-                    <p className="break-words text-xl font-black leading-tight text-[#050505] sm:text-2xl">
+                    <p className="whitespace-normal break-normal text-[clamp(1rem,4.2vw,1.5rem)] font-black leading-tight text-[#050505] sm:text-2xl">
                       {formatMoney(metrics.promedioCompra, currencySettings)}
                     </p>
                   </div>
@@ -1114,7 +1117,7 @@ export default function PurchasesPage() {
             )}
 
             {canManagePurchases && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
+              <div className="col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
                 <Button
                   type="button"
                   className="w-full gap-2 rounded-2xl shadow-[0_18px_45px_rgba(0,0,0,0.16)]"
@@ -1144,7 +1147,7 @@ export default function PurchasesPage() {
         </div>
       </section>
 
-      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
+      <div className={`grid min-w-0 gap-3 sm:gap-5 ${roleFlags.isOwner ? 'grid-cols-3' : 'grid-cols-2'} 2xl:grid-cols-4`}>
         <MetricCard
           title={t.purchases}
           value={metrics.cantidadCompras.toLocaleString('en-US')}
@@ -1170,14 +1173,15 @@ export default function PurchasesPage() {
       <div className="rounded-[1.6rem] border border-[#e9e2d3] bg-white/92 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
         <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5 xl:items-end">
           <div className="min-w-0 xl:col-span-1">
-            <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] opacity-0">
+            <label className="mb-2 hidden text-[10px] font-black uppercase tracking-[0.16em] opacity-0 xl:block">
               Search
             </label>
             <div className="relative min-w-0">
               <Search className="pointer-events-none absolute left-4 top-1/2 z-10 shrink-0 -translate-y-1/2 text-[#a1a1aa]" size={18} />
               <input
                 type="text"
-                placeholder={t.searchPlaceholder}
+                placeholder={t.searchPlaceholderMobile}
+                data-desktop-placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 pl-11 text-sm font-black text-[#050505] outline-none transition placeholder:text-[#a1a1aa] focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"
@@ -1209,7 +1213,7 @@ export default function PurchasesPage() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 text-sm font-black text-[#050505] outline-none transition focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"
+              className="box-border block h-11 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-[#e9e2d3] bg-white px-4 text-sm font-black text-[#050505] outline-none transition [-webkit-appearance:none] focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"
             />
           </div>
 
@@ -1221,7 +1225,7 @@ export default function PurchasesPage() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 text-sm font-black text-[#050505] outline-none transition focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"
+              className="box-border block h-11 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-[#e9e2d3] bg-white px-4 text-sm font-black text-[#050505] outline-none transition [-webkit-appearance:none] focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"
             />
           </div>
 
@@ -1332,30 +1336,30 @@ export default function PurchasesPage() {
             {visiblePurchases.map((purchase) => (
               <div
                 key={purchase.id}
-                className="relative overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 shadow-[0_14px_34px_rgba(15,15,15,0.06)]"
+                className="relative overflow-hidden rounded-[1.35rem] border border-[#e9e2d3] bg-white p-3 shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:p-4"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_38%)]" />
-                <div className="relative z-10 space-y-4">
+                <div className="relative z-10 space-y-3">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.id}</p>
                       <p className="mt-1 truncate text-lg font-black text-[#050505]">{formatPurchaseCode(purchase.id)}</p>
-                      <p className="mt-1 text-xs font-bold text-[#71717a]">{purchase.fecha}</p>
+                      <p className="mt-1 text-xs font-bold text-[#71717a]">{new Date(`${purchase.fecha}T00:00:00`).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                     </div>
                     <span className="shrink-0 rounded-full border border-[#e9e2d3] bg-[#fff4c7] px-3 py-1 text-xs font-black text-[#8a6a16]">
                       {Number(purchase.cantidad || 0).toLocaleString('en-US')} {purchase.productos?.unidad || ''}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
-                    <div className="min-w-0">
+                  <div className="grid grid-cols-2 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
+                    <div className={`min-w-0 ${roleFlags.isOwner ? '' : 'col-span-2'}`}>
                       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.product}</p>
                       <p className="mt-1 line-clamp-2 break-words text-sm font-black text-[#050505]">{purchase.productos?.nombre || t.deletedProduct}</p>
                     </div>
                     {roleFlags.isOwner && (
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.supplier}</p>
-                        <p className="mt-1 line-clamp-2 break-words text-sm font-semibold text-[#71717a]">{purchase.proveedor || t.noSupplier}</p>
+                        <p className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-snug text-[#71717a]">{purchase.proveedor || t.noSupplier}</p>
                       </div>
                     )}
                   </div>
@@ -1394,30 +1398,8 @@ export default function PurchasesPage() {
           )}
 
           {filteredPurchases.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 border-t border-[#f1ebdf] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-black text-[#71717a]">
-                {t.page} {safeCurrentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')} · {pageStartIndex + 1}-{pageEndIndex} {t.of} {filteredPurchases.length.toLocaleString('en-US')}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1 sm:flex-none"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={safeCurrentPage <= 1}
-                >
-                  {t.previous}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1 sm:flex-none"
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={safeCurrentPage >= totalPages}
-                >
-                  {t.next}
-                </Button>
-              </div>
+            <div className="mt-4 border-t border-[#f1ebdf] pt-4">
+              <CompactPagination currentPage={safeCurrentPage} totalPages={totalPages} start={pageStartIndex + 1} end={pageEndIndex} total={filteredPurchases.length} onPageChange={setCurrentPage} previousLabel={t.previous} nextLabel={t.next} ofLabel={t.of} />
             </div>
           )}
         </CardContent>
@@ -1799,17 +1781,17 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative min-h-[8.75rem] min-w-0 overflow-hidden rounded-[1.4rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:flex sm:min-h-0 sm:items-center sm:justify-between sm:gap-4 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pt-10 sm:pt-0 sm:pr-2">
+        <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full break-words text-[2rem] font-black leading-[0.95] tracking-tight tabular-nums text-[#050505] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]">
+        <p className="max-w-full whitespace-normal break-normal text-[clamp(1rem,4.2vw,2.55rem)] font-black leading-[1.02] tracking-[-0.04em] tabular-nums text-[#050505] sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem]">
           {value}
         </p>
       </div>
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${color}`}>
+      <div className={`absolute right-3 top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${color}`}>
         <Icon className="h-5 w-5 shrink-0 drop-shadow-sm sm:h-6 sm:w-6" />
       </div>
     </div>

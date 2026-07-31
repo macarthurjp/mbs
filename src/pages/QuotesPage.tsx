@@ -126,6 +126,7 @@ const quotesCopy = {
     approvedQuotes: 'Aprobadas',
     totalQuoted: 'Total cotizado',
     searchPlaceholder: 'Buscar por cliente, número, estado o fecha...',
+    searchPlaceholderMobile: 'Buscar cotizaciones...',
     history: 'Historial de cotizaciones',
     registeredQuotes: 'cotizaciones registradas',
     quote: 'Cotización',
@@ -201,6 +202,7 @@ const quotesCopy = {
     approvedQuotes: 'Approved',
     totalQuoted: 'Total quoted',
     searchPlaceholder: 'Search by client, number, status, or date...',
+    searchPlaceholderMobile: 'Search quotes...',
     history: 'Quote history',
     registeredQuotes: 'registered quotes',
     quote: 'Quote',
@@ -306,6 +308,19 @@ function formatNumber(value: number | null | undefined) {
 
 function getLocalDateString(date: Date) {
   return date.toLocaleDateString('en-CA');
+}
+
+function formatQuoteDate(value: string | null | undefined, locale: string) {
+  if (!value) return '-';
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 }
 
 function getDefaultDueDate() {
@@ -1086,7 +1101,7 @@ function money(value: number | null | undefined) {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-8">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-8 sm:pb-6">
       <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
@@ -1135,7 +1150,8 @@ function money(value: number | null | undefined) {
           <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
             type="text"
-            placeholder={t.searchPlaceholder}
+            placeholder={t.searchPlaceholderMobile}
+            data-desktop-placeholder={t.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -1206,31 +1222,31 @@ function money(value: number | null | undefined) {
 
           <div className="space-y-3 lg:hidden">
             {filteredQuotes.map((quote) => (
-              <div key={quote.id} className="rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 shadow-[0_14px_34px_rgba(15,15,15,0.06)]">
+              <div key={quote.id} className="rounded-[1.5rem] border border-[#e9e2d3] bg-white p-3 shadow-[0_14px_34px_rgba(15,15,15,0.06)] sm:p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.quote}</p>
                     <p className="mt-1 text-lg font-black text-[#050505]">{formatQuoteCode(quote.id)}</p>
-                    <p className="mt-1 text-sm font-semibold text-[#71717a]">{quote.clientes?.nombre || t.client}</p>
+                    <p className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-snug text-[#71717a]">{quote.clientes?.nombre || t.client}</p>
                   </div>
-                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.08em] ${getStatusClass(quote.estado)}`}>
+                  <span className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.08em] sm:text-xs ${getStatusClass(quote.estado)}`}>
                     {getStatusLabel(quote.estado)}
                   </span>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
-                  <div>
+                <div className="mt-3 grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3">
+                  <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.date}</p>
-                    <p className="mt-1 text-sm font-semibold text-[#71717a]">{quote.fecha}</p>
-                    <p className="mt-1 text-xs text-[#a1a1aa]">{t.dueDate}: {quote.fecha_vencimiento || '-'}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#71717a]">{formatQuoteDate(quote.fecha, language === 'es' ? 'es-ES' : 'en-US')}</p>
+                    <p className="mt-1 text-[11px] leading-snug text-[#a1a1aa]">{t.dueDate}: {formatQuoteDate(quote.fecha_vencimiento, language === 'es' ? 'es-ES' : 'en-US')}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="min-w-0 text-right">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.total}</p>
-                    <p className="mt-1 text-base font-black text-[#8a6a16]">{money(quote.total)}</p>
+                    <p className="mt-1 whitespace-nowrap text-[clamp(0.95rem,4vw,1.15rem)] font-black tracking-tight text-[#8a6a16]">{money(quote.total)}</p>
                   </div>
                 </div>
                 <Button
                   type="button"
-                  className="mt-4 w-full justify-center"
+                  className="mt-3 h-11 w-full justify-center rounded-2xl"
                   onClick={() => openQuoteDetails(quote)}
                 >
                   <FileText size={16} />
@@ -1596,17 +1612,17 @@ function QuoteMetricCard({
   iconClass: string;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative flex min-h-[9.25rem] min-w-0 flex-col justify-between gap-2 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:flex-row sm:items-center sm:gap-3 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-visible pr-2">
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pt-11 sm:pt-0 sm:pr-2">
+        <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full whitespace-nowrap text-[1.55rem] font-black leading-[0.95] tracking-tight tabular-nums text-[#050505] sm:text-[1.8rem] xl:text-[1.95rem] 2xl:text-[2.15rem]">
+        <p className="max-w-full whitespace-nowrap text-[clamp(1rem,4.4vw,1.55rem)] font-black leading-[0.95] tracking-[-0.05em] tabular-nums text-[#050505] sm:text-[1.8rem] sm:tracking-tight xl:text-[1.95rem] 2xl:text-[2.15rem]">
           {value}
         </p>
       </div>
-      <div className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[1.05rem] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-13 sm:w-13 ${iconClass}`}>
+      <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-13 sm:w-13 sm:rounded-[1.05rem] ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0" />
       </div>
     </div>

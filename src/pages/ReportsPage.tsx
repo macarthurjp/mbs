@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -715,7 +714,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
+    <div className="w-full min-w-0 space-y-5 overflow-x-hidden pb-20 text-[#08080b] sm:space-y-6 sm:pb-6">
       <section className="relative overflow-hidden rounded-[1.5rem] border border-[#e5dfd2] bg-white/85 p-4 shadow-[0_22px_70px_rgba(15,15,15,0.08)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.18),transparent_34%)]" />
         <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
@@ -743,16 +742,42 @@ export default function ReportsPage() {
       </section>
 
       {!isSeller && (
-        <section className="rounded-[2rem] border border-[#e5dfd2] bg-white/80 p-4 shadow-[0_16px_44px_rgba(15,15,15,0.05)] backdrop-blur-2xl sm:p-5">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Input label={t.from} type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} />
-            <Input label={t.to} type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
-            <Select
-              label={t.paymentType}
-              value={filters.paymentType}
-              onChange={(e) => setFilters({ ...filters, paymentType: e.target.value })}
-              options={[{ value: 'all', label: t.all }, { value: 'Contado', label: t.cash }, { value: 'Crédito', label: t.credit }]}
-            />
+        <section className="rounded-[1.4rem] border border-[#e5dfd2] bg-white/80 p-3 shadow-[0_16px_44px_rgba(15,15,15,0.05)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-5">
+          <div className="grid min-w-0 grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            <div className="col-span-2 min-w-0 max-w-full">
+              <div className="mb-2.5 grid grid-cols-2 gap-3">
+                <label className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.from}</label>
+                <label className="block text-[11px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.to}</label>
+              </div>
+              <div className="grid min-w-0 max-w-full grid-cols-2 overflow-hidden rounded-2xl border-2 border-[#e9e2d3] bg-white shadow-[0_10px_30px_rgba(15,15,15,0.05)] focus-within:border-[#f4c542] focus-within:ring-4 focus-within:ring-[#f4c542]/20">
+                <div className="min-w-0 overflow-hidden">
+                  <input
+                    aria-label={t.from}
+                    type="date"
+                    value={filters.from}
+                    onChange={(e) => setFilters({ ...filters, from: e.target.value })}
+                    className="box-border block h-12 w-full min-w-0 max-w-full appearance-none border-0 bg-white px-3 text-[13px] font-semibold text-[#050505] outline-none [-webkit-appearance:none] sm:px-4 sm:text-[15px]"
+                  />
+                </div>
+                <div className="min-w-0 overflow-hidden border-l-2 border-[#e9e2d3]">
+                  <input
+                    aria-label={t.to}
+                    type="date"
+                    value={filters.to}
+                    onChange={(e) => setFilters({ ...filters, to: e.target.value })}
+                    className="box-border block h-12 w-full min-w-0 max-w-full appearance-none border-0 bg-white px-3 text-[13px] font-semibold text-[#050505] outline-none [-webkit-appearance:none] sm:px-4 sm:text-[15px]"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="col-span-2 min-w-0 md:col-span-1">
+              <Select
+                label={t.paymentType}
+                value={filters.paymentType}
+                onChange={(e) => setFilters({ ...filters, paymentType: e.target.value })}
+                options={[{ value: 'all', label: t.all }, { value: 'Contado', label: t.cash }, { value: 'Crédito', label: t.credit }]}
+              />
+            </div>
           </div>
         </section>
       )}
@@ -763,7 +788,7 @@ export default function ReportsPage() {
         </section>
       )}
 
-      <section className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${isSeller ? '2xl:grid-cols-3' : '2xl:grid-cols-4'}`}>
+      <section className={`grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 ${isSeller ? '2xl:grid-cols-3' : '2xl:grid-cols-4'}`}>
         <MetricTile
           title={isSeller ? t.sellerSalesCount : t.totalSold}
           value={isSeller ? summary.cantidadVentas.toLocaleString('en-US') : formatMoney(summary.totalVentas, currencySettings)}
@@ -818,7 +843,7 @@ export default function ReportsPage() {
       {!isSeller && (
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ReportPanel title={t.inventoryBrowser} onOpen={() => setActiveDetail('inventory')} reportLabel={t.report}>
-          <InventoryArc lowStock={summary.productosBajoStock} products={productos.length} productsLabel={t.products} lowStockLabel={t.lowStock} alertsLabel={language === 'es' ? 'Alertas' : 'Alerts'} />
+          <InventoryArc lowStock={summary.productosBajoStock} products={productos.length} productsLabel={t.products} lowStockLabel={t.lowStock} healthyLabel={language === 'es' ? 'Saludables' : 'Healthy'} riskLabel={language === 'es' ? 'Nivel de alerta' : 'Alert level'} />
         </ReportPanel>
 
         <ReportPanel title={t.salesFunnel} onOpen={() => setActiveDetail('salesFunnel')} className="xl:col-span-2" reportLabel={t.report}>
@@ -881,7 +906,7 @@ export default function ReportsPage() {
           {activeDetail === 'inventory' && (
             <div className="space-y-5">
               <div className="rounded-[1.75rem] border border-[#e5dfd2] bg-white p-5 shadow-[0_18px_45px_rgba(15,15,15,0.08)]">
-                <InventoryArc lowStock={summary.productosBajoStock} products={productos.length} productsLabel={t.products} lowStockLabel={t.lowStock} alertsLabel={language === 'es' ? 'Alertas' : 'Alerts'} />
+                <InventoryArc lowStock={summary.productosBajoStock} products={productos.length} productsLabel={t.products} lowStockLabel={t.lowStock} healthyLabel={language === 'es' ? 'Saludables' : 'Healthy'} riskLabel={language === 'es' ? 'Nivel de alerta' : 'Alert level'} />
               </div>
               <ProductsReport productosMasVendidos={productosMasVendidos} productosBajoStock={productosBajoStock} t={t} currencySettings={currencySettings} />
             </div>
@@ -926,22 +951,25 @@ function MetricTile({
   helperValue: string;
   icon: ElementType;
 }) {
+  const isMoneyValue = /[A-Z]{2,4}\s*-?[\d,.]+/.test(value);
+  const isMoneyHelper = /[A-Z]{2,4}\s*-?[\d,.]+/.test(helperValue);
+
   return (
-    <div className="group relative overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative min-h-[8rem] min-w-0 overflow-hidden rounded-[1.4rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 flex items-start justify-between gap-4">
+      <div className="relative z-10 min-w-0 pt-8 sm:flex sm:items-start sm:justify-between sm:gap-4 sm:pt-0">
         <div className="min-w-0 flex-1 overflow-hidden">
-          <h3 className="mb-3 truncate text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">{title}</h3>
-          <p className="max-w-full whitespace-nowrap text-[1.9rem] font-black leading-none tracking-tight tabular-nums text-[#050505] sm:text-[2.15rem] xl:text-[2rem] 2xl:text-[2.25rem]">
+          <h3 className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.1em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">{title}</h3>
+          <p className={`max-w-full font-black leading-none tracking-[-0.035em] tabular-nums text-[#050505] ${isMoneyValue ? 'whitespace-nowrap text-[clamp(0.86rem,3.55vw,1.08rem)]' : 'text-[clamp(1.5rem,7vw,2rem)]'} sm:text-[2.15rem] sm:tracking-tight xl:text-[2rem] 2xl:text-[2.25rem]`}>
             {value}
           </p>
-          <div className="mt-4 flex min-w-0 flex-wrap items-center gap-2 text-sm font-black text-[#71717a]">
-            <span>{subtitle}</span>
-            <span className="rounded-full border border-[#e9e2d3] bg-[#fbfaf7] px-2.5 py-1 text-[#050505]">{helperValue}</span>
+          <div className="mt-2 flex min-w-0 flex-col items-start gap-1 text-[10px] font-black leading-tight text-[#71717a] sm:mt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:text-sm">
+            <span className="line-clamp-2">{subtitle}</span>
+            <span className={`max-w-full rounded-full border border-[#e9e2d3] bg-[#fbfaf7] px-2 py-1 text-[#050505] ${isMoneyHelper ? 'whitespace-nowrap text-[10px]' : ''} sm:px-2.5 sm:text-sm`}>{helperValue}</span>
           </div>
         </div>
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14">
-          <Icon size={22} />
+        <span className="absolute right-0 top-0 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem]">
+          <Icon className="h-5 w-5 sm:h-[22px] sm:w-[22px]" />
         </span>
       </div>
     </div>
@@ -950,8 +978,8 @@ function MetricTile({
 
 function ReportPanel({ title, children, onOpen, className = '', reportLabel = 'Report' }: { title: string; children: ReactNode; onOpen: () => void; className?: string; reportLabel?: string }) {
   return (
-    <div className={`rounded-[1.35rem] border border-[#e5dfd2] bg-white p-5 shadow-[0_18px_45px_rgba(15,15,15,0.08)] ${className}`}>
-      <div className="mb-5 flex items-center justify-between gap-4">
+    <div className={`rounded-[1.35rem] border border-[#e5dfd2] bg-white p-3 shadow-[0_18px_45px_rgba(15,15,15,0.08)] sm:p-5 ${className}`}>
+      <div className="mb-3 flex items-center justify-between gap-3 sm:mb-5 sm:gap-4">
         <h3 className="text-lg font-black text-[#161616]">{title}</h3>
         <button type="button" onClick={onOpen} className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[#3f3f46] transition hover:bg-[#f7f3e9] hover:text-[#050505]">
           {reportLabel}
@@ -967,7 +995,7 @@ function LineSummaryChart({ data, currencySettings }: { data: { label: string; v
   const points = data.map((item, index) => `${index * 16.6},${100 - item.height}`).join(' ');
   const highest = data.reduce((max, item) => (item.value > max.value ? item : max), data[0] || { label: '-', value: 0, height: 0 });
   return (
-    <div className="relative h-64 overflow-hidden">
+    <div className="relative h-36 overflow-hidden sm:h-64">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         <defs>
           <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
@@ -978,12 +1006,12 @@ function LineSummaryChart({ data, currencySettings }: { data: { label: string; v
         <polyline points={`0,100 ${points} 100,100`} fill="url(#lineFill)" stroke="none" />
         <polyline points={points} fill="none" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <div className="absolute left-1/2 top-6 -translate-x-1/2 rounded-xl bg-[#1d1d1f] px-4 py-2 text-center text-sm font-semibold text-white shadow-xl">
+      <div className="absolute left-1/2 top-6 hidden -translate-x-1/2 rounded-xl bg-[#1d1d1f] px-4 py-2 text-center text-sm font-semibold text-white shadow-xl sm:block">
         {formatMoney(highest.value, currencySettings)}
         <div className="text-xs font-medium text-white/65">{highest.label}</div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 grid grid-cols-7 text-center text-sm font-medium text-[#71717a]">
-        {data.map((item) => <span key={item.label}>{item.label}</span>)}
+      <div className="absolute inset-x-0 bottom-0 grid grid-cols-7 text-center text-[10px] font-bold text-[#71717a] sm:text-sm sm:font-medium">
+        {data.map((item) => <span className="truncate" key={item.label}>{item.label}</span>)}
       </div>
     </div>
   );
@@ -991,11 +1019,11 @@ function LineSummaryChart({ data, currencySettings }: { data: { label: string; v
 
 function BarSummaryChart({ data, currencySettings }: { data: { label: string; value: number; height: number }[]; currencySettings: CurrencySettings }) {
   return (
-    <div className="flex h-64 items-end gap-3 border-b border-dashed border-[#ded6c8] px-2 pb-8">
+    <div className="flex h-40 items-end gap-2 border-b border-dashed border-[#ded6c8] px-1 pb-7 sm:h-64 sm:gap-3 sm:px-2 sm:pb-8">
       {data.map((item) => (
-        <div key={item.label} className="flex flex-1 flex-col items-center gap-3">
-          <div className="w-full rounded-xl bg-[#0f7f86] shadow-[0_12px_24px_rgba(15,127,134,0.22)]" style={{ height: `${Math.max(22, item.height * 1.55)}px` }} title={formatMoney(item.value, currencySettings)} />
-          <span className="text-sm font-medium text-[#71717a]">{item.label}</span>
+        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2 sm:gap-3">
+          <div className="w-full rounded-lg bg-[#0f7f86] shadow-[0_12px_24px_rgba(15,127,134,0.22)] sm:rounded-xl" style={{ height: `${Math.max(14, item.height * 1.05)}px` }} title={formatMoney(item.value, currencySettings)} />
+          <span className="truncate text-[10px] font-bold text-[#71717a] sm:text-sm sm:font-medium">{item.label}</span>
         </div>
       ))}
     </div>
@@ -1004,16 +1032,16 @@ function BarSummaryChart({ data, currencySettings }: { data: { label: string; va
 
 function PaymentMixCard({ title, value, cashLabel, creditLabel, cashPercent, creditPercent }: { title: string; value: string; cashLabel: string; creditLabel: string; cashPercent: number; creditPercent: number }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div>
-        <p className="mb-2 text-base font-semibold text-[#71717a]">{title}</p>
-        <p className="text-4xl font-medium tracking-tight text-[#050505]">{value}</p>
+        <p className="mb-1 text-sm font-semibold text-[#71717a] sm:mb-2 sm:text-base">{title}</p>
+        <p className="whitespace-nowrap text-[clamp(1.35rem,6.3vw,2.25rem)] font-black tracking-tight text-[#050505] sm:text-4xl sm:font-medium">{value}</p>
       </div>
-      <div className="border-t border-[#ebe5d9] pt-5">
-        <div className="mb-7 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div><p className="font-semibold text-[#161616]">{cashLabel}</p><p className="mt-1 text-4xl font-medium">{cashPercent}%</p></div>
+      <div className="border-t border-[#ebe5d9] pt-3 sm:pt-5">
+        <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:mb-7 sm:gap-3">
+          <div><p className="text-sm font-semibold text-[#161616] sm:text-base">{cashLabel}</p><p className="mt-1 text-2xl font-black sm:text-4xl sm:font-medium">{cashPercent}%</p></div>
           <div className="rounded-full border border-[#e5dfd2] bg-white px-3 py-2 text-sm font-medium text-[#71717a] shadow-sm">VS</div>
-          <div className="text-right"><p className="font-semibold text-[#161616]">{creditLabel}</p><p className="mt-1 text-4xl font-medium">{creditPercent}%</p></div>
+          <div className="text-right"><p className="text-sm font-semibold text-[#161616] sm:text-base">{creditLabel}</p><p className="mt-1 text-2xl font-black sm:text-4xl sm:font-medium">{creditPercent}%</p></div>
         </div>
         <div className="grid grid-cols-[1fr_0.4fr] gap-3">
           <div className="h-4 rounded-full bg-[#7c3aed]" style={{ width: `${Math.max(cashPercent, 8)}%` }} />
@@ -1029,26 +1057,46 @@ function InventoryArc({
   products,
   productsLabel,
   lowStockLabel,
-  alertsLabel
+  healthyLabel,
+  riskLabel
 }: {
   lowStock: number;
   products: number;
   productsLabel: string;
   lowStockLabel: string;
-  alertsLabel: string;
+  healthyLabel: string;
+  riskLabel: string;
 }) {
+  const healthyProducts = Math.max(products - lowStock, 0);
+  const alertPercent = products > 0 ? Math.min(100, (lowStock / products) * 100) : 0;
+  const healthyPercent = 100 - alertPercent;
+
   return (
-    <div className="flex h-64 flex-col items-center justify-center gap-5">
-      <div className="relative h-44 w-72 overflow-hidden">
-        <div className="absolute left-8 top-8 h-40 w-56 rounded-t-full border-[34px] border-b-0 border-[#0f7f86]" />
-        <div className="absolute right-11 top-14 h-28 w-28 rounded-full border-[28px] border-transparent border-r-[#db2777] rotate-[-28deg]" />
-        <div className="absolute right-8 top-[86px] h-20 w-20 rounded-full border-[24px] border-transparent border-r-[#7c3aed] rotate-[-10deg]" />
-        <div className="absolute right-11 bottom-4 h-12 w-12 rounded-full bg-[#facc15]" />
+    <div className="space-y-4 py-1 sm:space-y-5 sm:py-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#71717a]">{productsLabel}</p>
+          <p className="mt-1 text-2xl font-black tabular-nums text-[#050505]">{products.toLocaleString('en-US')}</p>
+        </div>
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-red-700">{lowStockLabel}</p>
+          <p className="mt-1 text-2xl font-black tabular-nums text-red-700">{lowStock.toLocaleString('en-US')}</p>
+        </div>
       </div>
-      <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold text-[#3f3f46]">
-        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-[#0f7f86]" /> {productsLabel} {products}</span>
-        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-[#db2777]" /> {lowStockLabel} {lowStock}</span>
-        <span className="inline-flex items-center gap-2"><i className="h-3 w-3 rounded-full bg-[#facc15]" /> {alertsLabel}</span>
+
+      <div className="rounded-2xl border border-[#e9e2d3] bg-white p-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-xs font-black text-[#3f3f46]">{healthyProducts.toLocaleString('en-US')} {healthyLabel}</span>
+          <span className="text-xs font-black text-red-600">{alertPercent.toFixed(1)}% {riskLabel}</span>
+        </div>
+        <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#f1eee6]">
+          <div className="h-full bg-[#0f8a70] transition-all" style={{ width: `${healthyPercent}%` }} />
+          <div className="h-full bg-red-500 transition-all" style={{ width: `${alertPercent}%` }} />
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-[#71717a]">
+          <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#0f8a70]" />{healthyLabel}</span>
+          <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-red-500" />{lowStockLabel}</span>
+        </div>
       </div>
     </div>
   );
@@ -1057,16 +1105,16 @@ function InventoryArc({
 function FunnelChart({ labels, values }: { labels: string[]; values: number[] }) {
   const max = Math.max(...values, 1);
   return (
-    <div className="h-64 pt-5">
+    <div className="h-44 pt-2 sm:h-64 sm:pt-5">
       <div className="grid grid-cols-4 border-b border-l border-[#e5dfd2]">
         {labels.map((label, index) => (
-          <div key={label} className="min-w-0 border-r border-[#e5dfd2] px-5">
-            <p className="truncate text-base font-medium text-[#3f3f46]">{label}</p>
-            <p className="mt-1 text-2xl font-medium text-[#050505]">{values[index].toLocaleString('en-US')}</p>
+          <div key={label} className="min-w-0 border-r border-[#e5dfd2] px-2 sm:px-5">
+            <p className="truncate text-[10px] font-bold text-[#3f3f46] sm:text-base sm:font-medium">{label}</p>
+            <p className="mt-1 text-lg font-black text-[#050505] sm:text-2xl sm:font-medium">{values[index].toLocaleString('en-US')}</p>
           </div>
         ))}
       </div>
-      <div className="mt-8 grid h-28 grid-cols-4 items-end overflow-hidden rounded-b-2xl bg-[#eef0ff]">
+      <div className="mt-4 grid h-20 grid-cols-4 items-end overflow-hidden rounded-b-2xl bg-[#eef0ff] sm:mt-8 sm:h-28">
         {values.map((value, index) => (
           <div key={index} className="border-r border-[#c9d0ff] bg-[#4f46e5]/20" style={{ height: `${Math.max(18, (value / max) * 100)}%` }}>
             <div className="h-1 rounded-full bg-[#4338ca]" />
@@ -1102,7 +1150,40 @@ function SalesTable({ ventas, t, currencySettings, isSeller = false }: { ventas:
     <Card className="overflow-hidden border-[#e5dfd2] bg-white/92 shadow-[0_22px_65px_rgba(15,15,15,0.06)] backdrop-blur-2xl">
       <CardHeader><h2 className="text-xl font-black text-[#050505] sm:text-2xl">{t.periodSales}</h2></CardHeader>
       <CardContent>
-        <div className="overflow-x-auto rounded-[1.5rem] border border-[#f1ebdf] bg-[#fffdf8]/90 shadow-inner">
+        <div className="space-y-3 lg:hidden">
+          {ventas.map((venta) => (
+            <div key={venta.id} className="rounded-[1.25rem] border border-[#e9e2d3] bg-white p-3 shadow-[0_12px_28px_rgba(15,15,15,0.05)]">
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="inline-flex rounded-full border border-[#e9e2d3] bg-[#fffdf8] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#8a6a16]">
+                    V-{String(venta.id).padStart(4, '0')}
+                  </span>
+                  <p className="mt-2 line-clamp-2 text-sm font-black text-[#050505]">{getClientName(venta.clientes, t.generalClient)}</p>
+                  <p className="mt-1 text-xs font-semibold text-[#71717a]">{new Date(`${venta.fecha}T00:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${isCancelledSale(venta) ? 'bg-red-100 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{isCancelledSale(venta) ? t.cancelled : t.active}</span>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${venta.tipo_pago === 'Contado' ? 'bg-[#050505] text-[#f4c542]' : 'bg-[#fff4c7] text-[#8a6a16]'}`}>{venta.tipo_pago === 'Contado' ? t.cash : t.credit}</span>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#f1ebdf] pt-3">
+                {!isSeller && (
+                  <div className="min-w-0 rounded-xl bg-red-50 px-2.5 py-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.1em] text-red-700">{t.discount}</p>
+                    <p className="mt-1 whitespace-nowrap text-xs font-black tabular-nums text-red-700">-{formatMoney(getSaleDiscountAmount(venta), currencySettings)}</p>
+                  </div>
+                )}
+                <div className={`min-w-0 rounded-xl bg-[#fff4c7] px-2.5 py-2 text-right ${isSeller ? 'col-span-2' : ''}`}>
+                  <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[#8a6a16]">{t.total}</p>
+                  <p className={`mt-1 whitespace-nowrap text-xs font-black tabular-nums ${isCancelledSale(venta) ? 'text-red-600 line-through' : 'text-[#8a6a16]'}`}>{isCancelledSale(venta) ? `-${formatMoney(venta.total, currencySettings)}` : formatMoney(venta.total, currencySettings)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {ventas.length === 0 && <div className="rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] py-10 text-center font-semibold text-[#71717a]">{t.noSalesPeriod}</div>}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-[1.5rem] border border-[#f1ebdf] bg-[#fffdf8]/90 shadow-inner lg:block">
           <table className="w-full min-w-[980px]">
             <thead className="border-b border-[#e9e2d3] bg-[#fbfaf7]/95 backdrop-blur-xl">
               <tr>

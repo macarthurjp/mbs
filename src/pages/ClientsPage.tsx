@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -230,6 +231,7 @@ export function ClientsPage() {
   const { user, userProfile } = useAuth();
   const { isSeller } = getUserRoleFlags(userProfile);
   const { showToast, showConfirm } = useNotification();
+  const isDesktop = useIsDesktop();
   const [negocioId, setNegocioId] = useState<string | null>(null);
   const [clients, setClients] = useState<Cliente[]>([]);
   const [filteredClients, setFilteredClients] = useState<Cliente[]>([]);
@@ -586,8 +588,7 @@ export function ClientsPage() {
           <Search className="absolute left-4 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
             type="text"
-            placeholder={t.searchPlaceholderMobile}
-            data-desktop-placeholder={t.searchPlaceholder}
+            placeholder={isDesktop ? t.searchPlaceholder : t.searchPlaceholderMobile}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-11"

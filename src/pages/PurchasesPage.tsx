@@ -15,6 +15,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 
 type Producto = {
   id: number;
@@ -343,6 +344,7 @@ export default function PurchasesPage() {
   const roleFlags = getUserRoleFlags(userProfile);
   const canManagePurchases = roleFlags.isOwner || roleFlags.isAdmin || roleFlags.isSuperAdmin;
   const { showToast, showConfirm } = useNotification();
+  const isDesktop = useIsDesktop();
 
   const [negocioId, setNegocioId] = useState<string | null>(null);
   const [products, setProducts] = useState<Producto[]>([]);
@@ -1180,8 +1182,7 @@ export default function PurchasesPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 z-10 shrink-0 -translate-y-1/2 text-[#a1a1aa]" size={18} />
               <input
                 type="text"
-                placeholder={t.searchPlaceholderMobile}
-                data-desktop-placeholder={t.searchPlaceholder}
+                placeholder={isDesktop ? t.searchPlaceholder : t.searchPlaceholderMobile}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 pl-11 text-sm font-black text-[#050505] outline-none transition placeholder:text-[#a1a1aa] focus:border-[#f4c542] focus:ring-4 focus:ring-[#f4c542]/10"

@@ -795,6 +795,8 @@ export default function ReportsPage() {
           subtitle={isSeller ? t.quantitySold : t.netTotal}
           helperValue={isSeller ? soldUnits.toLocaleString('en-US') : formatMoney(summary.totalNeto, currencySettings)}
           icon={isSeller ? ShoppingCart : DollarSign}
+          isMoneyValue={!isSeller}
+          isMoneyHelper={!isSeller}
         />
         <MetricTile
           title={t.activeSales}
@@ -813,6 +815,8 @@ export default function ReportsPage() {
             subtitle={roleFlags.isOwner ? t.estimatedProfit : t.quantitySold}
             helperValue={roleFlags.isOwner ? formatMoney(summary.gananciaEstimada, currencySettings) : soldUnits.toLocaleString('en-US')}
             icon={TrendingUp}
+            isMoneyValue
+            isMoneyHelper={roleFlags.isOwner}
           />
         )}
       </section>
@@ -943,17 +947,18 @@ function MetricTile({
   value,
   subtitle,
   helperValue,
-  icon: Icon
+  icon: Icon,
+  isMoneyValue = false,
+  isMoneyHelper = false
 }: {
   title: string;
   value: string;
   subtitle: string;
   helperValue: string;
   icon: ElementType;
+  isMoneyValue?: boolean;
+  isMoneyHelper?: boolean;
 }) {
-  const isMoneyValue = /[A-Z]{2,4}\s*-?[\d,.]+/.test(value);
-  const isMoneyHelper = /[A-Z]{2,4}\s*-?[\d,.]+/.test(helperValue);
-
   return (
     <div className="group relative min-h-[8rem] min-w-0 overflow-hidden rounded-[1.4rem] border border-[#e9e2d3]/85 bg-white/90 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { formatPhone, normalizePhoneForLink } from '../utils/formatContact';
 import { printCompactReceipt } from '../utils/receiptPrinter';
 
@@ -579,6 +580,7 @@ function getInvoiceGrossProfit(venta: Venta | null | undefined, costMap: Map<num
 export default function InvoicesPage() {
   const { user, userProfile } = useAuth();
   const { showToast } = useNotification();
+  const isDesktop = useIsDesktop();
 
   const { language } = useLanguage();
   const t = invoicesCopy[language];
@@ -1728,6 +1730,7 @@ export default function InvoicesPage() {
             value={money(totalFacturado)}
             icon={TrendingUp}
             iconClass="bg-[#fff4c7] text-[#8a6a16] border border-[#f4c542]/30"
+            isMoney
           />
         )}
         {canManageFinancials && (
@@ -1736,6 +1739,7 @@ export default function InvoicesPage() {
             value={money(invoiceMetrics.cashTotal)}
             icon={Wallet}
             iconClass="bg-green-50 text-green-700 border border-green-200"
+            isMoney
           />
         )}
         {canManageFinancials && (
@@ -1744,6 +1748,7 @@ export default function InvoicesPage() {
             value={money(invoiceMetrics.creditTotal)}
             icon={CreditCard}
             iconClass="bg-blue-50 text-blue-700 border border-blue-200"
+            isMoney
           />
         )}
         {!isSeller && (
@@ -1752,6 +1757,7 @@ export default function InvoicesPage() {
             value={money(invoiceMetrics.pendingCredit)}
             icon={Wallet}
             iconClass="bg-red-50 text-red-700 border border-red-200"
+            isMoney
           />
         )}
         {canManageFinancials && (
@@ -1760,6 +1766,7 @@ export default function InvoicesPage() {
             value={money(invoiceMetrics.averageInvoice)}
             icon={ShoppingCart}
             iconClass="bg-[#f6f4ee] text-[#050505]"
+            isMoney
           />
         )}
         {canViewProfit && (
@@ -1769,6 +1776,7 @@ export default function InvoicesPage() {
               value={money(invoiceMetrics.grossProfit)}
               icon={TrendingUp}
               iconClass="bg-emerald-50 text-emerald-700"
+              isMoney
             />
           </div>
         )}
@@ -1818,10 +1826,9 @@ export default function InvoicesPage() {
             <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
             <Input
               type="text"
-              placeholder={t.searchPlaceholderMobile}
+              placeholder={isDesktop ? t.searchPlaceholder : t.searchPlaceholderMobile}
               aria-label={t.searchPlaceholder}
               data-testid="invoice-search"
-              data-desktop-placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -2494,22 +2501,22 @@ function MetricCard({
   title,
   value,
   icon: Icon,
-  iconClass
+  iconClass,
+  isMoney = false
 }: {
   title: string;
   value: string;
   icon: ElementType;
   iconClass: string;
+  isMoney?: boolean;
 }) {
-  const isMoneyValue = /[A-Z]{2,4}\s*-?[\d,.]+/.test(value);
-
   return (
     <div className="group relative min-h-[9rem] min-w-0 overflow-hidden rounded-[1.4rem] border border-[#e9e2d3] bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(15,15,15,0.1)] sm:flex sm:min-h-0 sm:items-center sm:justify-between sm:gap-4 sm:rounded-[2rem] sm:p-6 xl:gap-3 2xl:gap-4">
       <div className="min-w-0 pt-11 sm:flex-1 sm:pt-0 sm:pr-3">
         <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.12em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:leading-snug sm:tracking-[0.22em]">
           {title}
         </p>
-        <p className={`max-w-full font-black leading-[1.02] tracking-[-0.035em] tabular-nums text-[#050505] ${isMoneyValue ? 'whitespace-nowrap text-[clamp(0.78rem,3.25vw,1.05rem)]' : 'whitespace-normal break-normal text-[clamp(1.45rem,7vw,2.15rem)]'} sm:text-[clamp(1.55rem,2.2vw,2.6rem)] sm:tracking-tight xl:text-[clamp(1.45rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.8rem,2.2vw,2.8rem)]`}>
+        <p className={`max-w-full font-black leading-[1.02] tracking-[-0.035em] tabular-nums text-[#050505] ${isMoney ? 'whitespace-nowrap text-[clamp(0.78rem,3.25vw,1.05rem)]' : 'whitespace-normal break-normal text-[clamp(1.45rem,7vw,2.15rem)]'} sm:text-[clamp(1.55rem,2.2vw,2.6rem)] sm:tracking-tight xl:text-[clamp(1.45rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.8rem,2.2vw,2.8rem)]`}>
           {value}
         </p>
       </div>

@@ -21,6 +21,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { formatEmail, formatPhone, normalizePhoneForLink } from '../utils/formatContact';
 
 type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
@@ -337,6 +338,7 @@ export default function QuotesPage() {
   const { user, userProfile } = useAuth();
   const { language } = useLanguage();
   const { showToast } = useNotification();
+  const isDesktop = useIsDesktop();
   const currentLanguage: QuotesLanguage = language === 'en' ? 'en' : 'es';
   const t = quotesCopy[currentLanguage];
   const roleFlags = getUserRoleFlags(userProfile);
@@ -1150,8 +1152,7 @@ function money(value: number | null | undefined) {
           <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
             type="text"
-            placeholder={t.searchPlaceholderMobile}
-            data-desktop-placeholder={t.searchPlaceholder}
+            placeholder={isDesktop ? t.searchPlaceholder : t.searchPlaceholderMobile}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"

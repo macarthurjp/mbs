@@ -832,15 +832,15 @@ export default function AccountsReceivablePage() {
 
       {/* Seller notice removed */}
       <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
-        <MetricCard title={t.totalReceivable} value={formatMoney(metrics.totalReceivable, currencySettings)} icon={Wallet} iconClass="bg-[#050505] text-[#f4c542]" />
+        <MetricCard title={t.totalReceivable} value={formatMoney(metrics.totalReceivable, currencySettings)} icon={Wallet} iconClass="bg-[#050505] text-[#f4c542]" isMoney />
         <MetricCard title={t.clientsWithDebt} value={metrics.clientsWithDebt.toLocaleString('en-US')} icon={Users} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
         {canManageReceivables && (
           <MetricCard title={t.exceededClients} value={metrics.exceededClients.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" valueClass="text-red-600" />
         )}
         {canManageReceivables && (
-          <MetricCard title={t.totalCreditLimit} value={formatMoney(metrics.totalCreditLimit, currencySettings)} icon={CreditCard} iconClass="bg-[#f6f4ee] text-[#050505]" />
+          <MetricCard title={t.totalCreditLimit} value={formatMoney(metrics.totalCreditLimit, currencySettings)} icon={CreditCard} iconClass="bg-[#f6f4ee] text-[#050505]" isMoney />
         )}
-        <MetricCard title={t.overdueTotal} value={formatMoney(metrics.overdueTotal, currencySettings)} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" valueClass="text-red-600" />
+        <MetricCard title={t.overdueTotal} value={formatMoney(metrics.overdueTotal, currencySettings)} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" valueClass="text-red-600" isMoney />
         <MetricCard title={t.overdueInvoices} value={metrics.overdueInvoices.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" valueClass="text-red-600" />
       </div>
 
@@ -1220,16 +1220,16 @@ function MetricCard({
   value,
   icon: Icon,
   iconClass,
-  valueClass = 'text-[#050505]'
+  valueClass = 'text-[#050505]',
+  isMoney = false
 }: {
   title: string;
   value: string;
   icon: ElementType;
   iconClass: string;
   valueClass?: string;
+  isMoney?: boolean;
 }) {
-  const isMoneyValue = /^[A-Z]{2,4}\s*-?[\d,.]+$/i.test(value.trim());
-
   return (
     <div className="group relative min-h-[9rem] min-w-0 overflow-hidden rounded-[1.45rem] border border-[#e9e2d3]/85 bg-white/90 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:flex sm:min-h-[10rem] sm:items-center sm:justify-between sm:gap-4 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -1238,7 +1238,7 @@ function MetricCard({
           {title}
         </p>
         <p className={`max-w-full font-black leading-none tracking-tight tabular-nums ${
-          isMoneyValue
+          isMoney
             ? 'whitespace-nowrap text-[clamp(0.72rem,3.15vw,0.95rem)] sm:text-[clamp(1.15rem,2.2vw,2rem)] xl:text-[clamp(1.15rem,1.55vw,1.75rem)]'
             : 'whitespace-nowrap text-[2rem] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]'
         } ${valueClass}`}>

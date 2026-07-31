@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -197,6 +198,7 @@ export default function SupportTicketsPage() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const t = supportTicketsCopy[language];
+  const isDesktop = useIsDesktop();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -603,8 +605,7 @@ export default function SupportTicketsPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t.searchPlaceholderMobile}
-                data-desktop-placeholder={t.searchPlaceholder}
+                placeholder={isDesktop ? t.searchPlaceholder : t.searchPlaceholderMobile}
                 className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 py-3 pl-11 text-sm font-bold text-[#050505] shadow-sm outline-none transition placeholder:text-[#a1a1aa] focus:border-[#f4c542] focus:ring-2 focus:ring-[#f4c542]/20 sm:h-12"
               />
             </div>

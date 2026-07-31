@@ -716,7 +716,7 @@ export default function ReportsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[#e5dfd2] bg-white/85 p-5 shadow-[0_22px_70px_rgba(15,15,15,0.08)] backdrop-blur-2xl sm:p-7">
+      <section className="relative overflow-hidden rounded-[1.5rem] border border-[#e5dfd2] bg-white/85 p-4 shadow-[0_22px_70px_rgba(15,15,15,0.08)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.18),transparent_34%)]" />
         <div className="relative z-10 flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div>
@@ -724,7 +724,7 @@ export default function ReportsPage() {
               <BarChart3 size={14} />
               MatMax Business Suite
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-[#050505] sm:text-5xl">{t.title}</h1>
+            <h1 className="text-3xl font-black tracking-tight text-[#050505] sm:text-5xl">{t.title}</h1>
             <p className="mt-3 max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a]">
               {isSeller ? t.sellerSubtitle : t.subtitle}
             </p>

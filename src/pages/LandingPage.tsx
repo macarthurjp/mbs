@@ -6,11 +6,14 @@ import {
   CreditCard,
   Crown,
   Lock,
+  Menu,
   Package,
   ShieldCheck,
   Sparkles,
-  Users
+  Users,
+  X
 } from 'lucide-react';
+import { useState } from 'react';
 import Card, { CardContent } from '../components/ui/Card';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -223,75 +226,108 @@ month: '/mo',
 
 export default function LandingPage({ onGetStarted }: LandingPageProps) {
   const { language, setLanguage } = useLanguage();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const t = landingCopy[language];
   const localizedPlans = plans[language];
   const localizedFeatures = features[language];
   return (
     <div className="matmax-page text-[#08080b]">
       <header className="sticky top-0 z-40 border-b border-[#e9e2d3] bg-[#fbfaf7]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-matmax-soft">
-              <Building2 size={23} />
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3 md:px-6 md:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-matmax-soft md:h-12 md:w-12 md:rounded-2xl">
+              <Building2 size={21} />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-[#050505] md:text-2xl">MatMax Business Suite</h1>
-              <p className="text-xs font-medium text-[#71717a] md:text-sm">{t.tagline}</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-black text-[#050505] md:text-2xl">MatMax<span className="hidden sm:inline"> Business Suite</span></h1>
+              <p className="hidden text-xs font-medium text-[#71717a] md:block md:text-sm">{t.tagline}</p>
             </div>
           </div>
 
           <div className="hidden items-center gap-7 text-sm font-semibold text-[#52525b] md:flex">
-  <a href="#features" className="transition-colors hover:text-[#050505]">{t.featuresNav}</a>
-  <a href="#pricing" className="transition-colors hover:text-[#050505]">{t.plansNav}</a>
-  <a href="#security" className="transition-colors hover:text-[#050505]">{t.securityNav}</a>
+            <a href="#features" className="transition-colors hover:text-[#050505]">{t.featuresNav}</a>
+            <a href="#pricing" className="transition-colors hover:text-[#050505]">{t.plansNav}</a>
+            <a href="#security" className="transition-colors hover:text-[#050505]">{t.securityNav}</a>
+            <button
+              type="button"
+              onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+              className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-xs font-black text-[#050505] shadow-sm transition hover:bg-[#fff9e8]"
+            >
+              {language === 'es' ? 'EN' : 'ES'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onGetStarted('basic')}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#050505] bg-[#050505] px-5 py-3 text-sm font-black text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:bg-[#111111]"
+            >
+              {t.startNow}
+              <ArrowRight size={18} />
+            </button>
+          </div>
 
-  <button
-    type="button"
-    onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
-    className="rounded-2xl border border-[#e9e2d3] bg-white px-4 py-2 text-xs font-black text-[#050505] shadow-sm transition hover:bg-[#fff9e8]"
-  >
-    {language === 'es' ? 'EN' : 'ES'}
-  </button>
-</div>
-
-          <div className="flex items-center gap-3">
-  <button
-    type="button"
-    onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
-    className="inline-flex items-center justify-center rounded-2xl border border-[#e9e2d3] bg-white px-4 py-3 text-sm font-black text-[#050505] shadow-sm transition hover:bg-[#fff9e8] md:hidden"
-  >
-    {language === 'es' ? 'EN' : 'ES'}
-  </button>
-
-  <button
-    type="button"
-    onClick={() => onGetStarted('basic')}
-    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#050505] bg-[#050505] px-5 py-3 text-sm font-black text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:bg-[#111111] hover:shadow-[0_24px_60px_rgba(0,0,0,0.32)]"
-  >
-    {t.startNow}
-    <ArrowRight size={18} />
-  </button>
-</div>
+          <button
+            type="button"
+            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#e9e2d3] bg-white text-[#050505] shadow-sm md:hidden"
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="border-t border-[#e9e2d3] bg-[#fbfaf7] px-5 pb-5 pt-3 shadow-lg md:hidden">
+            <nav className="flex flex-col gap-1 font-bold text-[#3f3f46]">
+              {[
+                [t.featuresNav, '#features'],
+                [t.plansNav, '#pricing'],
+                [t.securityNav, '#security'],
+              ].map(([label, href]) => (
+                <a key={href} href={href} onClick={() => setIsMobileMenuOpen(false)} className="rounded-xl px-3 py-3 hover:bg-white">
+                  {label}
+                </a>
+              ))}
+            </nav>
+            <div className="mt-3 grid grid-cols-[auto_1fr] gap-3">
+              <button
+                type="button"
+                onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+                className="rounded-xl border border-[#e9e2d3] bg-white px-4 py-3 text-sm font-black"
+              >
+                {language === 'es' ? 'EN' : 'ES'}
+              </button>
+              <button
+                type="button"
+                onClick={() => onGetStarted('basic')}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#050505] px-5 py-3 text-sm font-black text-[#f4c542]"
+              >
+                {t.startNow}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-6 py-20 md:py-28 lg:grid-cols-2">
+        <section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-5 pb-16 pt-10 sm:px-6 md:gap-14 md:py-28 lg:grid-cols-2">
           <div>
-            <div className="matmax-pill mb-7 px-4 py-2 text-sm font-bold">
+            <div className="matmax-pill mb-5 max-w-full px-3 py-2 text-xs font-bold sm:mb-7 sm:px-4 sm:text-sm">
               <Sparkles size={16} className="text-[#b88900]" />
-              {t.saasBadge}
+              <span className="sm:hidden">{language === 'es' ? 'SaaS para negocios modernos' : 'SaaS for modern businesses'}</span>
+              <span className="hidden sm:inline">{t.saasBadge}</span>
             </div>
 
-            <h2 className="matmax-heading-gradient mb-7 text-5xl font-serif font-bold leading-[1.25] tracking-tight md:text-7xl">
+            <h2 className="matmax-heading-gradient mb-5 text-[clamp(2.75rem,13vw,3.5rem)] font-serif font-bold leading-[0.98] tracking-[-0.035em] sm:mb-7 sm:text-6xl sm:leading-[1.05] md:text-7xl">
               {t.heroTitle}
             </h2>
 
-            <p className="mb-9 max-w-2xl text-lg leading-relaxed text-[#52525b] md:text-xl">
+            <p className="mb-7 max-w-2xl text-base leading-7 text-[#52525b] sm:mb-9 sm:text-lg sm:leading-relaxed md:text-xl">
               {t.heroDescription}
             </p>
 
-            <div className="mb-9 flex flex-col gap-4 sm:flex-row">
+            <div className="mb-8 flex flex-col gap-3 pb-[env(safe-area-inset-bottom)] sm:mb-9 sm:flex-row sm:gap-4">
               <button
                 type="button"
                 onClick={() => onGetStarted('basic')}
@@ -475,19 +511,19 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           </Card>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-20 text-center">
-          <div className="rounded-[2rem] bg-[#050505] p-10 text-white shadow-matmax md:p-16">
-            <Crown size={42} className="mx-auto mb-5 text-[#f4c542]" />
-            <h2 className="mb-4 text-4xl font-serif font-bold md:text-5xl">
+        <section className="mx-auto max-w-7xl px-5 pb-12 pt-10 text-center sm:px-6 md:py-20">
+          <div className="rounded-[1.75rem] bg-[#050505] px-6 py-9 text-white shadow-matmax sm:p-10 md:rounded-[2rem] md:p-16">
+            <Crown size={36} className="mx-auto mb-4 text-[#f4c542] md:mb-5 md:h-[42px] md:w-[42px]" />
+            <h2 className="mx-auto mb-3 max-w-3xl text-3xl font-serif font-bold leading-tight sm:text-4xl md:mb-4 md:text-5xl">
               {t.ctaHeading}
             </h2>
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-white/70">
+            <p className="mx-auto mb-6 max-w-2xl text-base leading-7 text-white/70 md:mb-8 md:text-lg">
               {t.ctaDescription}
             </p>
             <button
               type="button"
               onClick={() => onGetStarted('basic')}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#f4c542] bg-[#f4c542] px-8 py-4 text-base font-black text-[#050505] shadow-[0_18px_40px_rgba(244,197,66,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ffd95a] hover:shadow-[0_24px_60px_rgba(244,197,66,0.34)]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f4c542] bg-[#f4c542] px-6 py-3.5 text-base font-black text-[#050505] shadow-[0_18px_40px_rgba(244,197,66,0.28)] transition hover:-translate-y-0.5 hover:bg-[#ffd95a] hover:shadow-[0_24px_60px_rgba(244,197,66,0.34)] sm:w-auto sm:px-8 sm:py-4"
             >
               {t.createAccountNow}
               <ArrowRight size={20} />
@@ -497,18 +533,19 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       </main>
 
       <footer className="border-t border-[#e9e2d3] bg-[#fbfaf7]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-[#71717a] md:flex-row">
-          <p>
-            © {new Date().getFullYear()} MatMax Consulting SARL-S. {t.footerRights}
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-5 pb-[calc(1.75rem+env(safe-area-inset-bottom))] pt-7 text-center text-sm text-[#71717a] sm:px-6 md:flex-row md:py-8 md:text-left">
+          <p className="max-w-sm leading-6 md:max-w-none">
+            <span className="block sm:inline">© {new Date().getFullYear()} MatMax Consulting SARL-S.</span>{' '}
+            <span className="block sm:inline">{t.footerRights}</span>
           </p>
-          <div className="flex items-center gap-6">
-            <a href="/terms" className="font-medium transition hover:text-[#050505]">
+          <nav aria-label="Legal" className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+            <a href="/terms" className="font-semibold transition hover:text-[#050505]">
               {t.footerTerms}
             </a>
-            <a href="/privacy" className="font-medium transition hover:text-[#050505]">
+            <a href="/privacy" className="font-semibold transition hover:text-[#050505]">
               {t.footerPrivacy}
             </a>
-          </div>
+          </nav>
         </div>
       </footer>
     </div>

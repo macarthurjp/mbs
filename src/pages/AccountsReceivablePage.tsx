@@ -736,7 +736,7 @@ export default function AccountsReceivablePage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-5 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:p-7 xl:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.9),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
         <div className="relative z-10 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] xl:items-stretch">
@@ -752,7 +752,7 @@ export default function AccountsReceivablePage() {
                 <Sparkles size={14} />
                 {t.businessSuite}
               </button>
-              <h1 className="mb-3 text-4xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-6xl">
+              <h1 className="mb-3 text-3xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-6xl">
                 {t.title}
               </h1>
               <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
@@ -831,7 +831,7 @@ export default function AccountsReceivablePage() {
       </section>
 
       {/* Seller notice removed */}
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
         <MetricCard title={t.totalReceivable} value={formatMoney(metrics.totalReceivable, currencySettings)} icon={Wallet} iconClass="bg-[#050505] text-[#f4c542]" />
         <MetricCard title={t.clientsWithDebt} value={metrics.clientsWithDebt.toLocaleString('en-US')} icon={Users} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
         {canManageReceivables && (

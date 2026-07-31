@@ -377,7 +377,11 @@ export default function NotificationsPage() {
   } = useNotification();
 
   const readCount = notifications.length - unreadCount;
-  const groups = groupNotifications(notifications);
+  const [viewFilter, setViewFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const visibleNotifications = notifications.filter((notification) =>
+    viewFilter === 'all' ? true : viewFilter === 'unread' ? !notification.read : notification.read
+  );
+  const groups = groupNotifications(visibleNotifications);
 
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [ticketModalLoading, setTicketModalLoading] = useState(false);
@@ -494,7 +498,7 @@ export default function NotificationsPage() {
     return (
       <div
         key={notification.id}
-        className={`group relative overflow-hidden rounded-[1.5rem] border p-4 shadow-[0_14px_34px_rgba(15,15,15,0.045)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(15,15,15,0.08)] sm:p-5 ${
+        className={`group relative overflow-hidden rounded-[1.25rem] border p-3 shadow-[0_14px_34px_rgba(15,15,15,0.045)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(15,15,15,0.08)] sm:rounded-[1.5rem] sm:p-5 ${
           notification.read
             ? 'border-[#e9e2d3] bg-white/88'
             : 'border-[#f4c542]/35 bg-[#fffdf8]'
@@ -504,21 +508,21 @@ export default function NotificationsPage() {
           <div className="pointer-events-none absolute inset-y-4 left-0 w-1 rounded-r-full bg-[#f4c542]" />
         )}
 
-        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${styles.icon}`}>
-              <Icon className="h-5 w-5 shrink-0" />
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 sm:rounded-2xl ${styles.icon}`}>
+              <Icon className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+              <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${styles.badge}`}>
                   {getNotificationTypeLabel(notification.type, t)}
                 </span>
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${notification.read ? 'bg-[#f4f1e8] text-[#71717a]' : 'bg-[#050505] text-[#f4c542]'}`}>
                   {notification.read ? t.readLabel : t.unreadLabel}
                 </span>
-                <span className="rounded-full border border-[#e9e2d3] bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a]">
+                <span className="hidden rounded-full border border-[#e9e2d3] bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a] sm:inline-flex">
                   {notificationCode}
                 </span>
               </div>
@@ -527,7 +531,7 @@ export default function NotificationsPage() {
                 {notification.title}
               </h3>
 
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#71717a]">
+              <p className="mt-1.5 line-clamp-2 whitespace-pre-wrap break-words text-xs font-medium leading-5 text-[#71717a] sm:mt-2 sm:text-sm sm:leading-relaxed">
                 {notification.message}
               </p>
 
@@ -538,12 +542,12 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-2 sm:min-w-[132px]">
+          <div className="grid min-w-0 shrink-0 grid-cols-2 gap-2 sm:min-w-[132px] sm:grid-cols-1">
             {(notification.link || isProductNotification(notification)) && (
               <button
                 type="button"
                 onClick={() => openNotification(notification)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#050505] bg-[#050505] px-3 py-2 text-xs font-black text-[#f4c542] transition hover:-translate-y-0.5 hover:bg-[#111111]"
+                className="col-span-2 inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#050505] bg-[#050505] px-3 py-2 text-center text-xs font-black leading-tight text-[#f4c542] transition hover:-translate-y-0.5 hover:bg-[#111111] sm:col-span-1 sm:w-full"
               >
                 <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                 {getNotificationActionLabel(notification, t)}
@@ -554,7 +558,7 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => markNotificationRead(notification.id)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
+                className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-2 py-2 text-center text-[11px] font-black leading-tight text-emerald-700 transition hover:bg-emerald-100 sm:w-full sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <CheckCheck className="h-3.5 w-3.5 shrink-0" />
                 {t.markRead}
@@ -564,7 +568,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={() => clearNotification(notification.id)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-100"
+              className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-2 py-2 text-center text-[11px] font-black leading-tight text-red-600 transition hover:bg-red-100 sm:w-full sm:gap-2 sm:px-3 sm:text-xs"
             >
               <Trash2 className="h-3.5 w-3.5 shrink-0" />
               {t.clear}
@@ -597,25 +601,25 @@ export default function NotificationsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-8">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-5 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:p-7 xl:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
 
-        <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
+        <div className="relative z-10 flex min-w-0 flex-col justify-between gap-4 sm:gap-6 xl:flex-row xl:items-center">
           <div className="min-w-0">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#eadfca] bg-white/75 px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#8a6a16] shadow-sm backdrop-blur-xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#eadfca] bg-white/75 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-[#8a6a16] shadow-sm backdrop-blur-xl sm:mb-4 sm:px-3.5 sm:py-2 sm:text-[11px]">
               <Bell size={14} />
               MatMax Business Suite
             </div>
-            <h1 className="mb-3 text-4xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-[4rem]">
+            <h1 className="mb-3 text-3xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-[4rem]">
               {t.title}
             </h1>
-            <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
+            <p className="max-w-3xl text-xs font-bold uppercase leading-5 tracking-[0.12em] text-[#71717a] sm:text-base sm:tracking-[0.18em]">
               {t.subtitle}
             </p>
           </div>
 
-          <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[520px]">
+          <div className="grid w-full min-w-0 grid-cols-3 gap-2 sm:gap-3 xl:w-[520px]">
             <NotificationMetric title={t.total} value={notifications.length} />
             <NotificationMetric title={t.unread} value={unreadCount} dark />
             <NotificationMetric title={t.read} value={readCount} />
@@ -625,7 +629,7 @@ export default function NotificationsPage() {
 
       <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_22px_65px_rgba(15,15,15,0.06)] backdrop-blur-2xl">
         <CardContent className="p-4 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-xl font-black text-[#050505]">
                 {t.title}
@@ -633,6 +637,25 @@ export default function NotificationsPage() {
               <p className="mt-1 text-sm font-semibold text-[#71717a]">
                 {unreadCount.toLocaleString('en-US')} {t.unread.toLowerCase()}
               </p>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:order-none">
+              {([
+                ['all', t.total, notifications.length],
+                ['unread', t.unread, unreadCount],
+                ['read', t.read, readCount],
+              ] as const).map(([value, label, count]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setViewFilter(value)}
+                  className={`shrink-0 rounded-full px-3 py-2 text-xs font-black ${
+                    viewFilter === value ? 'bg-[#050505] text-[#f4c542]' : 'border border-[#e9e2d3] bg-[#fbfaf7] text-[#52525b]'
+                  }`}
+                >
+                  {label} · {count}
+                </button>
+              ))}
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -660,7 +683,7 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {notifications.length === 0 ? (
+          {visibleNotifications.length === 0 ? (
             <div className="rounded-[1.5rem] border border-dashed border-[#e9e2d3] bg-[#fbfaf7] px-5 py-12 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.35rem] bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
                 <Bell className="h-7 w-7" />
@@ -800,11 +823,11 @@ function NotificationMetric({
   dark?: boolean;
 }) {
   return (
-    <div className={`relative min-w-0 overflow-hidden rounded-[1.5rem] border p-4 shadow-sm backdrop-blur-xl ${dark ? 'border-[#050505] bg-[#050505] text-white' : 'border-[#e9e2d3] bg-white/78 text-[#050505]'}`}>
-      <p className={`mb-2 text-[10px] font-black uppercase tracking-[0.2em] ${dark ? 'text-[#f4c542]' : 'text-[#8a6a16]'}`}>
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border p-3 shadow-sm backdrop-blur-xl sm:rounded-[1.5rem] sm:p-4 ${dark ? 'border-[#050505] bg-[#050505] text-white' : 'border-[#e9e2d3] bg-white/78 text-[#050505]'}`}>
+      <p className={`mb-1 truncate text-[8px] font-black uppercase tracking-[0.12em] sm:mb-2 sm:text-[10px] sm:tracking-[0.2em] ${dark ? 'text-[#f4c542]' : 'text-[#8a6a16]'}`}>
         {title}
       </p>
-      <p className={`break-words text-3xl font-black leading-none tracking-tight tabular-nums ${dark ? 'text-[#f4c542]' : 'text-[#050505]'}`}>
+      <p className={`break-words text-2xl font-black leading-none tracking-tight tabular-nums sm:text-3xl ${dark ? 'text-[#f4c542]' : 'text-[#050505]'}`}>
         {value.toLocaleString('en-US')}
       </p>
     </div>

@@ -258,6 +258,7 @@ export function UsersPage() {
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'seller' | 'protected'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [openBusinessIds, setOpenBusinessIds] = useState<Record<string, boolean>>({});
 
@@ -337,7 +338,7 @@ export function UsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, roleFilter]);
 
   const normalizeUserRole = useCallback((role: UserRole | string | null | undefined) => {
     const value = String(role || 'seller').toLowerCase().trim();
@@ -440,14 +441,18 @@ export function UsersPage() {
       const businessName = getBusinessDisplayName(item);
 
       return (
-        getUserDisplayName(item).toLowerCase().includes(search) ||
-        (item.email || '').toLowerCase().includes(search) ||
-        (item.username || '').toLowerCase().includes(search) ||
-        businessName.toLowerCase().includes(search) ||
-        String(role || '').toLowerCase().includes(search)
+        (roleFilter === 'all' ||
+          (roleFilter === 'protected' ? isProtectedUser(item) : role === roleFilter)) &&
+        (
+          getUserDisplayName(item).toLowerCase().includes(search) ||
+          (item.email || '').toLowerCase().includes(search) ||
+          (item.username || '').toLowerCase().includes(search) ||
+          businessName.toLowerCase().includes(search) ||
+          String(role || '').toLowerCase().includes(search)
+        )
       );
     });
-  }, [users, searchTerm, getBusinessDisplayName, getUserDisplayName, getUserRole]);
+  }, [users, searchTerm, roleFilter, getBusinessDisplayName, getUserDisplayName, getUserRole, isProtectedUser]);
 
   const userMetrics = useMemo(() => {
     const admins = users.filter((item) => getUserRole(item) === 'admin').length;
@@ -967,8 +972,8 @@ export function UsersPage() {
 
     if (normalizedRole === 'super_admin') {
       return (
-        <span className="inline-flex h-9 min-w-[118px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#050505] px-3 text-sm font-black leading-none text-[#f4c542]">
-          <Crown size={16} className="shrink-0 text-[#f4c542]" />
+        <span className="inline-flex h-7 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#050505] px-2.5 text-xs font-black leading-none text-[#f4c542] sm:h-9 sm:min-w-[118px] sm:gap-2 sm:rounded-xl sm:px-3 sm:text-sm">
+          <Crown size={14} className="shrink-0 text-[#f4c542] sm:h-4 sm:w-4" />
           {t.superAdmin}
         </span>
       );
@@ -976,16 +981,16 @@ export function UsersPage() {
 
     if (normalizedRole === 'owner' || normalizedRole === 'admin') {
       return (
-        <span className="inline-flex h-9 min-w-[118px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#fff4c7] px-3 text-sm font-black leading-none text-[#8a6a16]">
-          <Shield size={16} className="shrink-0 text-[#8a6a16]" />
+        <span className="inline-flex h-7 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#fff4c7] px-2.5 text-xs font-black leading-none text-[#8a6a16] sm:h-9 sm:min-w-[118px] sm:gap-2 sm:rounded-xl sm:px-3 sm:text-sm">
+          <Shield size={14} className="shrink-0 text-[#8a6a16] sm:h-4 sm:w-4" />
           {normalizedRole === 'owner' ? t.owner : t.admin}
         </span>
       );
     }
 
     return (
-      <span className="inline-flex h-9 min-w-[118px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-100 px-3 text-sm font-black leading-none text-blue-700">
-        <ShoppingBag size={16} className="shrink-0 text-blue-600" />
+      <span className="inline-flex h-7 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-blue-100 px-2.5 text-xs font-black leading-none text-blue-700 sm:h-9 sm:min-w-[118px] sm:gap-2 sm:rounded-xl sm:px-3 sm:text-sm">
+        <ShoppingBag size={14} className="shrink-0 text-blue-600 sm:h-4 sm:w-4" />
         {t.seller}
       </span>
     );
@@ -1029,38 +1034,31 @@ export function UsersPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-8">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-5 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:p-7 xl:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
-        <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
+        <div className="relative z-10 flex min-w-0 flex-col justify-between gap-4 sm:gap-6 xl:flex-row xl:items-center">
           <div className="min-w-0">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#eadfca] bg-white/75 px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-[#8a6a16] shadow-sm backdrop-blur-xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#eadfca] bg-white/75 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-[#8a6a16] shadow-sm backdrop-blur-xl sm:mb-4 sm:px-3.5 sm:py-2 sm:text-[11px] sm:tracking-[0.22em]">
               <Users size={14} />
               MatMax Business Suite
             </div>
-            <h1 className="mb-3 text-4xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-[4rem]">
+            <h1 className="mb-2 text-3xl font-black tracking-tight text-[#050505] sm:mb-3 sm:text-5xl xl:text-[4rem]">
               {t.title}
             </h1>
-            <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
+            <p className="max-w-3xl text-xs font-bold uppercase leading-5 tracking-[0.12em] text-[#71717a] sm:text-base sm:tracking-[0.18em]">
               {t.subtitle}
             </p>
           </div>
 
-          <Button type="button" className="w-full rounded-2xl px-5 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:w-auto" onClick={openCreateModal}>
+          <Button type="button" className="w-full rounded-xl px-5 py-2.5 shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:w-auto sm:rounded-2xl sm:py-3" onClick={openCreateModal}>
             <UserPlus className="shrink-0" size={20} />
             {t.newUser}
           </Button>
         </div>
       </section>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <UserMetricCard title={t.totalUsers} value={userMetrics.totalUsers.toLocaleString('en-US')} icon={Users} iconClass="bg-[#050505] text-[#f4c542]" />
-        <UserMetricCard title={t.admins} value={userMetrics.admins.toLocaleString('en-US')} icon={Shield} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
-        <UserMetricCard title={t.sellers} value={userMetrics.sellers.toLocaleString('en-US')} icon={ShoppingBag} iconClass="bg-blue-50 text-blue-700" />
-        <UserMetricCard title={t.protectedUsers} value={userMetrics.protectedUsers.toLocaleString('en-US')} icon={Crown} iconClass="bg-[#f6f4ee] text-[#050505]" />
-      </div>
-
-      <div className="rounded-[1.6rem] border border-[#e9e2d3] bg-white/92 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-white/92 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
@@ -1071,10 +1069,36 @@ export function UsersPage() {
             className="pl-10"
           />
         </div>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {([
+            ['all', language === 'es' ? 'Todos' : 'All', userMetrics.totalUsers],
+            ['admin', t.admins, userMetrics.admins],
+            ['seller', t.sellers, userMetrics.sellers],
+            ['protected', t.protectedUsers, userMetrics.protectedUsers],
+          ] as const).map(([value, label, count]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setRoleFilter(value)}
+              className={`shrink-0 rounded-full px-3 py-2 text-xs font-black transition ${
+                roleFilter === value ? 'bg-[#050505] text-[#f4c542]' : 'border border-[#e9e2d3] bg-[#fbfaf7] text-[#52525b]'
+              }`}
+            >
+              {label} · {count}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <UserMetricCard title={t.totalUsers} value={userMetrics.totalUsers.toLocaleString('en-US')} icon={Users} iconClass="bg-[#050505] text-[#f4c542]" />
+        <UserMetricCard title={t.admins} value={userMetrics.admins.toLocaleString('en-US')} icon={Shield} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
+        <UserMetricCard title={t.sellers} value={userMetrics.sellers.toLocaleString('en-US')} icon={ShoppingBag} iconClass="bg-blue-50 text-blue-700" />
+        <UserMetricCard title={t.protectedUsers} value={userMetrics.protectedUsers.toLocaleString('en-US')} icon={Crown} iconClass="bg-[#f6f4ee] text-[#050505]" />
       </div>
 
       <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_22px_65px_rgba(15,15,15,0.06)] backdrop-blur-2xl">
-        <CardContent>
+        <CardContent className="p-2 sm:p-5 xl:p-6">
           {loading && users.length === 0 ? (
             <div className="py-12 text-center font-semibold text-[#71717a]">
               {t.loadingUsers}
@@ -1088,22 +1112,22 @@ export function UsersPage() {
             <>
               <div className="space-y-3">
                 {groupedUsersByBusiness.map((group) => {
-                  const isOpen = openBusinessIds[group.businessId] ?? true;
+                  const isOpen = openBusinessIds[group.businessId] ?? false;
 
                   return (
-                    <div key={group.businessId} className="overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white shadow-[0_14px_34px_rgba(15,15,15,0.05)]">
+                    <div key={group.businessId} className="overflow-hidden rounded-[1.25rem] border border-[#e9e2d3] bg-white shadow-[0_14px_34px_rgba(15,15,15,0.05)] sm:rounded-[1.5rem]">
                       <button
                         type="button"
                         onClick={() => setOpenBusinessIds((current) => ({ ...current, [group.businessId]: !isOpen }))}
-                        className="flex w-full min-w-0 items-center justify-between gap-4 bg-[#fbfaf7] px-4 py-4 text-left transition hover:bg-[#fff9e8]"
+                        className="flex w-full min-w-0 items-center justify-between gap-3 bg-[#fbfaf7] px-3 py-3 text-left transition hover:bg-[#fff9e8] sm:gap-4 sm:px-4 sm:py-4"
                       >
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.16)]">
-                            <Building2 size={20} />
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#050505] text-[#f4c542] shadow-[0_14px_30px_rgba(0,0,0,0.16)] sm:h-11 sm:w-11 sm:rounded-2xl">
+                            <Building2 size={18} />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-lg font-black text-[#050505]">{group.businessName}</p>
-                            <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">
+                            <p className="truncate text-sm font-black text-[#050505] sm:text-lg">{group.businessName}</p>
+                            <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.1em] text-[#8a6a16] sm:text-xs sm:tracking-[0.14em]">
                               {group.users.length.toLocaleString('en-US')} {t.user} · {group.owners.toLocaleString('en-US')} {t.owner} · {group.admins.toLocaleString('en-US')} {t.admin} · {group.sellers.toLocaleString('en-US')} {t.seller}
                             </p>
                           </div>
@@ -1121,7 +1145,7 @@ export function UsersPage() {
                       {isOpen && (
                         <div className="divide-y divide-[#f1ebdf]">
                           {group.users.map((item) => (
-                            <div key={item.id} className="grid min-w-0 grid-cols-1 gap-3 px-4 py-4 transition hover:bg-[#fffdf8] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_auto] lg:items-center">
+                            <div key={item.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-3 transition hover:bg-[#fffdf8] sm:gap-3 sm:px-4 sm:py-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_auto]">
                               <div className="min-w-0">
                                 <p className="break-words font-black text-[#050505]">{getUserDisplayName(item)}</p>
                                 {item.email && <p className="mt-1 break-words text-sm font-semibold text-[#71717a]">{formatEmail(item.email)}</p>}
@@ -1130,11 +1154,11 @@ export function UsersPage() {
                                 </p>
                               </div>
 
-                              <div className="flex min-w-0 items-center">
+                              <div className="flex min-w-0 items-center justify-end lg:justify-start">
                                 {renderRoleBadge(item.rol)}
                               </div>
 
-                              <div className="flex flex-wrap items-center justify-end gap-2">
+                              <div className="col-span-2 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
                                 {!canDeleteUser(item) && isProtectedUser(item) ? (
                                   <div className="rounded-xl border border-[#f4c542]/30 bg-[#fff4c7] px-3 py-2 text-xs font-black text-[#8a6a16]">
                                     {getProtectedLabel(item)}
@@ -1470,18 +1494,18 @@ function UserMetricCard({
   iconClass: string;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className="group relative flex min-h-36 min-w-0 flex-col justify-between overflow-hidden rounded-[1.4rem] border border-[#e9e2d3]/85 bg-white/90 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:min-h-0 sm:flex-row sm:items-center sm:gap-4 sm:rounded-[1.75rem] sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
-        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
+      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pt-10 sm:pr-2 sm:pt-0">
+        <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-4 tracking-[0.14em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full break-words text-[2rem] font-black leading-[0.95] tracking-tight tabular-nums text-[#050505] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]">
+        <p className="max-w-full break-words text-[1.75rem] font-black leading-[0.95] tracking-tight tabular-nums text-[#050505] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]">
           {value}
         </p>
       </div>
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${iconClass}`}>
-        <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
+      <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>
+        <Icon className="h-4 w-4 shrink-0 sm:h-6 sm:w-6" />
       </div>
     </div>
   );

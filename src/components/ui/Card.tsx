@@ -31,7 +31,7 @@ interface CardHeaderProps {
 export function CardHeader({ children, className = '' }: CardHeaderProps) {
   return (
     <div
-      className={`relative overflow-hidden border-b border-[#f1ebdf] bg-gradient-to-r from-[#fffdf8] via-[#fdfbf7] to-white px-6 py-5 backdrop-blur-xl ${className}`}
+      className={`relative overflow-hidden border-b border-[#f1ebdf] bg-gradient-to-r from-[#fffdf8] via-[#fdfbf7] to-white px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5 ${className}`}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_42%)]" />
 
@@ -51,7 +51,7 @@ interface CardContentProps {
 
 export function CardContent({ children, className = '' }: CardContentProps) {
   return (
-    <div className={`relative z-10 p-6 lg:p-7 xl:p-8 ${className}`}>
+    <div className={`relative z-10 p-4 sm:p-6 lg:p-7 xl:p-8 ${className}`}>
       {children}
     </div>
   );

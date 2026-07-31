@@ -228,13 +228,14 @@ export default function SuperAdminPage() {
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'activo' | 'trial' | 'bloqueado'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedBusinessId, setExpandedBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, statusFilter]);
 
 
   const businessSummaries = useMemo(() => {
@@ -279,17 +280,21 @@ export default function SuperAdminPage() {
         .toLowerCase();
 
       return (
-        business.nombre.toLowerCase().includes(value) ||
-        business.id.toLowerCase().includes(value) ||
-        (business.plan || '').toLowerCase().includes(value) ||
-        (business.estado || '').toLowerCase().includes(value) ||
-        (business.telefono || '').toLowerCase().includes(value) ||
-        usersText.includes(value)
+        (statusFilter === 'all' ||
+          (statusFilter === 'trial' ? business.plan === 'trial' : business.estado === statusFilter)) &&
+        (
+          business.nombre.toLowerCase().includes(value) ||
+          business.id.toLowerCase().includes(value) ||
+          (business.plan || '').toLowerCase().includes(value) ||
+          (business.estado || '').toLowerCase().includes(value) ||
+          (business.telefono || '').toLowerCase().includes(value) ||
+          usersText.includes(value)
+        )
       );
     });
 
     setFilteredBusinesses(filtered);
-  }, [search, businessSummaries]);
+  }, [search, statusFilter, businessSummaries]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBusinesses.length / BUSINESSES_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -506,7 +511,12 @@ export default function SuperAdminPage() {
 
     return (
       <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black ${className}`}>
-        {getRoleLabel(role)}
+        {normalizedRole === 'admin' ? (
+          <>
+            <span className="sm:hidden">Admin</span>
+            <span className="hidden sm:inline">{getRoleLabel(role)}</span>
+          </>
+        ) : getRoleLabel(role)}
       </span>
     );
   }
@@ -618,7 +628,7 @@ export default function SuperAdminPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-8">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-5 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:p-7 xl:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
         <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
@@ -627,7 +637,7 @@ export default function SuperAdminPage() {
               <Shield size={14} />
               MatMax Business Suite
             </div>
-            <h1 className="mb-3 text-4xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-[4rem]">
+            <h1 className="mb-3 text-3xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-[4rem]">
               {t.title}
             </h1>
             <p className="max-w-4xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
@@ -642,18 +652,7 @@ export default function SuperAdminPage() {
         </div>
       </section>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
-        <MetricCard title={t.businesses} value={metrics.total.toLocaleString('en-US')} icon={Building2} iconClass="bg-[#050505] text-[#f4c542]" />
-        <MetricCard title={t.active} value={metrics.active.toLocaleString('en-US')} icon={TrendingUp} iconClass="bg-[#050505] text-[#f4c542]" />
-        <MetricCard title={t.users} value={metrics.totalUsers.toLocaleString('en-US')} icon={Users} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
-        <MetricCard title={t.blocked} value={metrics.blocked.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" />
-        <MetricCard title={t.trial} value={metrics.trial.toLocaleString('en-US')} icon={Sparkles} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
-        <MetricCard title={t.subscriptions} value={metrics.activeSubscriptions.toLocaleString('en-US')} icon={CreditCard} iconClass="bg-[#050505] text-[#f4c542]" />
-        <MetricCard title={language === 'es' ? 'Con owner' : 'With owner'} value={metrics.businessesWithOwner.toLocaleString('en-US')} icon={Shield} iconClass="bg-emerald-50 text-emerald-700" />
-        <MetricCard title={language === 'es' ? 'Owner pendiente' : 'Owner pending'} value={metrics.businessesWithoutOwner.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" />
-      </div>
-
-      <div className="rounded-[1.6rem] border border-[#e9e2d3] bg-white/92 p-4 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
+      <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-white/92 p-3 shadow-[0_18px_50px_rgba(15,15,15,0.06)] backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 shrink-0 -translate-y-1/2 transform text-[#a1a1aa]" size={20} />
           <Input
@@ -664,6 +663,41 @@ export default function SuperAdminPage() {
             className="pl-10"
           />
         </div>
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {([
+            ['all', language === 'es' ? 'Todos' : 'All', metrics.total],
+            ['activo', t.active, metrics.active],
+            ['trial', t.trial, metrics.trial],
+            ['bloqueado', t.blocked, metrics.blocked],
+          ] as const).map(([value, label, count]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStatusFilter(value)}
+              className={`shrink-0 rounded-full px-3 py-2 text-xs font-black transition ${
+                statusFilter === value
+                  ? 'bg-[#050505] text-[#f4c542]'
+                  : 'border border-[#e9e2d3] bg-[#fbfaf7] text-[#52525b] hover:bg-[#fff9e8]'
+              }`}
+            >
+              {label} · {count}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
+        <MetricCard compact title={t.businesses} value={metrics.total.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={Building2} iconClass="bg-[#050505] text-[#f4c542]" />
+        <MetricCard compact title={t.active} value={metrics.active.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} detail={`${metrics.active}/${metrics.total} · ${metrics.total > 0 ? Math.round((metrics.active / metrics.total) * 100) : 0}%`} icon={TrendingUp} iconClass="bg-[#050505] text-[#f4c542]" />
+        <MetricCard compact title={t.trial} value={metrics.trial.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={Sparkles} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
+        <MetricCard compact title={t.blocked} value={metrics.blocked.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" />
+      </div>
+
+      <div className="hidden min-w-0 grid-cols-2 gap-4 sm:grid 2xl:grid-cols-4">
+        <MetricCard title={t.users} value={metrics.totalUsers.toLocaleString('en-US')} icon={Users} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
+        <MetricCard title={t.subscriptions} value={metrics.activeSubscriptions.toLocaleString('en-US')} icon={CreditCard} iconClass="bg-[#050505] text-[#f4c542]" />
+        <MetricCard title={language === 'es' ? 'Con owner' : 'With owner'} value={metrics.businessesWithOwner.toLocaleString('en-US')} icon={Shield} iconClass="bg-emerald-50 text-emerald-700" />
+        <MetricCard title={language === 'es' ? 'Owner pendiente' : 'Owner pending'} value={metrics.businessesWithoutOwner.toLocaleString('en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" />
       </div>
 
       <Card className="overflow-hidden border-[#e9e2d3] bg-white/92 shadow-[0_22px_65px_rgba(15,15,15,0.06)] backdrop-blur-2xl">
@@ -790,40 +824,62 @@ export default function SuperAdminPage() {
               const isExpanded = expandedBusinessId === business.id;
 
               return (
-                <article key={business.id} className="relative overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 shadow-[0_14px_34px_rgba(15,15,15,0.06)]">
+                <article key={business.id} className="relative overflow-hidden border-b border-[#e9e2d3] bg-white last:border-b-0">
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.10),transparent_38%)]" />
-                  <div className="relative z-10 space-y-4">
-                    <div className="flex min-w-0 items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedBusinessId(isExpanded ? null : business.id)}
-                          className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e9e2d3] bg-white text-[#8a6a16] transition-all hover:bg-[#fff4c7]"
-                          title={isExpanded ? t.collapseBusiness : t.expandBusiness}
-                        >
-                          <ChevronDown className={`shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} size={18} />
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.business}</p>
-                          <h3 className="mt-1 break-words text-xl font-black text-[#050505]">{business.nombre}</h3>
-                          <p className="mt-1 text-sm font-semibold text-[#71717a]">{formatPhone(business.telefono, t.noPhone)}</p>
-                        </div>
-                      </div>
-                      <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${business.estado === 'activo' ? 'bg-[#050505] text-[#f4c542]' : business.estado === 'bloqueado' ? 'bg-red-100 text-red-700' : 'bg-[#fff4c7] text-[#8a6a16]'}`}>
-                        {formatStatusLabel(business.estado)}
+                  <div className="relative z-10">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedBusinessId(isExpanded ? null : business.id)}
+                      className="flex w-full min-w-0 items-center gap-3 px-3 py-3.5 text-left transition hover:bg-[#fff9e8] sm:px-4 sm:py-4"
+                      aria-expanded={isExpanded}
+                      title={isExpanded ? t.collapseBusiness : t.expandBusiness}
+                    >
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f4ee] text-[#8a6a16]">
+                        <Building2 size={18} />
                       </span>
-                    </div>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-black text-[#050505] sm:text-base">{business.nombre}</span>
+                        <span className="mt-1 flex min-w-0 items-center gap-2 text-xs font-semibold text-[#71717a]">
+                          <span className="truncate">{formatPhone(business.telefono, t.noPhone)}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="shrink-0">{business.usersCount} {t.usersText}</span>
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 flex-col items-end gap-1.5">
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                          business.plan === 'premium'
+                            ? 'bg-[#050505] text-[#f4c542]'
+                            : business.plan === 'pro'
+                              ? 'bg-[#fff4c7] text-[#8a6a16]'
+                              : business.plan === 'basic'
+                                ? 'bg-[#f1f0ec] text-[#52525b]'
+                                : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {formatPlanLabel(business.plan)}
+                        </span>
+                        <span className={`text-[9px] font-black uppercase tracking-wide ${
+                          business.estado === 'activo' ? 'text-emerald-700' : business.estado === 'bloqueado' ? 'text-red-700' : 'text-[#8a6a16]'
+                        }`}>
+                          {formatStatusLabel(business.estado)}
+                        </span>
+                      </span>
+                      <ChevronDown className={`shrink-0 text-[#8a6a16] transition-transform ${isExpanded ? 'rotate-180' : ''}`} size={18} />
+                    </button>
 
-                    <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-3 sm:grid-cols-3">
-                      <InfoMini label={t.users} value={`${business.usersCount.toLocaleString('en-US')} ${t.usersText}`} detail={isExpanded ? t.collapseBusiness : t.expandBusiness} />
-                      <InfoMini label={t.plan} value={formatPlanLabel(business.plan)} detail={`${t.subscription}: ${business.subscriptionStatus || '—'}`} />
-                      <InfoMini label={t.trial} value={business.trial_ends_at ? new Date(business.trial_ends_at).toLocaleDateString() : '—'} detail={business.direccion || t.noAddress} />
-                    </div>
-
-                    {isExpanded && renderBusinessExpandedDetails(business)}
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                      <div className="min-w-0">
+                    {isExpanded && (
+                      <div className="space-y-4 border-t border-[#f1ebdf] bg-[#fbfaf7]/75 px-3 pb-4 pt-3 sm:px-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="rounded-xl border border-[#e9e2d3] bg-white p-3">
+                            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.subscription}</p>
+                            <p className="mt-1 truncate text-sm font-black text-[#050505]">{business.subscriptionStatus || '—'}</p>
+                          </div>
+                          <div className="rounded-xl border border-[#e9e2d3] bg-white p-3">
+                            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#8a6a16]">{t.trial}</p>
+                            <p className="mt-1 truncate text-sm font-black text-[#050505]">
+                              {business.trial_ends_at ? new Date(business.trial_ends_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US') : '—'}
+                            </p>
+                          </div>
+                        </div>
                         <Select
                           label={t.plan}
                           value={business.plan || 'trial'}
@@ -836,22 +892,22 @@ export default function SuperAdminPage() {
                             { value: 'premium', label: t.premium }
                           ]}
                         />
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button type="button" variant="secondary" className="min-w-0 px-2" onClick={() => setSelectedBusiness(business)}>
+                            <Eye className="shrink-0" size={16} />
+                            <span className="hidden sm:inline">{t.view}</span>
+                          </Button>
+                          <Button type="button" className="min-w-0 px-2" disabled={updatingId === business.id || business.estado === 'activo'} onClick={() => updateBusinessStatus(business.id, 'activo')}>
+                            <Shield className="shrink-0" size={16} />
+                            <span className="hidden sm:inline">{t.activate}</span>
+                          </Button>
+                          <Button type="button" variant="secondary" className="min-w-0 border-red-200 bg-red-50 px-2 text-red-700 hover:bg-red-100" disabled={updatingId === business.id || business.estado === 'bloqueado'} onClick={() => updateBusinessStatus(business.id, 'bloqueado')}>
+                            <AlertTriangle className="shrink-0" size={16} />
+                            <span className="hidden sm:inline">{t.block}</span>
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={() => setSelectedBusiness(business)}>
-                          <Eye className="shrink-0" size={16} />
-                          {t.view}
-                        </Button>
-                        <Button type="button" className="flex-1 sm:flex-none" disabled={updatingId === business.id || business.estado === 'activo'} onClick={() => updateBusinessStatus(business.id, 'activo')}>
-                          <Shield className="shrink-0" size={16} />
-                          {t.activate}
-                        </Button>
-                        <Button type="button" variant="secondary" className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 sm:flex-none" disabled={updatingId === business.id || business.estado === 'bloqueado'} onClick={() => updateBusinessStatus(business.id, 'bloqueado')}>
-                          <AlertTriangle className="shrink-0" size={16} />
-                          {t.block}
-                        </Button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </article>
               );
@@ -865,11 +921,36 @@ export default function SuperAdminPage() {
           )}
 
           {filteredBusinesses.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 border-t border-[#f1ebdf] pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-black text-[#71717a]">
-                {safeCurrentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')} · {pageStartIndex + 1}-{pageEndIndex} / {filteredBusinesses.length.toLocaleString('en-US')}
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#f1ebdf] pt-3 sm:mt-4 sm:pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label={language === 'es' ? 'Página anterior' : 'Previous page'}
+                className="h-10 w-10 shrink-0 rounded-full p-0 sm:hidden"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage <= 1}
+              >
+                ‹
+              </Button>
+              <p className="text-center text-xs font-black tabular-nums text-[#71717a] sm:text-left sm:text-sm">
+                <span className="sm:hidden">
+                  {pageStartIndex + 1}–{pageEndIndex} {language === 'es' ? 'de' : 'of'} {filteredBusinesses.length.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}
+                </span>
+                <span className="hidden sm:inline">
+                  {safeCurrentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')} · {pageStartIndex + 1}-{pageEndIndex} / {filteredBusinesses.length.toLocaleString('en-US')}
+                </span>
               </p>
-              <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label={language === 'es' ? 'Página siguiente' : 'Next page'}
+                className="h-10 w-10 shrink-0 rounded-full p-0 sm:hidden"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={safeCurrentPage >= totalPages}
+              >
+                ›
+              </Button>
+              <div className="hidden gap-2 sm:flex">
                 <Button type="button" variant="secondary" className="flex-1 sm:flex-none" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>
                   ‹
                 </Button>
@@ -905,21 +986,88 @@ export default function SuperAdminPage() {
         title={t.businessDetail}
       >
         {selectedBusiness && (
-          <div className="space-y-5">
-            <div className="rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.business}</p>
-              <h3 className="mt-2 text-2xl font-black text-[#050505]">{selectedBusiness.nombre}</h3>
-              <p className="mt-1 break-all text-sm font-semibold text-[#71717a]">{selectedBusiness.id}</p>
+          <div className="space-y-3 sm:space-y-5">
+            <div className="relative overflow-hidden rounded-[1.5rem] bg-[#050505] p-4 text-white sm:p-5">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.24),transparent_45%)]" />
+              <div className="relative z-10 flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f4c542] text-[#050505]">
+                  <Building2 size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#f4c542]">{t.business}</p>
+                  <h3 className="mt-1 truncate text-xl font-black sm:text-2xl">{selectedBusiness.nombre}</h3>
+                  <p className="mt-1 truncate text-xs font-semibold text-white/55">{formatPhone(selectedBusiness.telefono, t.noPhone)}</p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${
+                  selectedBusiness.estado === 'activo' ? 'bg-[#f4c542] text-[#050505]' : selectedBusiness.estado === 'bloqueado' ? 'bg-red-100 text-red-700' : 'bg-white/10 text-white'
+                }`}>
+                  {formatStatusLabel(selectedBusiness.estado)}
+                </span>
+              </div>
             </div>
 
-            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
-              <InfoBox label={t.phone} value={formatPhone(selectedBusiness.telefono, '—')} detail={selectedBusiness.direccion || t.noAddress} />
-              <InfoBox label={t.plan} value={formatPlanLabel(selectedBusiness.plan)} detail={`${t.subscription}: ${selectedBusiness.subscriptionStatus || '—'}`} />
-              <InfoBox label={t.users} value={selectedBusiness.usersCount.toLocaleString('en-US')} detail={getRoleCountsLabel(selectedBusiness)} />
-              <InfoBox label={t.status} value={formatStatusLabel(selectedBusiness.estado)} detail={selectedBusiness.trial_ends_at ? `${t.trialUntil} ${new Date(selectedBusiness.trial_ends_at).toLocaleDateString()}` : t.noTrialDate} />
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:gap-4">
+              <InfoBox label={t.plan} value={formatPlanLabel(selectedBusiness.plan)} detail={selectedBusiness.subscriptionStatus || '—'} />
+              <InfoBox label={t.users} value={selectedBusiness.usersCount.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} detail={getRoleCountsLabel(selectedBusiness)} />
+              <InfoBox
+                label={language === 'es' ? 'Dirección' : 'Address'}
+                value={selectedBusiness.direccion || t.noAddress}
+                detail={selectedBusiness.moneda ? `${language === 'es' ? 'Moneda' : 'Currency'}: ${selectedBusiness.moneda}` : '—'}
+              />
+              <InfoBox label={t.trial} value={selectedBusiness.trial_ends_at ? new Date(selectedBusiness.trial_ends_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US') : '—'} detail={selectedBusiness.trial_ends_at ? t.trialUntil : t.noTrialDate} />
             </div>
 
-            {renderBusinessExpandedDetails(selectedBusiness)}
+            <details className="rounded-xl border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-2.5 text-xs">
+              <summary className="cursor-pointer font-black text-[#52525b]">{language === 'es' ? 'Información técnica' : 'Technical information'}</summary>
+              <div className="mt-3 space-y-2 border-t border-[#e9e2d3] pt-3">
+                <p className="font-semibold text-[#71717a]">{t.businessId}: <span className="break-all font-mono text-[#050505]">{selectedBusiness.id}</span></p>
+                <p className="font-semibold text-[#71717a]">{t.created}: <span className="text-[#050505]">{selectedBusiness.created_at ? new Date(selectedBusiness.created_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US') : '—'}</span></p>
+              </div>
+            </details>
+
+            <section className="overflow-hidden rounded-[1.5rem] border border-[#e9e2d3] bg-white">
+              <div className="flex items-center justify-between border-b border-[#f1ebdf] bg-[#fbfaf7] px-4 py-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.businessUsers}</p>
+                  <p className="mt-0.5 text-xs font-semibold text-[#71717a]">{getRoleCountsLabel(selectedBusiness)}</p>
+                </div>
+                <span className="rounded-full bg-[#050505] px-2.5 py-1 text-xs font-black text-[#f4c542]">{selectedBusiness.usersCount}</span>
+              </div>
+              {getSortedBusinessUsers(selectedBusiness).map((user) => (
+                <details key={user.id} className="group border-b border-[#f1ebdf] last:border-b-0">
+                  <summary className="flex min-w-0 cursor-pointer list-none items-center gap-3 px-3 py-3 transition hover:bg-[#fff9e8] sm:px-4 [&::-webkit-details-marker]:hidden">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff4c7] text-sm font-black text-[#8a6a16]">
+                      {getUserDisplayName(user).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-[#050505]">{getUserDisplayName(user)}</p>
+                      <p className="mt-0.5 truncate text-xs font-semibold text-[#71717a]">{getUserEmail(user)}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {renderUserRoleBadge(user.rol)}
+                      <span className={`text-[9px] font-black uppercase ${user.is_active === false ? 'text-red-600' : 'text-emerald-700'}`}>
+                        {user.is_active === false ? t.inactiveUser : t.activeUser}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-[#8a6a16] transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="grid gap-2 bg-[#fbfaf7] px-3 pb-3 pt-1 sm:grid-cols-2 sm:px-4">
+                    <div className="min-w-0 rounded-xl border border-[#e9e2d3] bg-white px-3 py-2">
+                      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.email}</p>
+                      <p className="mt-1 break-all text-xs font-bold text-[#52525b]">{getUserEmail(user)}</p>
+                    </div>
+                    <div className="min-w-0 rounded-xl border border-[#e9e2d3] bg-white px-3 py-2">
+                      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.alias}</p>
+                      <p className="mt-1 break-all text-xs font-bold text-[#52525b]">@{getUserAlias(user)}</p>
+                    </div>
+                    <div className="min-w-0 rounded-xl border border-[#e9e2d3] bg-white px-3 py-2 sm:col-span-2">
+                      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.userId}</p>
+                      <p className="mt-1 break-all font-mono text-[10px] font-bold text-[#71717a]">{user.id}</p>
+                    </div>
+                  </div>
+                </details>
+              ))}
+            </section>
           </div>
         )}
       </Modal>
@@ -932,26 +1080,37 @@ function MetricCard({
   title,
   value,
   icon: Icon,
-  iconClass
+  iconClass,
+  detail,
+  compact = false
 }: {
   title: string;
   value: string;
   icon: ElementType;
   iconClass: string;
+  detail?: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className={`group relative min-w-0 overflow-hidden border border-[#e9e2d3]/85 bg-white/90 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] ${
+      compact
+        ? 'flex min-h-36 flex-col justify-between rounded-[1.4rem] p-4 sm:min-h-0 sm:flex-row sm:items-center sm:gap-4 sm:rounded-[1.75rem] sm:p-6'
+        : 'flex items-center justify-between gap-4 rounded-[1.75rem] p-5 sm:p-6'
+    }`}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
+      <div className={`relative z-10 min-w-0 flex-1 overflow-hidden ${compact ? 'pt-10 sm:pt-0 sm:pr-2' : 'pr-2'}`}>
         <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
           {title}
         </p>
         <p className="max-w-full whitespace-nowrap text-[1.9rem] font-black leading-none tracking-tight tabular-nums text-[#050505] sm:text-[2.15rem] xl:text-[2rem] 2xl:text-[2.25rem]">
           {value}
         </p>
+        {detail && <p className="mt-2 truncate text-[11px] font-bold text-[#71717a] sm:text-sm">{detail}</p>}
       </div>
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${iconClass}`}>
-        <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6" />
+      <div className={`z-10 flex shrink-0 items-center justify-center shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 ${
+        compact ? 'absolute right-3 top-3 h-9 w-9 rounded-xl sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem]' : 'relative h-12 w-12 rounded-[1.15rem] sm:h-14 sm:w-14'
+      } ${iconClass}`}>
+        <Icon className={`${compact ? 'h-4 w-4 sm:h-6 sm:w-6' : 'h-5 w-5 sm:h-6 sm:w-6'} shrink-0`} />
       </div>
     </div>
   );
@@ -985,10 +1144,10 @@ function InfoBox({
   detail: string;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[#e9e2d3] bg-white p-4 shadow-matmax-soft">
-      <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-[#8a6a16]">{label}</p>
-      <p className="break-words text-lg font-black text-[#050505]">{value}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-[#71717a]">{detail}</p>
+    <div className="min-w-0 rounded-xl border border-[#e9e2d3] bg-white p-3 shadow-matmax-soft sm:rounded-2xl sm:p-4">
+      <p className="mb-1 text-[9px] font-black uppercase tracking-[0.16em] text-[#8a6a16] sm:mb-2 sm:text-xs sm:tracking-[0.18em]">{label}</p>
+      <p className="truncate text-sm font-black text-[#050505] sm:text-lg">{value}</p>
+      <p className="mt-1 line-clamp-2 text-[10px] font-semibold text-[#71717a] sm:text-sm">{detail}</p>
     </div>
   );
 }

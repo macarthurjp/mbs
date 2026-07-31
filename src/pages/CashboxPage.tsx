@@ -718,7 +718,7 @@ export default function CashboxPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#141414] bg-[#050505] p-5 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-6 xl:p-7">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#141414] bg-[#050505] p-4 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-6 xl:p-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_44%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/70 to-transparent" />
         <div className="relative z-10 grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,460px)] xl:items-stretch">
@@ -728,7 +728,7 @@ export default function CashboxPage() {
                 <Receipt size={14} />
                 Cashbox Control
               </div>
-              <h1 className="mb-3 text-4xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">
+              <h1 className="mb-3 text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">
                 {t.title}
               </h1>
               <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-white/58 sm:text-base">
@@ -811,7 +811,7 @@ export default function CashboxPage() {
         </Button>
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
         <MetricCard
           title={t.activeSales}
           value={formatMoney(metrics.totalVentas, currencySettings)}

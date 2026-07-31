@@ -39,6 +39,7 @@ const supportTicketsCopy = {
     waiting: 'Esperando',
     waitingCustomer: 'Esperando Cliente',
     searchPlaceholder: 'Buscar por asunto, ID, usuario, email o negocio...',
+    searchPlaceholderMobile: 'Buscar tickets...',
     allStatuses: 'Todos los estados',
     allBusinesses: 'Todos los negocios',
     allUsers: 'Todos los usuarios',
@@ -46,7 +47,7 @@ const supportTicketsCopy = {
     showing: 'Mostrando',
     of: 'de',
     tickets: 'Tickets',
-    boardTitle: 'Tablero de Tickets estilo Jira',
+    boardTitle: 'Tickets de soporte',
     loadingTickets: 'Cargando tickets...',
     noTickets: 'No se encontraron tickets de soporte.',
     openDescription: 'Tickets nuevos esperando revisión',
@@ -87,6 +88,7 @@ const supportTicketsCopy = {
     waiting: 'Waiting',
     waitingCustomer: 'Waiting Customer',
     searchPlaceholder: 'Search by subject, ticket ID, user, email or business...',
+    searchPlaceholderMobile: 'Search tickets...',
     allStatuses: 'All Statuses',
     allBusinesses: 'All Businesses',
     allUsers: 'All Users',
@@ -539,46 +541,55 @@ export default function SupportTicketsPage() {
   ];
 
   return (
-    <div className="w-full min-w-0 space-y-5 overflow-x-hidden sm:space-y-6">
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="break-words text-2xl font-bold text-[#050505] sm:text-3xl">{t.title}</h1>
-          <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-gray-500">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden sm:space-y-6">
+      <div className="rounded-[1.75rem] border border-[#e9e2d3] bg-white/75 p-4 shadow-[0_14px_34px_rgba(15,15,15,0.05)] sm:flex sm:min-w-0 sm:items-center sm:justify-between sm:gap-4 sm:p-6">
+        <div className="min-w-0">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16] sm:text-xs">
+            MatMax Business Suite
+          </p>
+          <h1 className="break-words text-[2rem] font-black leading-none text-[#050505] sm:text-3xl">{t.title}</h1>
+          <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-gray-500">
             {t.subtitle}
           </p>
         </div>
-        <Button type="button" variant="secondary" onClick={() => loadTickets()} disabled={loading} className="w-full sm:w-auto">
+        <Button type="button" variant="secondary" onClick={() => loadTickets()} disabled={loading} className="mt-4 h-11 w-full rounded-2xl sm:mt-0 sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" />
           {t.refresh}
         </Button>
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-3 gap-2 sm:gap-3">
         <Card>
-          <CardContent className="flex min-w-0 items-center justify-between gap-3 p-4 sm:p-5">
-            <div>
-              <p className="text-sm text-gray-500">{t.open}</p>
-              <p className="text-2xl font-bold">{openTickets}</p>
+          <CardContent className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase leading-tight tracking-[0.04em] text-[#8a6a16] sm:text-sm sm:normal-case sm:tracking-normal sm:text-gray-500">{t.open}</p>
+              <p className="mt-1 text-2xl font-black sm:text-3xl">{openTickets}</p>
             </div>
-            <Headset className="h-8 w-8" />
+            <span className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-black text-[#f4c542] sm:flex">
+              <Headset className="h-6 w-6" />
+            </span>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex min-w-0 items-center justify-between gap-3 p-4 sm:p-5">
-            <div>
-              <p className="text-sm text-gray-500">{t.inProgress}</p>
-              <p className="text-2xl font-bold">{progressTickets}</p>
+          <CardContent className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <p className="whitespace-normal text-[10px] font-black uppercase leading-tight tracking-[0.04em] text-[#8a6a16] sm:text-sm sm:normal-case sm:tracking-normal sm:text-gray-500">{t.inProgress}</p>
+              <p className="mt-1 text-2xl font-black sm:text-3xl">{progressTickets}</p>
             </div>
-            <Clock className="h-8 w-8" />
+            <span className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-[#fff3c4] text-[#8a6a16] sm:flex">
+              <Clock className="h-6 w-6" />
+            </span>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex min-w-0 items-center justify-between gap-3 p-4 sm:p-5">
-            <div>
-              <p className="text-sm text-gray-500">{t.resolved}</p>
-              <p className="text-2xl font-bold">{resolvedTickets}</p>
+          <CardContent className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase leading-tight tracking-[0.04em] text-[#8a6a16] sm:text-sm sm:normal-case sm:tracking-normal sm:text-gray-500">{t.resolved}</p>
+              <p className="mt-1 text-2xl font-black sm:text-3xl">{resolvedTickets}</p>
             </div>
-            <CheckCircle className="h-8 w-8" />
+            <span className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 sm:flex">
+              <CheckCircle className="h-6 w-6" />
+            </span>
           </CardContent>
         </Card>
       </div>
@@ -592,7 +603,8 @@ export default function SupportTicketsPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t.searchPlaceholder}
+                placeholder={t.searchPlaceholderMobile}
+                data-desktop-placeholder={t.searchPlaceholder}
                 className="h-11 w-full min-w-0 rounded-2xl border border-[#e9e2d3] bg-white px-4 py-3 pl-11 text-sm font-bold text-[#050505] shadow-sm outline-none transition placeholder:text-[#a1a1aa] focus:border-[#f4c542] focus:ring-2 focus:ring-[#f4c542]/20 sm:h-12"
               />
             </div>
@@ -600,7 +612,7 @@ export default function SupportTicketsPage() {
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-11 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 text-sm font-black shadow-sm sm:h-12"
+              className="h-12 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 !py-0 text-sm font-black leading-normal shadow-sm"
             >
               <option value="all">{t.allStatuses}</option>
               <option value="open">{t.open}</option>
@@ -613,7 +625,7 @@ export default function SupportTicketsPage() {
             <Select
               value={businessFilter}
               onChange={(e) => setBusinessFilter(e.target.value)}
-              className="h-11 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 text-sm font-black shadow-sm sm:h-12"
+              className="h-12 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 !py-0 text-sm font-black leading-normal shadow-sm"
             >
               <option value="all">{t.allBusinesses}</option>
               {businessOptions.map((businessId) => (
@@ -624,11 +636,18 @@ export default function SupportTicketsPage() {
             </Select>
           </div>
 
-          <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_minmax(190px,0.75fr)_minmax(190px,0.75fr)_minmax(180px,auto)]">
+          <details className="group mt-3 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-3 md:border-0 md:bg-transparent md:p-0">
+            <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16] md:hidden">
+              <span className="flex items-center justify-between">
+                Filtros avanzados
+                <span className="text-lg transition group-open:rotate-45">+</span>
+              </span>
+            </summary>
+          <div className="mt-3 hidden min-w-0 grid-cols-1 gap-3 group-open:grid md:mt-0 md:grid xl:grid-cols-[minmax(240px,1fr)_minmax(190px,0.75fr)_minmax(190px,0.75fr)_minmax(180px,auto)]">
             <Select
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
-              className="h-11 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 text-sm font-black shadow-sm sm:h-12"
+              className="h-12 w-full rounded-2xl border-[#e9e2d3] bg-white px-4 !py-0 text-sm font-black leading-normal shadow-sm"
             >
               <option value="all">{t.allUsers}</option>
               {userOptions.map(([userKey, userLabel]) => (
@@ -670,6 +689,7 @@ export default function SupportTicketsPage() {
               {t.clearFilters}
             </Button>
           </div>
+          </details>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[#71717a]">
             <span className="rounded-full border border-[#e9e2d3] bg-white px-3 py-1 shadow-sm">
@@ -682,12 +702,12 @@ export default function SupportTicketsPage() {
 
       <Card className="overflow-hidden">
         <CardHeader>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-semibold">
               <MessageSquare className="h-5 w-5" />
               {t.boardTitle}
             </div>
-            <span className="rounded-full border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">
+            <span className="shrink-0 rounded-full border border-[#e9e2d3] bg-[#fbfaf7] px-3 py-1 text-xs font-black uppercase tracking-[0.1em] text-[#8a6a16]">
               {filteredTickets.length.toLocaleString('en-US')} {t.tickets}
             </span>
           </div>
@@ -701,8 +721,8 @@ export default function SupportTicketsPage() {
               {t.noTickets}
             </div>
           ) : (
-            <div className="-mx-3 overflow-x-auto px-3 pb-3 sm:-mx-2 sm:px-2">
-              <div className="grid min-w-[1180px] grid-cols-5 gap-3 sm:min-w-[1320px] sm:gap-4">
+            <div className="min-w-0 lg:-mx-2 lg:overflow-x-auto lg:px-2 lg:pb-3">
+              <div className="grid min-w-0 grid-cols-1 gap-3 lg:min-w-[1320px] lg:grid-cols-5 lg:gap-4">
               {statusColumns.map((column) => {
                 const columnTickets = filteredTickets.filter((ticket) => ticket.status === column.id);
 
@@ -718,7 +738,7 @@ export default function SupportTicketsPage() {
                         handleTicketDrop(ticketId, column.id);
                       }
                     }}
-                    className={`min-w-0 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-2.5 transition sm:p-3 ${draggingTicketId ? 'ring-2 ring-[#f4c542]/30' : ''}`}
+                    className={`min-w-0 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-2.5 transition sm:p-3 ${columnTickets.length === 0 ? 'hidden lg:block' : ''} ${draggingTicketId ? 'ring-2 ring-[#f4c542]/30' : ''}`}
                   >
                     <div className="mb-3 flex min-w-0 items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -728,7 +748,7 @@ export default function SupportTicketsPage() {
                             {column.title}
                           </h3>
                         </div>
-                        <p className="mt-1 line-clamp-2 text-xs font-semibold text-gray-500">
+                        <p className="mt-1 hidden line-clamp-2 text-xs font-semibold text-gray-500 lg:block">
                           {column.description}
                         </p>
                       </div>
@@ -752,7 +772,7 @@ export default function SupportTicketsPage() {
                               setDraggingTicketId(ticket.id);
                             }}
                             onDragEnd={() => setDraggingTicketId(null)}
-                            className={`rounded-xl border border-[#e9e2d3] bg-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,15,15,0.08)] sm:p-3 ${ticket.status === 'closed' ? 'cursor-not-allowed opacity-80' : 'cursor-grab active:cursor-grabbing'} ${draggingTicketId === ticket.id ? 'scale-[0.98] opacity-60' : ''}`}
+                            className={`rounded-xl border border-[#e9e2d3] bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(15,15,15,0.08)] ${ticket.status === 'closed' ? 'cursor-not-allowed opacity-80' : 'cursor-grab active:cursor-grabbing'} ${draggingTicketId === ticket.id ? 'scale-[0.98] opacity-60' : ''}`}
                           >
                             <div className="mb-2 flex min-w-0 flex-col items-start gap-2 overflow-hidden">
                               <span className="block max-w-full truncate text-[10px] font-black uppercase tracking-[0.14em] text-[#8a6a16]">
@@ -794,7 +814,7 @@ export default function SupportTicketsPage() {
                               {ticket.subject}
                             </h4>
 
-                            <p className="mt-2 line-clamp-3 break-words text-xs font-medium leading-relaxed text-gray-500 [overflow-wrap:anywhere]">
+                            <p className="mt-2 line-clamp-2 break-words text-xs font-medium leading-relaxed text-gray-500 [overflow-wrap:anywhere]">
                               {ticket.message}
                             </p>
 
@@ -841,7 +861,7 @@ export default function SupportTicketsPage() {
                               </div>
                             )}
 
-                            <div className="mt-3 grid grid-cols-1 gap-2">
+                            <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-1">
                               <Select
                                 value={ticket.status || 'open'}
                                 onChange={(e) => updateTicketStatus(ticket.id, e.target.value)}
@@ -880,35 +900,35 @@ export default function SupportTicketsPage() {
         title={t.modalTitle}
       >
         {selectedTicket && (
-          <div className="max-h-[78vh] space-y-5 overflow-y-auto pr-1">
-            <div className="min-w-0 rounded-2xl border bg-white p-3 sm:p-4">
+          <div className="space-y-4">
+            <div className="min-w-0 rounded-[1.5rem] bg-gradient-to-br from-[#050505] via-[#111111] to-[#2b2208] p-4 text-white shadow-[0_18px_40px_rgba(15,15,15,0.18)] sm:p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-[#e9e2d3] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#f4c542]">
                   {formatTicketCode(selectedTicket.id)}
                 </span>
-                <h3 className="min-w-0 break-words text-lg font-bold sm:text-xl [overflow-wrap:anywhere]">{selectedTicket.subject}</h3>
-                <span className="rounded-full bg-[#fff8e1] px-3 py-1 text-xs font-bold text-[#8a6a16]">
+                <span className="rounded-full bg-[#f4c542] px-3 py-1 text-[10px] font-black text-black">
                   {formatCategory(selectedTicket.category, t)}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${getStatusBadgeClasses(selectedTicket.status)}`}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${getStatusBadgeClasses(selectedTicket.status)}`}
                 >
                   <span className={`h-2 w-2 rounded-full ${getStatusDotClasses(selectedTicket.status)}`} />
                   {formatStatus(selectedTicket.status, t)}
                 </span>
               </div>
 
-              <p className="text-sm text-gray-500">
+              <h3 className="min-w-0 break-words text-xl font-black leading-tight sm:text-2xl [overflow-wrap:anywhere]">{selectedTicket.subject}</h3>
+              <p className="mt-3 text-sm font-semibold text-white/70">
                 {selectedTicket.user_name || t.unknownUser} · {formatEmail(selectedTicket.user_email, t.noEmail)}
               </p>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs font-semibold text-white/45">
                 {new Date(selectedTicket.created_at).toLocaleString()}
               </p>
-              <p className="mt-4 whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]">{selectedTicket.message}</p>
+              <p className="mt-4 whitespace-pre-wrap break-words rounded-2xl bg-white/10 p-3 text-sm font-medium leading-relaxed text-white/90 [overflow-wrap:anywhere]">{selectedTicket.message}</p>
 
               {selectedTicket.attachment_url && (
-                <div className="mt-4 rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-4">
-                  <p className="mb-3 text-sm font-bold text-[#050505]">
+                <div className="mt-3 rounded-2xl border border-white/15 bg-white/10 p-3">
+                  <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-[#f4c542]">
                     {t.attachment}
                   </p>
 
@@ -920,7 +940,7 @@ export default function SupportTicketsPage() {
                         name: selectedTicket.attachment_name
                       })
                     }
-                    className="inline-flex max-w-full items-center gap-2 rounded-xl border border-[#e9e2d3] bg-white px-4 py-2 text-sm font-semibold text-[#050505] transition hover:bg-[#fff9e8]"
+                    className="inline-flex max-w-full items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                   >
                     📎 <span className="truncate">{selectedTicket.attachment_name || t.attachment}</span>
                     <span className="shrink-0 text-xs font-black uppercase tracking-[0.12em] text-[#8a6a16]">
@@ -931,10 +951,10 @@ export default function SupportTicketsPage() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">{t.supportResponse}</label>
+            <div className="rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4">
+              <label className="text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.supportResponse}</label>
               <textarea
-                className="min-h-[140px] w-full rounded-lg border p-3 text-sm"
+                className="mt-3 min-h-[112px] w-full resize-y rounded-2xl border border-[#e9e2d3] bg-[#fbfaf7] p-3 text-sm font-medium outline-none transition focus:border-[#f4c542] focus:ring-2 focus:ring-[#f4c542]/20"
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
                 placeholder={selectedTicket.status === 'closed' ? t.closedReadonly : t.responsePlaceholder}
@@ -942,8 +962,9 @@ export default function SupportTicketsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">{t.priority}</label>
+            <div className="grid grid-cols-1 gap-3 rounded-[1.5rem] border border-[#e9e2d3] bg-white p-4 sm:grid-cols-2">
+              <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">{t.priority}</label>
               <Select
                 value={selectedTicket.priority || 'normal'}
                 onChange={(e) => updateTicketPriority(selectedTicket.id, e.target.value)}
@@ -954,9 +975,9 @@ export default function SupportTicketsPage() {
                 <option value="high">{t.high}</option>
                 <option value="urgent">{t.urgent}</option>
               </Select>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              </div>
+              <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.14em] text-[#8a6a16]">Estado</label>
               <Select
                 value={selectedTicket.status || 'open'}
                 onChange={(e) => updateTicketStatus(selectedTicket.id, e.target.value)}
@@ -968,9 +989,11 @@ export default function SupportTicketsPage() {
                 <option value="resolved">{t.resolved}</option>
                 <option value="closed">{t.closed}</option>
               </Select>
+              </div>
 
               <Button
                 type="button"
+                className="h-12 w-full rounded-2xl sm:col-span-2"
                 onClick={saveTicketResponse}
                 disabled={selectedTicket.status === 'closed' || savingResponse || !responseText.trim()}
               >

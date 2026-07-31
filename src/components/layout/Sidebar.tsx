@@ -696,7 +696,7 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-[100dvh] max-w-[92vw] transform overflow-hidden border-r border-[#ece5d7] bg-[#fbfaf7]/92 shadow-[0_30px_90px_rgba(0,0,0,0.14)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:static lg:h-auto lg:translate-x-0 lg:overflow-visible lg:shadow-none ${sidebarWidth} ${
+        className={`fixed left-0 top-0 z-50 h-[100dvh] max-w-[86vw] transform overflow-hidden border-r border-[#ece5d7] bg-[#fbfaf7]/92 shadow-[0_30px_90px_rgba(0,0,0,0.14)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:static lg:h-auto lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:shadow-none ${sidebarWidth} ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ minHeight: elasticSidebarMinHeight }}
@@ -704,10 +704,10 @@ export default function Sidebar({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(244,197,66,0.12),transparent_38%)]" />
 
         <div className="relative z-10 flex h-[100dvh] min-h-0 flex-col lg:h-auto">
-          <div className={`flex items-center justify-between gap-3 border-b border-[#ece5d7] bg-white/45 px-4 backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-5 ${isElasticOpen ? 'py-4 sm:py-5' : 'py-4 sm:py-5'}`}>
+          <div className={`flex items-center justify-between gap-3 border-b border-[#ece5d7] bg-white/45 px-4 py-3 backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-5 sm:py-5`}>
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#1b1b1b] bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
-                <Building2 size={24} />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1b1b1b] bg-[#050505] text-[#f4c542] shadow-[0_18px_40px_rgba(0,0,0,0.28)] sm:h-12 sm:w-12 sm:rounded-2xl">
+                <Building2 size={22} />
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-lg font-black text-[#050505]">MatMax</h1>
@@ -727,8 +727,8 @@ export default function Sidebar({
             </button>
           </div>
 
-          <div className={`px-4 transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-5 ${isElasticOpen ? 'py-3.5 sm:py-4' : isPreparingStretch ? 'py-3 sm:py-3.5' : 'py-3.5 sm:py-4'}`}>
-            <div className={`rounded-[1.7rem] border border-[#ece5d7] bg-white/78 shadow-[0_18px_48px_rgba(15,15,15,0.06)] backdrop-blur-xl transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isElasticOpen ? 'p-3.5' : isPreparingStretch ? 'p-3' : 'p-3.5'}`}>
+          <div className={`px-3 py-2.5 transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-5 sm:py-4`}>
+            <div className={`rounded-[1.35rem] border border-[#ece5d7] bg-white/78 p-3 shadow-[0_18px_48px_rgba(15,15,15,0.06)] backdrop-blur-xl transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:rounded-[1.7rem] sm:p-3.5`}>
               <p className="mb-1 text-xs font-black uppercase tracking-[0.22em] text-[#8a6a16]">
                 {sidebarBusinessLabel}
               </p>
@@ -736,11 +736,11 @@ export default function Sidebar({
                 {effectiveIsSuperAdmin ? 'MatMax SaaS Control Center' : businessName}
               </h2>
               {(isElasticOpen || (!isPreparingStretch && isLargeViewport)) && (
-                <p className="mt-2 line-clamp-2 text-xs font-semibold leading-relaxed text-[#71717a]">
+                <p className="mt-2 hidden line-clamp-2 text-xs font-semibold leading-relaxed text-[#71717a] sm:block">
                   {sidebarBusinessDescription}
                 </p>
               )}
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:mt-3 sm:justify-between sm:gap-3">
                 <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#fff4c7] px-3 py-1 text-xs font-black text-[#5f4700] shadow-sm">
                   <CreditCard className="shrink-0" size={13} />
                   {planLabel}
@@ -787,7 +787,7 @@ export default function Sidebar({
             </div>
           </div>
 
-          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 pb-4 scrollbar-hide lg:flex-none lg:overflow-visible">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 pb-3 scrollbar-hide lg:flex-none lg:overflow-visible">
             {visibleNavigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -799,7 +799,7 @@ export default function Sidebar({
                   key={item.id}
                   type="button"
                   onClick={() => handleNavigate(item.id)}
-                  className={`group relative flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl px-3 text-left transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-4 ${isElasticOpen ? 'py-2.5' : isPreparingStretch ? 'py-1.5' : 'py-2.5'} ${
+                  className={`group relative flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl px-3 py-2 text-left transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-4 ${isElasticOpen ? 'sm:py-2.5' : isPreparingStretch ? 'sm:py-1.5' : 'sm:py-2.5'} ${
                     isActive
                       ? 'bg-[#050505] text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)]'
                       : 'text-[#52525b] hover:bg-white/90 hover:text-[#050505] hover:shadow-[0_16px_36px_rgba(15,15,15,0.06)]'
@@ -819,7 +819,7 @@ export default function Sidebar({
                   <span className="relative z-10 min-w-0 flex-1">
                     <span className={`${isElasticOpen || isPreparingStretch || isLargeViewport ? 'text-[15px]' : 'text-sm'} block truncate font-black transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)]`}>{itemCopy.label}</span>
                     <span
-                      className={`block text-xs font-medium transition-all duration-500 ${
+                    className={`hidden text-xs font-medium transition-all duration-500 sm:block ${
                         isElasticOpen || isPreparingStretch || isLargeViewport ? 'mt-0.5 max-h-8 opacity-100' : 'max-h-4 truncate opacity-85'
                       } ${
                         isActive ? 'text-white/55' : 'text-[#a1a1aa] group-hover:text-[#8a6a16]'
@@ -833,28 +833,28 @@ export default function Sidebar({
             })}
           </nav>
 
-          <div className="mt-auto shrink-0 overflow-hidden border-t border-[#ece5d7] bg-white/30 p-3 backdrop-blur-xl sm:p-3.5">
-            <div className={`rounded-[1.7rem] border border-[#1b1b1b] bg-[#050505] text-white shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isElasticOpen ? 'p-3.5' : isPreparingStretch ? 'p-3' : 'p-3.5'}`}>
-              <div className={`${isElasticOpen ? 'mb-3' : 'mb-3'} flex min-w-0 items-center gap-3 transition-all duration-[900ms]`}>
+          <div className="mt-auto shrink-0 overflow-hidden border-t border-[#ece5d7] bg-white/50 px-3 pb-[calc(.75rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl sm:p-3.5">
+            <div className={`rounded-[1.35rem] border border-[#1b1b1b] bg-[#050505] p-3 text-white shadow-[0_24px_70px_rgba(0,0,0,0.34)] transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] sm:rounded-[1.7rem] sm:p-3.5`}>
+              <div className="flex min-w-0 items-center gap-3 transition-all duration-[900ms]">
                 <div className={`${isElasticOpen ? 'h-10 w-10 rounded-2xl' : 'h-10 w-10 rounded-2xl'} flex items-center justify-center bg-[#f4c542] text-[#050505] transition-all duration-[900ms]`}>
                   <Receipt size={20} />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black">{t.tagline}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#f4c542]">{effectiveIsSuperAdmin ? 'Super Admin' : planLabel}</p>
                   <p className="truncate text-xs font-medium text-white/45">
                     {userEmail ? formatEmail(userEmail) : sidebarAccountLabel}
                   </p>
                 </div>
               </div>
 
-              <p className="line-clamp-2 text-xs leading-relaxed text-white/55 xl:line-clamp-3">
+              <p className="mt-3 hidden line-clamp-2 text-xs leading-relaxed text-white/55 sm:block xl:line-clamp-3">
                 {sidebarBusinessDescription}
               </p>
 
               <button
                 type="button"
                 onClick={onLogout}
-                className={`${isElasticOpen ? 'mt-3.5 py-2.5' : isPreparingStretch ? 'mt-3 py-2.5' : 'mt-3.5 py-2.5'} flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 text-sm font-black text-white backdrop-blur-xl transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-[#f4c542] hover:text-[#050505] hover:shadow-[0_18px_40px_rgba(244,197,66,0.24)]`}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-black text-white backdrop-blur-xl transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:bg-[#f4c542] hover:text-[#050505] hover:shadow-[0_18px_40px_rgba(244,197,66,0.24)] sm:rounded-2xl sm:py-2.5"
               >
                 <LogOut className="shrink-0" size={17} />
                 {t.logout}

@@ -1656,7 +1656,7 @@ export default function InvoicesPage() {
             >
               MatMax Business Suite
             </button>
-            <h1 className="mb-3 block overflow-visible pb-2 pt-2 text-4xl font-black leading-[1.05] tracking-tight text-[#050505] sm:text-5xl xl:text-6xl">
+            <h1 className="mb-3 block overflow-visible pb-1 pt-1 text-3xl font-black leading-[1.05] tracking-tight text-[#050505] sm:pb-2 sm:pt-2 sm:text-5xl xl:text-6xl">
               {t.title}
             </h1>
             <p className="text-sm font-bold uppercase tracking-widest text-[#71717a]">
@@ -1696,7 +1696,7 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {canManageInvoices && (
           <MetricCard
             title={t.invoices}

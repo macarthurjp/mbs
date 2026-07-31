@@ -488,9 +488,11 @@ export function DashboardPage() {
   const platformBusinessGrowth = useMemo(() => {
     return Array.from({ length: 6 }).map((_, index) => {
       const date = new Date();
+      date.setDate(1);
+      date.setHours(0, 0, 0, 0);
       date.setMonth(date.getMonth() - (5 - index));
-      const month = date.toISOString().slice(0, 7);
-      const label = date.toLocaleDateString(t.locale, { month: 'short' });
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString(t.locale, { month: 'short' }).replace('.', '');
       const count = platformBusinesses.filter((business) => String(business.created_at || '').slice(0, 7) <= month).length;
 
       return {
@@ -503,9 +505,11 @@ export function DashboardPage() {
   const platformMonthlyRevenue = useMemo(() => {
     return Array.from({ length: 6 }).map((_, index) => {
       const date = new Date();
+      date.setDate(1);
+      date.setHours(0, 0, 0, 0);
       date.setMonth(date.getMonth() - (5 - index));
-      const month = date.toISOString().slice(0, 7);
-      const label = date.toLocaleDateString(t.locale, { month: 'short' });
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString(t.locale, { month: 'short' }).replace('.', '');
       const total = platformSubscriptions
         .filter((subscription) => String(subscription.created_at || '').slice(0, 7) === month)
         .reduce((sum, subscription) => sum + Number(subscription.monto ?? subscription.amount ?? subscription.precio ?? 0), 0);
@@ -545,6 +549,7 @@ export function DashboardPage() {
       id: business.id,
       name: business.nombre || business.name || 'Business',
       detail: getEffectivePlatformPlan(business),
+      status: String(business.estado || '').toLowerCase(),
       date: business.created_at || ''
     }));
   }, [platformBusinesses, getEffectivePlatformPlan]);
@@ -685,7 +690,7 @@ export function DashboardPage() {
 
     return (
       <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-        <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#141414] bg-[#050505] p-5 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:p-7 xl:p-8">
+        <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#141414] bg-[#050505] p-4 text-white shadow-[0_28px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_44%)]" />
           <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
             <div>
@@ -693,7 +698,7 @@ export function DashboardPage() {
                 <ShieldCheck size={14} />
                 MatMax SaaS Control Center
               </div>
-              <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">{t.saasTitle}</h1>
+              <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">{t.saasTitle}</h1>
               <p className="mt-3 max-w-4xl text-sm font-bold uppercase tracking-[0.18em] text-white/58 sm:text-base">{t.saasSubtitle}</p>
             </div>
             <button type="button" onClick={loadDashboardData} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-[#f4c542] hover:text-[#050505]">
@@ -703,49 +708,84 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-          <DashboardMetricCard title={t.mrr} value={`€ ${formatNumber(platformMetrics.mrr)}`} subtitle={t.subscriptions} icon={DollarSign} iconClass="bg-[#050505] text-[#f4c542]" />
-          <DashboardMetricCard title={t.activeBusinesses} value={platformMetrics.activeBusinesses.toLocaleString('en-US')} subtitle={`${platformMetrics.totalBusinesses.toLocaleString('en-US')} ${t.businesses}`} icon={Building2} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
-          <DashboardMetricCard title={t.totalUsers} value={platformMetrics.totalUsers.toLocaleString('en-US')} subtitle={`${platformMetrics.businessesWithOwner} ${t.withOwner} · ${platformMetrics.businessesWithoutOwner} ${t.withoutOwner}`} icon={Users} iconClass="bg-[#f6f4ee] text-[#050505]" />
-          <DashboardMetricCard title={t.activeTrials} value={platformMetrics.activeTrials.toLocaleString('en-US')} subtitle={`${expiringTrials.length} ${t.trialAlerts}`} icon={CalendarClock} iconClass="bg-red-100 text-red-700" />
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 2xl:grid-cols-4">
+          <DashboardMetricCard compact title={t.mrr} value={platformMetrics.mrr.toLocaleString(t.locale, { style: 'currency', currency: 'EUR' })} subtitle={t.subscriptions} icon={DollarSign} iconClass="bg-[#050505] text-[#f4c542]" />
+          <DashboardMetricCard
+            compact
+            title={t.activeBusinesses}
+            value={platformMetrics.activeBusinesses.toLocaleString(t.locale)}
+            subtitle={`${platformMetrics.activeBusinesses}/${platformMetrics.totalBusinesses} · ${platformMetrics.totalBusinesses > 0 ? Math.round((platformMetrics.activeBusinesses / platformMetrics.totalBusinesses) * 100) : 0}%`}
+            icon={Building2}
+            iconClass="bg-[#fff4c7] text-[#8a6a16]"
+          />
+          <DashboardMetricCard compact title={t.totalUsers} value={platformMetrics.totalUsers.toLocaleString(t.locale)} subtitle={language === 'es' ? 'En toda la plataforma' : 'Across the platform'} icon={Users} iconClass="bg-[#f6f4ee] text-[#050505]" />
+          <DashboardMetricCard compact title={t.activeTrials} value={platformMetrics.activeTrials.toLocaleString(t.locale)} subtitle={`${expiringTrials.length} ${language === 'es' ? 'por vencer' : 'expiring'}`} icon={CalendarClock} iconClass="bg-red-100 text-red-700" />
         </div>
 
         <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
-          <Card>
-            <CardHeader>
+          <Card className="rounded-[1.5rem] sm:rounded-[2rem]">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <h2 className="text-xl font-serif font-bold text-[#050505] sm:text-2xl">{t.businessGrowth}</h2>
+              <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                {language === 'es' ? 'Total acumulado · últimos 6 meses' : 'Cumulative total · last 6 months'}
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="flex h-72 items-end gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4">
+            <CardContent className="p-3 sm:p-5 xl:p-6">
+              <div className="flex h-64 items-end gap-2 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] px-3 pb-3 pt-5 sm:h-72 sm:gap-3 sm:p-4">
                 {platformBusinessGrowth.map((item) => (
-                  <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="flex h-56 w-full items-end rounded-t-2xl bg-[#f6f4ee]">
-                      <div className="w-full rounded-t-2xl bg-gradient-to-t from-[#050505] to-[#3f3f46] transition-all duration-500" style={{ height: `${(item.count / maxGrowth) * 100}%` }} />
+                  <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-black tabular-nums text-[#050505] sm:text-xs">{item.count}</span>
+                    <div className="flex h-40 w-full max-w-10 items-end overflow-hidden rounded-t-lg bg-[#f1efe9] sm:h-48 sm:max-w-none sm:rounded-t-xl">
+                      <div
+                        className="w-full rounded-t-lg bg-gradient-to-t from-[#050505] to-[#3f3f46] transition-all duration-500 sm:rounded-t-xl"
+                        style={{ height: item.count > 0 ? `${Math.max((item.count / maxGrowth) * 100, 5)}%` : '0%' }}
+                      />
                     </div>
-                    <span className="text-xs font-black text-[#71717a]">{item.label}</span>
-                    <span className="text-xs font-black text-[#050505]">{item.count}</span>
+                    <span className="truncate text-[10px] font-black capitalize text-[#71717a] sm:text-xs">{item.label}</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="rounded-[1.5rem] sm:rounded-[2rem]">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
               <h2 className="text-xl font-serif font-bold text-[#050505] sm:text-2xl">{t.monthlyRevenue}</h2>
+              <p className="mt-1 text-xs font-semibold text-[#71717a]">
+                {language === 'es' ? 'Ingresos registrados · últimos 6 meses' : 'Recorded revenue · last 6 months'}
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="flex h-72 items-end gap-3 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4">
-                {platformMonthlyRevenue.map((item) => (
-                  <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="flex h-56 w-full items-end rounded-t-2xl bg-[#f6f4ee]">
-                      <div className="w-full rounded-t-2xl bg-gradient-to-t from-[#d9a900] to-[#f4c542] transition-all duration-500" style={{ height: `${(item.total / maxRevenue) * 100}%` }} />
+            <CardContent className="p-3 sm:p-5 xl:p-6">
+              {platformMonthlyRevenue.some((item) => item.total > 0) ? (
+                <div className="flex h-64 items-end gap-2 rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] px-3 pb-3 pt-5 sm:h-72 sm:gap-3 sm:p-4">
+                  {platformMonthlyRevenue.map((item) => (
+                    <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                      <span className="max-w-full truncate text-[9px] font-black tabular-nums text-[#050505] sm:text-xs">
+                        {item.total.toLocaleString(t.locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                      </span>
+                      <div className="flex h-40 w-full max-w-10 items-end overflow-hidden rounded-t-lg bg-[#f1efe9] sm:h-48 sm:max-w-none sm:rounded-t-xl">
+                        <div
+                          className="w-full rounded-t-lg bg-gradient-to-t from-[#d9a900] to-[#f4c542] transition-all duration-500 sm:rounded-t-xl"
+                          style={{ height: item.total > 0 ? `${Math.max((item.total / maxRevenue) * 100, 5)}%` : '0%' }}
+                        />
+                      </div>
+                      <span className="truncate text-[10px] font-black capitalize text-[#71717a] sm:text-xs">{item.label}</span>
                     </div>
-                    <span className="text-xs font-black text-[#71717a]">{item.label}</span>
-                    <span className="text-xs font-black text-[#050505]">€ {formatNumber(item.total)}</span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-[#dfd5c2] bg-[#fffdf8] px-6 text-center sm:h-64">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4c7] text-[#8a6a16]">
+                    <DollarSign size={22} />
                   </div>
-                ))}
-              </div>
+                  <p className="font-black text-[#050505]">
+                    {language === 'es' ? 'Aún no hay ingresos registrados' : 'No revenue recorded yet'}
+                  </p>
+                  <p className="mt-1 max-w-sm text-sm font-medium text-[#71717a]">
+                    {language === 'es' ? 'La gráfica aparecerá cuando se registren pagos de suscripciones.' : 'The chart will appear when subscription payments are recorded.'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -772,16 +812,46 @@ export function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-serif font-bold text-[#050505]">{t.recentPlatformActivity}</h2>
+          <Card className="rounded-[1.5rem] sm:rounded-[2rem]">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-serif font-bold text-[#050505]">{t.recentPlatformActivity}</h2>
+                <span className="rounded-full bg-[#050505] px-2.5 py-1 text-[11px] font-black text-[#f4c542]">
+                  {recentPlatformActivity.length}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-3 sm:p-5 xl:p-5">
+              <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-white">
                 {recentPlatformActivity.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-[#f1ebdf] bg-[#fffdf8] p-4">
-                    <p className="font-black text-[#050505]">{item.name}</p>
-                    <p className="text-sm font-semibold text-[#71717a]">{item.detail} · {item.date ? new Date(item.date).toLocaleDateString(t.locale) : '-'}</p>
+                  <div key={item.id} className="flex min-w-0 items-center gap-3 border-b border-[#f1ebdf] px-3 py-3 last:border-b-0 sm:px-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f4ee] text-[#8a6a16]">
+                      <Building2 size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black text-[#050505] sm:text-base">{item.name}</p>
+                      <p className="mt-0.5 text-xs font-semibold text-[#71717a]">
+                        {language === 'es' ? 'Creado' : 'Created'} · {item.date
+                          ? new Date(item.date).toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' })
+                          : '—'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                        item.detail === 'premium'
+                          ? 'bg-[#050505] text-[#f4c542]'
+                          : item.detail === 'pro'
+                            ? 'bg-[#fff4c7] text-[#8a6a16]'
+                            : item.detail === 'basic'
+                              ? 'bg-[#f1f0ec] text-[#52525b]'
+                              : 'bg-blue-50 text-blue-700'
+                      }`}>
+                        {item.detail}
+                      </span>
+                      {item.status === 'bloqueado' && (
+                        <span className="text-[9px] font-black uppercase text-red-600">{language === 'es' ? 'Bloqueado' : 'Blocked'}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {recentPlatformActivity.length === 0 && <div className="rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] py-8 text-center font-semibold text-[#71717a]">{t.noPlatformActivity}</div>}
@@ -789,19 +859,45 @@ export function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <h2 className="text-xl font-serif font-bold text-[#050505]">{t.trialAlerts}</h2>
+          <Card className="rounded-[1.5rem] sm:rounded-[2rem]">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-serif font-bold text-[#050505]">{t.trialAlerts}</h2>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${expiringTrials.length > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                  {expiringTrials.length}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {expiringTrials.map((business) => (
-                  <div key={business.id} className="rounded-2xl border border-red-100 bg-red-50 p-4">
-                    <p className="font-black text-red-700">{business.nombre || business.name || 'Business'}</p>
-                    <p className="text-sm font-semibold text-red-600">{business.trial_ends_at ? new Date(business.trial_ends_at).toLocaleDateString(t.locale) : '-'}</p>
+            <CardContent className="p-3 sm:p-5 xl:p-5">
+              <div className="overflow-hidden rounded-2xl border border-[#f1ebdf] bg-white">
+                {expiringTrials.map((business) => {
+                  const trialEnd = business.trial_ends_at ? new Date(business.trial_ends_at) : null;
+                  const daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : null;
+                  return (
+                    <div key={business.id} className="flex min-w-0 items-center gap-3 border-b border-red-100 bg-red-50/55 px-3 py-3 last:border-b-0 sm:px-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                        <CalendarClock size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-[#050505] sm:text-base">{business.nombre || business.name || 'Business'}</p>
+                        <p className="mt-0.5 text-xs font-semibold text-red-700">
+                          {trialEnd ? trialEnd.toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-red-700">
+                        {daysLeft} {language === 'es' ? 'días' : 'days'}
+                      </span>
+                    </div>
+                  );
+                })}
+                {expiringTrials.length === 0 && (
+                  <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <p className="text-sm font-bold text-[#71717a]">{t.noTrialAlerts}</p>
                   </div>
-                ))}
-                {expiringTrials.length === 0 && <div className="rounded-2xl border border-[#f1ebdf] bg-[#fbfaf7] py-8 text-center font-semibold text-[#71717a]">{t.noTrialAlerts}</div>}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -812,7 +908,7 @@ export function DashboardPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 overflow-x-hidden text-[#08080b] sm:space-y-6">
-      <section className="relative min-w-0 overflow-hidden rounded-[2rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-5 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:p-7 xl:p-8">
+      <section className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-[#e9e2d3]/80 bg-[#fffdf8]/85 p-4 shadow-[0_24px_70px_rgba(15,15,15,0.07)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-7 xl:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,197,66,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.88),transparent_42%)]" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4c542]/60 to-transparent" />
         <div className="relative z-10 flex min-w-0 flex-col justify-between gap-6 xl:flex-row xl:items-center">
@@ -821,7 +917,7 @@ export function DashboardPage() {
               <Sparkles size={14} />
               MatMax Business Suite
             </div>
-            <h1 className="mb-3 text-4xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-6xl">
+            <h1 className="mb-3 text-3xl font-black tracking-tight text-[#050505] sm:text-5xl xl:text-6xl">
               Dashboard
             </h1>
             <p className="max-w-3xl text-sm font-bold uppercase tracking-[0.18em] text-[#71717a] sm:text-base">
@@ -1074,30 +1170,38 @@ function DashboardMetricCard({
   value,
   subtitle,
   icon: Icon,
-  iconClass
+  iconClass,
+  compact = false
 }: {
   title: string;
   value: string;
   subtitle: string;
   icon: ElementType;
   iconClass: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] border border-[#e9e2d3]/85 bg-white/90 p-5 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] sm:p-6">
+    <div className={`group relative min-w-0 overflow-hidden border border-[#e9e2d3]/85 bg-white/90 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] ${
+      compact
+        ? 'flex min-h-[9.5rem] flex-col justify-between rounded-[1.4rem] p-4 sm:min-h-0 sm:flex-row sm:items-center sm:gap-4 sm:rounded-[1.75rem] sm:p-6'
+        : 'flex items-center justify-between gap-4 rounded-[1.75rem] p-5 sm:p-6'
+    }`}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,197,66,0.09),transparent_38%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      <div className="relative z-10 min-w-0 flex-1 overflow-hidden pr-2">
-        <p className="mb-2 truncate text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">
+      <div className={`relative z-10 min-w-0 flex-1 overflow-hidden ${compact ? 'pt-11 sm:pt-0 sm:pr-2' : 'pr-2'}`}>
+        <p className={`mb-2 font-black uppercase text-[#8a6a16] ${compact ? 'line-clamp-2 text-[9px] leading-4 tracking-[0.14em] sm:truncate sm:text-[10px] sm:tracking-[0.18em]' : 'truncate text-[10px] tracking-[0.18em]'}`}>
           {title}
         </p>
-        <p className="max-w-full whitespace-nowrap text-[1.9rem] font-black leading-none tracking-tight text-[#050505] sm:text-[2.15rem] 2xl:text-[2.35rem]">
+        <p className={`max-w-full whitespace-nowrap font-black leading-none tracking-tight text-[#050505] ${compact ? 'text-[1.65rem] sm:text-[2.15rem] 2xl:text-[2.35rem]' : 'text-[1.9rem] sm:text-[2.15rem] 2xl:text-[2.35rem]'}`}>
           {value}
         </p>
-        <p className="mt-2 truncate text-sm font-bold text-[#71717a]">
+        <p className={`mt-2 truncate font-bold text-[#71717a] ${compact ? 'text-[11px] sm:text-sm' : 'text-sm'}`}>
           {subtitle}
         </p>
       </div>
-      <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.15rem] shadow-[0_16px_34px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:h-14 sm:w-14 ${iconClass}`}>
-        <Icon className="h-6 w-6 shrink-0" />
+      <div className={`z-10 flex shrink-0 items-center justify-center shadow-[0_16px_34px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 ${
+        compact ? 'absolute right-3 top-3 h-9 w-9 rounded-xl sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem]' : 'relative h-12 w-12 rounded-[1.15rem] sm:h-14 sm:w-14'
+      } ${iconClass}`}>
+        <Icon className={`${compact ? 'h-4 w-4 sm:h-6 sm:w-6' : 'h-6 w-6'} shrink-0`} />
       </div>
     </div>
   );

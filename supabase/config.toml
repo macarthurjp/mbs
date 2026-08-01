@@ -19,3 +19,8 @@ entrypoint = "./functions/create-platform-backup/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-owner-alert/index.ts"
+
+[functions.send-trial-reminders]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-trial-reminders/index.ts"

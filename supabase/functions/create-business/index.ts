@@ -178,13 +178,20 @@ serve(async (req) => {
 
       const { data: currentBusiness, error: currentBusinessError } = await admin
         .from('negocios')
-        .select('email_alias')
+        .select('email_alias, trial_ends_at')
         .eq('id', negocioId)
         .maybeSingle();
 
       if (currentBusinessError) throw currentBusinessError;
 
       const emailAlias = cleanText(currentBusiness?.email_alias) || await getUniqueBusinessAlias(admin, businessName, negocioId);
+      // Only stamp trial_ends_at the first time this negocio actually enters
+      // a trial (no existing value yet) — never overwrite one that's already
+      // set, so re-calling this with plan='trial' can't reset/extend it.
+      const trialEndsAtUpdate =
+        plan === 'trial' && !currentBusiness?.trial_ends_at
+          ? { trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString() }
+          : {};
       const { error: updateBusinessError } = await admin
         .from('negocios')
         .update({
@@ -196,6 +203,7 @@ serve(async (req) => {
           email_alias: emailAlias,
           email_from_name: businessName,
           email_reply_to: email,
+          ...trialEndsAtUpdate,
         })
         .eq('id', negocioId);
 

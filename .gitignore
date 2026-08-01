@@ -33,3 +33,6 @@ supabase/.temp/
 
 # Local backup snapshots
 matmax-pos-backup-*.zip
+
+# Claude Code local session/harness state (per-clone, never shared)
+.claude/

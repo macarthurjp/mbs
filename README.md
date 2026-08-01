@@ -186,9 +186,14 @@ STRIPE_PRICE_PREMIUM=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
 SAAS_EMAIL_DOMAIN=mbs.app
+TRIAL_REMINDER_CRON_SECRET=
+TRIAL_REMINDER_FROM_EMAIL=
+APP_URL=https://app.matmaxsuite.com
 ```
 
 Configurar estos valores con Supabase CLI o desde el Dashboard de Supabase.
+
+`TRIAL_REMINDER_CRON_SECRET` protege `send-trial-reminders` de la misma forma que `PLATFORM_BACKUP_CRON_SECRET` protege el backup: después de desplegar la función y setear el secreto, hay que programar el cron una sola vez (`select public.configure_trial_reminder_cron(...)`, ver el comentario en `supabase/migrations/20260801130000_create_trial_reminder_cron.sql`).
 
 ## Supabase
 

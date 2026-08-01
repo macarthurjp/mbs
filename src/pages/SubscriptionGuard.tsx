@@ -78,9 +78,11 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
       .eq('id', user.id)
       .maybeSingle();
 
-    if (error) {
-      console.warn('No se pudo leer negocio_id desde usuarios:', error);
-    }
+    // Thrown (not swallowed) so callers can tell "the lookup failed" apart
+    // from "it succeeded and there's genuinely no negocio_id" — the two
+    // used to collapse into the same null and get shown as if the user's
+    // business were missing, even when the real problem was a stalled query.
+    if (error) throw error;
 
     if (data?.negocio_id) return data.negocio_id;
 
@@ -113,12 +115,15 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
       // only got a single, non-retried, non-timed-out attempt there.
       const maxAttempts = cameFromCheckout ? 8 : 3;
       let negocioId: string | null = null;
+      let lastResolveError: unknown = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
           negocioId = await withTimeout(resolveNegocioId(), ATTEMPT_TIMEOUT_MS);
+          lastResolveError = null;
         } catch (error) {
           console.warn(`resolveNegocioId intento ${attempt}/${maxAttempts} falló:`, error);
+          lastResolveError = error;
           negocioId = null;
         }
 
@@ -131,8 +136,13 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
 
       if (!negocioId) {
         setBusiness(null);
-        setStatus('missing-business');
-        setMessage('Este usuario no tiene un negocio asignado. Redirigiendo a configuración del negocio.');
+        if (lastResolveError) {
+          setStatus('blocked');
+          setMessage('No se pudo validar la suscripción. Intenta nuevamente.');
+        } else {
+          setStatus('missing-business');
+          setMessage('Este usuario no tiene un negocio asignado. Redirigiendo a configuración del negocio.');
+        }
         return;
       }
 

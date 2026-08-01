@@ -134,6 +134,7 @@ const landingCopy = {
       'MatMax Business Suite centraliza ventas, cotizaciones, inventario, clientes, caja, compras, facturas, cuentas por cobrar y reportes en una experiencia premium, simple y preparada para crecer.',
     createAccount: 'Crear cuenta',
     viewPlans: 'Ver planes',
+    freeTrialNote: '30 días gratis, sin tarjeta de crédito.',
     secureStripe: 'Pago seguro con Stripe',
     multiBusiness: 'Multi-negocio preparado',
     realtimeDashboard: 'Dashboard en tiempo real',
@@ -152,7 +153,7 @@ const landingCopy = {
       'Diseñado para dueños de negocios que necesitan claridad, control y una experiencia elegante.',
     plansTitle: 'Planes',
     plansHeading: 'Elige el plan ideal',
-    plansDescription: 'Empieza simple y escala cuando tu negocio lo necesite.',
+    plansDescription: 'Empieza simple y escala cuando tu negocio lo necesite. Prueba cualquier plan gratis por 30 días, sin tarjeta.',
     recommended: 'Recomendado',
     start: 'Empezar',
     securityBadge: 'Seguridad y control',
@@ -165,7 +166,7 @@ const landingCopy = {
       'El sistema bloquea o activa el acceso según el estado real de cada negocio y el rol del usuario.',
     ctaHeading: 'Empieza a gestionar tu negocio hoy.',
     ctaDescription:
-      'Crea tu cuenta, registra tu empresa y elige el plan que mejor se adapta a tu operación.',
+      'Crea tu cuenta, registra tu empresa y prueba MatMax gratis por 30 días antes de elegir un plan.',
     createAccountNow: 'Crear cuenta ahora',
 month: '/mes',
     footerRights: 'Todos los derechos reservados.',
@@ -184,6 +185,7 @@ month: '/mes',
       'MatMax Business Suite centralizes sales, quotes, inventory, clients, cash register, purchases, invoices, accounts receivable, and reports in a premium experience designed to grow.',
     createAccount: 'Create account',
     viewPlans: 'View plans',
+    freeTrialNote: '30 days free, no credit card required.',
     secureStripe: 'Secure payments with Stripe',
     multiBusiness: 'Multi-business ready',
     realtimeDashboard: 'Real-time dashboard',
@@ -202,7 +204,7 @@ month: '/mes',
       'Designed for business owners who need clarity, control, and an elegant experience.',
     plansTitle: 'Plans',
     plansHeading: 'Choose the ideal plan',
-    plansDescription: 'Start simple and scale when your business needs it.',
+    plansDescription: 'Start simple and scale when your business needs it. Try any plan free for 30 days, no card required.',
     recommended: 'Recommended',
     start: 'Get Started',
     securityBadge: 'Security and control',
@@ -215,7 +217,7 @@ month: '/mes',
       'The system blocks or enables access according to the real status of each business and user role.',
     ctaHeading: 'Start managing your business today.',
     ctaDescription:
-      'Create your account, register your company, and choose the plan that best fits your operation.',
+      'Create your account, register your company, and try MatMax free for 30 days before choosing a plan.',
     createAccountNow: 'Create account now',
 month: '/mo',
     footerRights: 'All rights reserved.',
@@ -343,6 +345,8 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 {t.viewPlans}
               </a>
             </div>
+
+            <p className="mb-6 text-sm font-bold text-[#8a6a16] sm:mb-7">{t.freeTrialNote}</p>
 
             <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-[#71717a]">
               {[t.secureStripe, t.multiBusiness, t.realtimeDashboard].map((item) => (

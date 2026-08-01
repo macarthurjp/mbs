@@ -3,11 +3,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 
-type PlanId = 'basic' | 'pro' | 'premium';
+type PlanId = 'basic' | 'pro' | 'premium' | 'trial';
+
+const TRIAL_DAYS = 30;
 
 function normalizePlan(plan: unknown): PlanId {
   const value = String(plan || '').trim().toLowerCase();
-  if (value === 'pro' || value === 'premium') return value;
+  if (value === 'pro' || value === 'premium' || value === 'trial') return value;
   return 'basic';
 }
 
@@ -200,6 +202,9 @@ serve(async (req) => {
       if (updateBusinessError) throw updateBusinessError;
     } else {
       const emailAlias = await getUniqueBusinessAlias(admin, businessName, null);
+      const trialEndsAt = plan === 'trial'
+        ? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        : null;
       const { data: negocio, error: negocioError } = await admin
         .from('negocios')
         .insert({
@@ -214,7 +219,7 @@ serve(async (req) => {
           logo_url: null,
           estado: 'pendiente',
           plan,
-          trial_ends_at: null,
+          trial_ends_at: trialEndsAt,
         })
         .select('id')
         .single();

@@ -24,6 +24,7 @@ import { notifySaasOwner } from '../utils/ownerAlerts';
 
 type OnboardingStep = 'business' | 'plans';
 type PlanId = 'basic' | 'pro' | 'premium';
+type CheckoutPlanId = PlanId | 'trial';
 
 type OnboardingPageProps = {
   selectedPlan?: PlanId;
@@ -99,6 +100,11 @@ const onboardingCopy = {
     proDescription: 'Para negocios en crecimiento que necesitan reportes, caja y compras.',
     premiumDescription: 'Para empresas que necesitan control completo y herramientas avanzadas.',
     recommended: 'Recomendado',
+    trialTitle: '¿No quieres decidir todavía?',
+    trialSubtitle: 'Empieza gratis por 30 días con acceso completo. Sin tarjeta, sin compromiso.',
+    trialCta: 'Empezar prueba gratis de 30 días',
+    trialCtaLoading: 'Activando prueba...',
+    trialStarted: '¡Prueba gratuita activada! Redirigiendo...',
     basicFeatures: ['Ventas y productos', 'Clientes', 'Cotizaciones', 'Facturación simple'],
     proFeatures: ['Todo en Basic', 'Caja avanzada', 'Cuentas por cobrar', 'Reportes', 'Control por roles'],
     premiumFeatures: ['Todo en Pro', 'Multiusuario', 'Permisos Dueño/Admin/Vendedor', 'Analytics avanzado', 'Soporte prioritario']
@@ -142,6 +148,11 @@ const onboardingCopy = {
     proDescription: 'For growing businesses that need reports, cashbox, and purchases.',
     premiumDescription: 'For companies that need complete control and advanced tools.',
     recommended: 'Recommended',
+    trialTitle: "Not ready to decide?",
+    trialSubtitle: 'Start free for 30 days with full access. No card, no commitment.',
+    trialCta: 'Start 30-day free trial',
+    trialCtaLoading: 'Activating trial...',
+    trialStarted: 'Free trial activated! Redirecting...',
     basicFeatures: ['Sales and products', 'Clients', 'Quotes', 'Simple invoicing'],
     proFeatures: ['Everything in Basic', 'Advanced cashbox', 'Accounts receivable', 'Reports', 'Role control'],
     premiumFeatures: ['Everything in Pro', 'Multi-user', 'Owner/Admin/Seller permissions', 'Advanced analytics', 'Priority support']
@@ -187,6 +198,7 @@ export default function OnboardingPage({ selectedPlan: initialSelectedPlan = 'ba
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(initialSelectedPlan);
   const [saving, setSaving] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [startingTrial, setStartingTrial] = useState(false);
   const [createdNegocioId, setCreatedNegocioId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -225,7 +237,7 @@ export default function OnboardingPage({ selectedPlan: initialSelectedPlan = 'ba
     setStep('plans');
   }
 
-  async function createBusinessIfNeeded(plan: PlanId) {
+  async function createBusinessIfNeeded(plan: CheckoutPlanId) {
     if (createdNegocioId) {
       const { data, error } = await supabase.functions.invoke('create-business', {
         body: {
@@ -322,6 +334,20 @@ export default function OnboardingPage({ selectedPlan: initialSelectedPlan = 'ba
       showToast(message, 'error');
     } finally {
       setCheckoutLoading(false);
+    }
+  }
+
+  async function handleStartTrial() {
+    try {
+      setStartingTrial(true);
+      await createBusinessIfNeeded('trial');
+      showToast(t.trialStarted, 'success');
+    } catch (error) {
+      console.error('Onboarding trial error:', error);
+      const message = error instanceof Error ? error.message : t.businessCreateError;
+      showToast(message, 'error');
+    } finally {
+      setStartingTrial(false);
     }
   }
 
@@ -445,6 +471,22 @@ export default function OnboardingPage({ selectedPlan: initialSelectedPlan = 'ba
                 <p className="text-sm font-bold text-[#71717a]">{t.company}</p>
                 <p className="max-w-full break-words font-black text-[#050505]">{form.business_name}</p>
               </div>
+            </div>
+
+            <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 rounded-2xl border border-[#f4c542]/40 bg-[#fff9e8] px-6 py-5 text-center shadow-sm sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <h3 className="text-lg font-black text-[#050505]">{t.trialTitle}</h3>
+                <p className="mt-1 text-sm font-medium text-[#52525b]">{t.trialSubtitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleStartTrial}
+                disabled={startingTrial || checkoutLoading}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#050505] bg-white px-5 py-3 font-black text-[#050505] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#fbfaf7] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                <Sparkles className="shrink-0" size={18} />
+                {startingTrial ? t.trialCtaLoading : t.trialCta}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

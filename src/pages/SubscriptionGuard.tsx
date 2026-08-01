@@ -30,6 +30,30 @@ function isTrialActive(trialEndsAt: string | null) {
   return new Date(trialEndsAt).getTime() >= Date.now();
 }
 
+// Supabase queries occasionally stall (cold connection pooler, network
+// blip) well past what's reasonable to keep the user staring at "Validando
+// suscripción...". A stalled request just hangs on its own `await` with no
+// error to retry on, so each attempt gets a hard client-side timeout that
+// turns a stall into a fast, retryable failure instead of an indefinite wait.
+const ATTEMPT_TIMEOUT_MS = 8000;
+const RETRY_DELAY_MS = 1200;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error('Tiempo de espera agotado')), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 export default function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const { user, userProfile } = useAuth();
 
@@ -84,16 +108,24 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
         return;
       }
 
-      const maxAttempts = cameFromCheckout ? 8 : 1;
+      // Retries apply to every login, not just the post-checkout return —
+      // a stalled query is just as likely on a plain sign-in, and previously
+      // only got a single, non-retried, non-timed-out attempt there.
+      const maxAttempts = cameFromCheckout ? 8 : 3;
       let negocioId: string | null = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        negocioId = await resolveNegocioId();
+        try {
+          negocioId = await withTimeout(resolveNegocioId(), ATTEMPT_TIMEOUT_MS);
+        } catch (error) {
+          console.warn(`resolveNegocioId intento ${attempt}/${maxAttempts} falló:`, error);
+          negocioId = null;
+        }
 
         if (negocioId) break;
 
         if (attempt < maxAttempts) {
-          await new Promise((resolve) => window.setTimeout(resolve, 1200));
+          await new Promise((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS));
         }
       }
 
@@ -105,33 +137,49 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
       }
 
       let data: NegocioSubscription | null = null;
+      let lastQueryError: unknown = null;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        const [businessResult, subscriptionResult] = await Promise.all([
-          supabase
-            .from('negocios')
-            .select('id, nombre, estado, plan, trial_ends_at')
-            .eq('id', negocioId)
-            .maybeSingle(),
-          supabase
-            .from('suscripciones')
-            .select('estado, plan')
-            .eq('negocio_id', negocioId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        ]);
+        try {
+          const [businessResult, subscriptionResult] = await withTimeout(
+            Promise.all([
+              supabase
+                .from('negocios')
+                .select('id, nombre, estado, plan, trial_ends_at')
+                .eq('id', negocioId)
+                .maybeSingle(),
+              supabase
+                .from('suscripciones')
+                .select('estado, plan')
+                .eq('negocio_id', negocioId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle()
+            ]),
+            ATTEMPT_TIMEOUT_MS
+          );
 
-        if (businessResult.error) throw businessResult.error;
-        if (subscriptionResult.error) console.warn('No se pudo leer suscripción:', subscriptionResult.error);
+          if (businessResult.error) throw businessResult.error;
+          if (subscriptionResult.error) console.warn('No se pudo leer suscripción:', subscriptionResult.error);
 
-        data = businessResult.data
-          ? {
-              ...(businessResult.data as NegocioSubscription),
-              subscription_estado: subscriptionResult.data?.estado || null,
-              subscription_plan: subscriptionResult.data?.plan || null,
-            }
-          : null;
+          lastQueryError = null;
+          data = businessResult.data
+            ? {
+                ...(businessResult.data as NegocioSubscription),
+                subscription_estado: subscriptionResult.data?.estado || null,
+                subscription_plan: subscriptionResult.data?.plan || null,
+              }
+            : null;
+        } catch (error) {
+          console.warn(`Consulta de negocio/suscripción intento ${attempt}/${maxAttempts} falló:`, error);
+          lastQueryError = error;
+          data = null;
+
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS));
+          }
+          continue;
+        }
 
         const normalizedCheckoutPlan = String(checkoutPlan || '').trim().toLowerCase();
         const normalizedBusinessPlan = getEffectivePlan({
@@ -147,14 +195,24 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
         if (!cameFromCheckout || (data?.estado === 'activo' && planMatches)) break;
 
         if (attempt < maxAttempts) {
-          await new Promise((resolve) => window.setTimeout(resolve, 1200));
+          await new Promise((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS));
         }
       }
 
       if (!data) {
+        // A real "no row" result and an exhausted-retries timeout/error both
+        // land here as data === null, but they're not the same situation —
+        // don't tell someone with a real, existing business that it's
+        // missing (which would drop them into "create a business") just
+        // because the query kept stalling.
         setBusiness(null);
-        setStatus('missing-business');
-        setMessage('No se encontró el negocio asociado a este usuario.');
+        if (lastQueryError) {
+          setStatus('blocked');
+          setMessage('No se pudo validar la suscripción. Intenta nuevamente.');
+        } else {
+          setStatus('missing-business');
+          setMessage('No se encontró el negocio asociado a este usuario.');
+        }
         return;
       }
 

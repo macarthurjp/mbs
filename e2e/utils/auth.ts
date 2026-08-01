@@ -43,9 +43,15 @@ export async function loginAs(page: Page, email: string, password: string) {
   await page.locator('form button[type="submit"]').click();
 
   // LoginPage hard-redirects to /dashboard ~1s after a successful sign-in,
-  // reloading the whole SPA.
-  await page.waitForURL('**/dashboard', { timeout: 20_000 });
-  await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible({ timeout: 20_000 });
+  // reloading the whole SPA. Both waits below chain multiple real network
+  // round trips (sign-in, full reload, SubscriptionGuard's own Supabase
+  // queries) against the live project, not a local/staging one — 20s was
+  // observed timing out intermittently (~4/27 runs) purely on network
+  // variance, scattered across unrelated tests/accounts, never on a
+  // specific assertion. 45s/30s gives real headroom without masking an
+  // actual hang (a genuinely broken login would still exceed either).
+  await page.waitForURL('**/dashboard', { timeout: 45_000 });
+  await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible({ timeout: 30_000 });
 }
 
 export async function loginAsTestOwner(page: Page) {

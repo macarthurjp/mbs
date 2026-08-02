@@ -2282,26 +2282,26 @@ if (cleanEmail !== oldProfileEmail) {
                 </div>
 
                 {!isEditingBusiness && (
-                  <div className="grid min-w-0 grid-cols-2 gap-3 rounded-[1.4rem] border border-[#e9e2d3] bg-[#fbfaf7] p-3 shadow-sm sm:gap-4 sm:rounded-[2rem] sm:p-4 xl:grid-cols-4">
-                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4">
+                  <div className="grid min-w-0 grid-cols-2 gap-3 rounded-[1.4rem] border border-[#e9e2d3] bg-[#fbfaf7] p-3 shadow-sm sm:gap-4 sm:rounded-[2rem] sm:p-4 xl:grid-cols-12">
+                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4 xl:col-span-3">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.businessName}</p>
                       <p className="mt-2 break-words text-base font-black text-[#050505]">{businessForm.nombre || '—'}</p>
                     </div>
-                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4">
+                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4 xl:col-span-2">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.currency}</p>
                       <p className="mt-2 text-base font-black text-[#050505]">{businessForm.moneda || '—'}</p>
                     </div>
-                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4">
+                    <div className="min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:rounded-[1.35rem] sm:p-4 xl:col-span-3">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.exchangeRateSettings}</p>
                       <p className="mt-2 whitespace-nowrap text-sm font-black text-[#050505] sm:text-base">{businessForm.moneda_secundaria || '—'} · {businessForm.tasa_cambio || '—'}</p>
                     </div>
-                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4">
+                    <div className="col-span-2 min-w-0 rounded-[1.1rem] border border-[#e9e2d3] bg-white/85 p-3 sm:col-span-1 sm:rounded-[1.35rem] sm:p-4 xl:col-span-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a6a16]">{t.businessEmail}</p>
-                      <p className="mt-2 max-w-full whitespace-nowrap text-[clamp(0.68rem,2.75vw,0.875rem)] font-black leading-snug tracking-[-0.01em] text-[#050505] sm:whitespace-normal sm:break-all sm:text-base" title={`${businessForm.email_alias || getDefaultEmailAlias(businessForm.nombre)}@${SAAS_EMAIL_DOMAIN}`}>
+                      <p className="mt-2 max-w-full [overflow-wrap:anywhere] text-sm font-black leading-snug tracking-[-0.02em] text-[#050505] sm:text-base xl:text-[clamp(0.8rem,1vw,1rem)]" title={`${businessForm.email_alias || getDefaultEmailAlias(businessForm.nombre)}@${SAAS_EMAIL_DOMAIN}`}>
                         {(businessForm.email_alias || getDefaultEmailAlias(businessForm.nombre))}@{SAAS_EMAIL_DOMAIN}
                       </p>
                     </div>
-                    <p className="col-span-2 hidden rounded-xl bg-white/55 px-3 py-2 text-sm font-semibold leading-relaxed text-[#71717a] sm:block xl:col-span-4">
+                    <p className="col-span-2 hidden rounded-xl bg-white/55 px-3 py-2 text-sm font-semibold leading-relaxed text-[#71717a] sm:block xl:col-span-12">
                       {t.businessCollapsedHint}
                     </p>
                   </div>

@@ -485,6 +485,10 @@ export function DashboardPage() {
     };
   }, [platformBusinesses, platformUsers, platformSubscriptions, getEffectivePlatformPlan]);
 
+  const activeBusinessRate = platformMetrics.totalBusinesses > 0
+    ? Math.round((platformMetrics.activeBusinesses / platformMetrics.totalBusinesses) * 100)
+    : 0;
+
   const platformBusinessGrowth = useMemo(() => {
     return Array.from({ length: 6 }).map((_, index) => {
       const date = new Date();
@@ -714,7 +718,11 @@ export function DashboardPage() {
             compact
             title={t.activeBusinesses}
             value={platformMetrics.activeBusinesses.toLocaleString(t.locale)}
-            subtitle={`${platformMetrics.activeBusinesses}/${platformMetrics.totalBusinesses} · ${platformMetrics.totalBusinesses > 0 ? Math.round((platformMetrics.activeBusinesses / platformMetrics.totalBusinesses) * 100) : 0}%`}
+            subtitle={language === 'es'
+              ? `de ${platformMetrics.totalBusinesses.toLocaleString(t.locale)} registrados`
+              : `of ${platformMetrics.totalBusinesses.toLocaleString(t.locale)} registered`}
+            progress={activeBusinessRate}
+            progressLabel={language === 'es' ? 'activos' : 'active'}
             icon={Building2}
             iconClass="bg-[#fff4c7] text-[#8a6a16]"
           />
@@ -1172,7 +1180,9 @@ function DashboardMetricCard({
   subtitle,
   icon: Icon,
   iconClass,
-  compact = false
+  compact = false,
+  progress,
+  progressLabel
 }: {
   title: string;
   value: string;
@@ -1180,7 +1190,13 @@ function DashboardMetricCard({
   icon: ElementType;
   iconClass: string;
   compact?: boolean;
+  progress?: number;
+  progressLabel?: string;
 }) {
+  const safeProgress = typeof progress === 'number'
+    ? Math.min(100, Math.max(0, progress))
+    : null;
+
   return (
     <div className={`group relative min-w-0 overflow-hidden border border-[#e9e2d3]/85 bg-white/90 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] ${
       compact
@@ -1198,6 +1214,19 @@ function DashboardMetricCard({
         <p className={`mt-2 font-bold leading-snug text-[#71717a] ${compact ? 'line-clamp-2 text-[11px] sm:text-sm' : 'truncate text-sm'}`}>
           {subtitle}
         </p>
+        {safeProgress !== null && (
+          <div className="mt-3 flex max-w-[15rem] items-center gap-2.5">
+            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[#eee9de] shadow-inner">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#b88716,#f4c542)] shadow-[0_0_14px_rgba(244,197,66,0.42)] transition-[width] duration-700 ease-out"
+                style={{ width: `${safeProgress}%` }}
+              />
+            </div>
+            <span className="shrink-0 rounded-full border border-[#ead9a4] bg-[#fff8dc] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#7a5a10]">
+              {safeProgress}% {progressLabel}
+            </span>
+          </div>
+        )}
       </div>
       <div className={`z-10 flex shrink-0 items-center justify-center shadow-[0_16px_34px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 ${
         compact ? 'absolute right-3 top-3 h-9 w-9 rounded-xl sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem]' : 'relative h-12 w-12 rounded-[1.15rem] sm:h-14 sm:w-14'

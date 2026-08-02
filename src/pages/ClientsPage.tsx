@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -856,11 +857,7 @@ function ClientMetricCard({
           <p className="mb-2 line-clamp-2 max-w-[13rem] text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-4 sm:text-[11px] sm:tracking-[0.24em]">
             {title}
           </p>
-          <p
-            className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.45rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[2.35rem] sm:tracking-tight xl:text-[2.15rem] 2xl:text-[2.45rem] ${valueClass}`}
-          >
-            {value}
-          </p>
+          <AdaptiveValue value={value} className={`text-[clamp(1rem,4.35vw,2.45rem)] font-black leading-[1.02] tracking-[-0.045em] sm:text-[2.35rem] sm:tracking-tight xl:text-[2.15rem] 2xl:text-[2.45rem] ${valueClass}`} />
         </div>
 
         <div className={`absolute right-0 top-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>

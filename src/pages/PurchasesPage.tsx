@@ -15,6 +15,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 
 type Producto = {
@@ -1094,9 +1095,7 @@ export default function PurchasesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#f4c542]">{t.totalPurchases}</p>
-                    <p className="whitespace-normal break-normal text-[clamp(1rem,4.2vw,2.25rem)] font-black leading-none text-white sm:text-4xl">
-                      {formatMoney(metrics.totalCompras, currencySettings)}
-                    </p>
+                    <AdaptiveValue value={formatMoney(metrics.totalCompras, currencySettings)} className="text-[clamp(1rem,4.2vw,2.25rem)] font-black leading-none text-white sm:text-4xl" />
                   </div>
                 </div>
               </div>
@@ -1110,9 +1109,7 @@ export default function PurchasesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a6a16]">{t.averagePurchase}</p>
-                    <p className="whitespace-normal break-normal text-[clamp(1rem,4.2vw,1.5rem)] font-black leading-tight text-[#050505] sm:text-2xl">
-                      {formatMoney(metrics.promedioCompra, currencySettings)}
-                    </p>
+                    <AdaptiveValue value={formatMoney(metrics.promedioCompra, currencySettings)} className="text-[clamp(1rem,4.2vw,1.5rem)] font-black leading-tight text-[#050505] sm:text-2xl" />
                   </div>
                 </div>
               </div>
@@ -1788,9 +1785,7 @@ function MetricCard({
         <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full whitespace-normal break-normal text-[clamp(1rem,4.2vw,2.55rem)] font-black leading-[1.02] tracking-[-0.04em] tabular-nums text-[#050505] sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem]">
-          {value}
-        </p>
+        <AdaptiveValue value={value} className="text-[clamp(1rem,4.2vw,2.55rem)] font-black leading-[1.02] tracking-[-0.04em] text-[#050505] sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem]" />
       </div>
       <div className={`absolute right-3 top-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${color}`}>
         <Icon className="h-5 w-5 shrink-0 drop-shadow-sm sm:h-6 sm:w-6" />

@@ -17,6 +17,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { getUserRoleFlags } from '../utils/roles';
 import { logAudit } from '../utils/audit';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -1619,9 +1620,7 @@ function QuoteMetricCard({
         <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full whitespace-nowrap text-[clamp(1rem,4.4vw,1.55rem)] font-black leading-[0.95] tracking-[-0.05em] tabular-nums text-[#050505] sm:text-[1.8rem] sm:tracking-tight xl:text-[1.95rem] 2xl:text-[2.15rem]">
-          {value}
-        </p>
+        <AdaptiveValue value={value} className="text-[clamp(1rem,4.4vw,1.55rem)] font-black leading-[0.95] tracking-[-0.05em] text-[#050505] sm:text-[1.8rem] sm:tracking-tight xl:text-[1.95rem] 2xl:text-[2.15rem]" />
       </div>
       <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-13 sm:w-13 sm:rounded-[1.05rem] ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0" />

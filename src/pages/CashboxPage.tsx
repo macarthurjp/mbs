@@ -17,6 +17,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1300,9 +1301,7 @@ function MetricCard({
           {title}
         </p>
 
-        <p className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.55rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem] ${valueClass}`}>
-          {value}
-        </p>
+        <AdaptiveValue value={value} className={`text-[clamp(1rem,4.35vw,2.55rem)] font-black leading-[1.02] tracking-[-0.045em] sm:text-[2.35rem] sm:tracking-tight xl:text-[2.25rem] 2xl:text-[2.55rem] ${valueClass}`} />
       </div>
 
       <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>

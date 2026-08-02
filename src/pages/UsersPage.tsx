@@ -21,6 +21,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1530,9 +1531,7 @@ function UserMetricCard({
         <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-4 tracking-[0.14em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className="max-w-full break-words text-[1.75rem] font-black leading-[0.95] tracking-tight tabular-nums text-[#050505] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]">
-          {value}
-        </p>
+        <AdaptiveValue value={value} className="text-[1.75rem] font-black leading-[0.95] tracking-tight text-[#050505] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]" />
       </div>
       <div className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] ${iconClass}`}>
         <Icon className="h-4 w-4 shrink-0 sm:h-6 sm:w-6" />

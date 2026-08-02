@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent } from '../components/ui/Card';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -1125,9 +1126,7 @@ function MetricCard({
         <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a6a16] sm:text-[11px]">
           {title}
         </p>
-        <p className="max-w-full whitespace-nowrap text-[1.9rem] font-black leading-none tracking-tight tabular-nums text-[#050505] sm:text-[2.15rem] xl:text-[2rem] 2xl:text-[2.25rem]">
-          {value}
-        </p>
+        <AdaptiveValue value={value} className="text-[1.9rem] font-black leading-none tracking-tight text-[#050505] sm:text-[2.15rem] xl:text-[2rem] 2xl:text-[2.25rem]" />
         {detail && <p className="mt-2 truncate text-[11px] font-bold text-[#71717a] sm:text-sm">{detail}</p>}
         {safeProgress !== null && (
           <div className="mt-3 flex max-w-[15rem] items-center gap-2.5">

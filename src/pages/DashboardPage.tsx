@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getUserRoleFlags } from '../utils/roles';
 import { getEffectivePlan } from '../utils/subscriptionPlan';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 
 type Venta = {
   id: number;
@@ -1208,9 +1209,7 @@ function DashboardMetricCard({
         <p className={`mb-2 font-black uppercase text-[#8a6a16] ${compact ? 'line-clamp-2 text-[9px] leading-4 tracking-[0.14em] sm:truncate sm:text-[10px] sm:tracking-[0.18em]' : 'truncate text-[10px] tracking-[0.18em]'}`}>
           {title}
         </p>
-        <p className={`max-w-full whitespace-nowrap font-black leading-none tracking-[-0.04em] text-[#050505] ${compact ? 'text-[clamp(1.05rem,4.55vw,2.35rem)] sm:text-[2.15rem] 2xl:text-[2.35rem]' : 'text-[1.9rem] sm:text-[2.15rem] 2xl:text-[2.35rem]'}`}>
-          {value}
-        </p>
+        <AdaptiveValue value={value} className={`font-black leading-none tracking-[-0.04em] text-[#050505] ${compact ? 'text-[clamp(1.05rem,4.55vw,2.35rem)] sm:text-[2.15rem] 2xl:text-[2.35rem]' : 'text-[1.9rem] sm:text-[2.15rem] 2xl:text-[2.35rem]'}`} />
         <p className={`mt-2 font-bold leading-snug text-[#71717a] ${compact ? 'line-clamp-2 text-[11px] sm:text-sm' : 'truncate text-sm'}`}>
           {subtitle}
         </p>

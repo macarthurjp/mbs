@@ -19,6 +19,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
@@ -1604,7 +1605,7 @@ function ProductMetricCard({
       <div className="relative z-10 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1 overflow-hidden pt-11 sm:pt-0 sm:pr-2">
           <p className="mb-2 line-clamp-2 max-w-[13rem] text-[9px] font-black uppercase leading-4 tracking-[0.13em] text-[#8a6a16] sm:mb-4 sm:text-[11px] sm:tracking-[0.22em]">{title}</p>
-          <p className={`max-w-full whitespace-normal break-normal text-[clamp(1rem,4.35vw,2.15rem)] font-black leading-[1.02] tracking-[-0.045em] tabular-nums sm:text-[clamp(1.45rem,1.85vw,2.15rem)] sm:tracking-tight ${valueClass}`}>{value}</p>
+          <AdaptiveValue value={value} className={`text-[clamp(1rem,4.35vw,2.15rem)] font-black leading-[1.02] tracking-[-0.045em] sm:text-[clamp(1.45rem,1.85vw,2.15rem)] sm:tracking-tight ${valueClass}`} />
         </div>
         <div className={`absolute right-0 top-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-12 sm:w-12 sm:rounded-[1.05rem] ${iconClass}`}>
           <Icon className="h-5 w-5 shrink-0" />

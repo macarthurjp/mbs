@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { AdaptiveValue } from './AdaptiveValue';
 
 interface StatCardProps {
   title: string;
@@ -25,9 +26,7 @@ export function StatCard({
             {title}
           </p>
 
-          <p className="mb-2 overflow-hidden text-2xl font-black tracking-tight text-[#050505] sm:text-3xl md:text-4xl xl:text-5xl">
-            {value}
-          </p>
+          <AdaptiveValue value={value} className="mb-2 overflow-hidden text-2xl font-black tracking-tight text-[#050505] sm:text-3xl md:text-4xl xl:text-5xl" />
 
           <p className="line-clamp-2 text-xs font-semibold leading-relaxed text-[#71717a] sm:text-sm">
             {subtitle}

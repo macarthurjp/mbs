@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { CompactPagination } from '../components/ui/CompactPagination';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { formatPhone, normalizePhoneForLink } from '../utils/formatContact';
 import { printCompactReceipt } from '../utils/receiptPrinter';
@@ -2517,9 +2518,7 @@ function MetricCard({
         <p className="mb-2 line-clamp-2 text-[9px] font-black uppercase leading-tight tracking-[0.12em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:leading-snug sm:tracking-[0.22em]">
           {title}
         </p>
-        <p className={`max-w-full font-black leading-[1.02] tracking-[-0.035em] tabular-nums text-[#050505] ${isMoney ? 'whitespace-nowrap text-[clamp(0.78rem,3.25vw,1.05rem)]' : 'whitespace-normal break-normal text-[clamp(1.45rem,7vw,2.15rem)]'} sm:text-[clamp(1.55rem,2.2vw,2.6rem)] sm:tracking-tight xl:text-[clamp(1.45rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.8rem,2.2vw,2.8rem)]`}>
-          {value}
-        </p>
+        <AdaptiveValue value={value} className={`font-black leading-[1.02] tracking-[-0.035em] text-[#050505] ${isMoney ? 'text-[clamp(0.78rem,3.25vw,1.05rem)]' : 'text-[clamp(1.45rem,7vw,2.15rem)]'} sm:text-[clamp(1.55rem,2.2vw,2.6rem)] sm:tracking-tight xl:text-[clamp(1.45rem,1.9vw,2.3rem)] 2xl:text-[clamp(1.8rem,2.2vw,2.8rem)]`} />
       </div>
       <div className={`absolute right-3 top-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 shadow-[0_18px_40px_rgba(15,15,15,0.14)] transition-all duration-300 group-hover:scale-105 group-hover:rotate-3 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.2rem] xl:h-12 xl:w-12 2xl:h-14 2xl:w-14 ${iconClass}`}>
         <Icon className="h-5 w-5 shrink-0 sm:h-6 sm:w-6 xl:h-5 xl:w-5 2xl:h-6 2xl:w-6" />

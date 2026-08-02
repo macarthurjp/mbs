@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { formatEmail, formatPhone } from '../utils/formatContact';
+import { AdaptiveValue } from '../components/ui/AdaptiveValue';
 
 type Cliente = {
   id: number;
@@ -1237,13 +1238,11 @@ function MetricCard({
         <p className="mb-2 line-clamp-2 pr-1 text-[9px] font-black uppercase leading-snug tracking-[0.16em] text-[#8a6a16] sm:mb-3 sm:text-[11px] sm:tracking-[0.2em]">
           {title}
         </p>
-        <p className={`max-w-full font-black leading-none tracking-tight tabular-nums ${
+        <AdaptiveValue value={value} className={`font-black leading-none tracking-tight ${
           isMoney
-            ? 'whitespace-nowrap text-[clamp(0.72rem,3.15vw,0.95rem)] sm:text-[clamp(1.15rem,2.2vw,2rem)] xl:text-[clamp(1.15rem,1.55vw,1.75rem)]'
-            : 'whitespace-nowrap text-[2rem] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]'
-        } ${valueClass}`}>
-          {value}
-        </p>
+            ? 'text-[clamp(0.72rem,3.15vw,0.95rem)] sm:text-[clamp(1.15rem,2.2vw,2rem)] xl:text-[clamp(1.15rem,1.55vw,1.75rem)]'
+            : 'text-[2rem] sm:text-[2.35rem] xl:text-[2.25rem] 2xl:text-[2.55rem]'
+        } ${valueClass}`} />
       </div>
 
       <div className={`absolute right-3 top-3 z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] shadow-[0_14px_30px_rgba(15,15,15,0.10)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem] sm:shadow-[0_18px_40px_rgba(15,15,15,0.12)] ${iconClass}`}>

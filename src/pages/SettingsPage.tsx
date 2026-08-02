@@ -301,7 +301,7 @@ const settingsCopy = {
     stockResetSuccess: 'Stock reseteado correctamente',
     stockResetError: 'Error al resetear el stock',
     active: 'Activo',
-    trial: 'Basic',
+    trial: 'Prueba gratuita',
     statusActiveLabel: 'Activo',
     planBasicLabel: 'Basic',
     businessEmail: 'Correo del negocio',
@@ -449,7 +449,7 @@ const settingsCopy = {
     stockResetSuccess: 'Stock reset successfully',
     stockResetError: 'Error resetting stock',
     active: 'Active',
-    trial: 'Basic',
+    trial: 'Free Trial',
     statusActiveLabel: 'Active',
     planBasicLabel: 'Basic',
     businessEmail: 'Business Email',
@@ -607,9 +607,13 @@ export default function SettingsPage() {
 function formatPlanLabel(plan: string | null | undefined) {
   const normalizedPlan = String(plan || '').trim().toLowerCase();
 
-if (!normalizedPlan || normalizedPlan === 'trial' || normalizedPlan === 'basic') {
-  return t.planBasicLabel;
-}
+  if (normalizedPlan === 'trial') {
+    return t.trial;
+  }
+
+  if (!normalizedPlan || normalizedPlan === 'basic') {
+    return t.planBasicLabel;
+  }
 
   return normalizedPlan.charAt(0).toUpperCase() + normalizedPlan.slice(1);
 }

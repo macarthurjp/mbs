@@ -326,6 +326,10 @@ export default function SuperAdminPage() {
     };
   }, [businesses, users, subscriptions, businessSummaries]);
 
+  const activeBusinessRate = metrics.total > 0
+    ? Math.round((metrics.active / metrics.total) * 100)
+    : 0;
+
   const loadPlatformData = useCallback(async () => {
     try {
       setLoading(true);
@@ -688,7 +692,18 @@ export default function SuperAdminPage() {
 
       <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 2xl:grid-cols-4">
         <MetricCard compact title={t.businesses} value={metrics.total.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={Building2} iconClass="bg-[#050505] text-[#f4c542]" />
-        <MetricCard compact title={t.active} value={metrics.active.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} detail={`${metrics.active}/${metrics.total} · ${metrics.total > 0 ? Math.round((metrics.active / metrics.total) * 100) : 0}%`} icon={TrendingUp} iconClass="bg-[#050505] text-[#f4c542]" />
+        <MetricCard
+          compact
+          title={t.active}
+          value={metrics.active.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}
+          detail={language === 'es'
+            ? `de ${metrics.total.toLocaleString('es-ES')} registrados`
+            : `of ${metrics.total.toLocaleString('en-US')} registered`}
+          progress={activeBusinessRate}
+          progressLabel={language === 'es' ? 'activos' : 'active'}
+          icon={TrendingUp}
+          iconClass="bg-[#050505] text-[#f4c542]"
+        />
         <MetricCard compact title={t.trial} value={metrics.trial.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={Sparkles} iconClass="bg-[#fff4c7] text-[#8a6a16]" />
         <MetricCard compact title={t.blocked} value={metrics.blocked.toLocaleString(language === 'es' ? 'es-ES' : 'en-US')} icon={AlertTriangle} iconClass="bg-red-100 text-red-700" />
       </div>
@@ -1082,7 +1097,9 @@ function MetricCard({
   icon: Icon,
   iconClass,
   detail,
-  compact = false
+  compact = false,
+  progress,
+  progressLabel
 }: {
   title: string;
   value: string;
@@ -1090,7 +1107,13 @@ function MetricCard({
   iconClass: string;
   detail?: string;
   compact?: boolean;
+  progress?: number;
+  progressLabel?: string;
 }) {
+  const safeProgress = typeof progress === 'number'
+    ? Math.min(100, Math.max(0, progress))
+    : null;
+
   return (
     <div className={`group relative min-w-0 overflow-hidden border border-[#e9e2d3]/85 bg-white/90 shadow-[0_18px_50px_rgba(15,15,15,0.055)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-[#f4c542]/35 hover:bg-white hover:shadow-[0_28px_70px_rgba(15,15,15,0.09)] ${
       compact
@@ -1106,6 +1129,19 @@ function MetricCard({
           {value}
         </p>
         {detail && <p className="mt-2 truncate text-[11px] font-bold text-[#71717a] sm:text-sm">{detail}</p>}
+        {safeProgress !== null && (
+          <div className="mt-3 flex max-w-[15rem] items-center gap-2.5">
+            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[#eee9de] shadow-inner">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#b88716,#f4c542)] shadow-[0_0_14px_rgba(244,197,66,0.42)] transition-[width] duration-700 ease-out"
+                style={{ width: `${safeProgress}%` }}
+              />
+            </div>
+            <span className="shrink-0 rounded-full border border-[#ead9a4] bg-[#fff8dc] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-[#7a5a10]">
+              {safeProgress}% {progressLabel}
+            </span>
+          </div>
+        )}
       </div>
       <div className={`z-10 flex shrink-0 items-center justify-center shadow-[0_18px_40px_rgba(15,15,15,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-0.5 ${
         compact ? 'absolute right-3 top-3 h-9 w-9 rounded-xl sm:relative sm:right-auto sm:top-auto sm:h-14 sm:w-14 sm:rounded-[1.15rem]' : 'relative h-12 w-12 rounded-[1.15rem] sm:h-14 sm:w-14'

@@ -1376,6 +1376,7 @@ export function UsersPage() {
                     previousLabel={t.previous}
                     nextLabel={t.next}
                     ofLabel={t.of}
+                    showPageCount={false}
                   />
                 </div>
               )}

@@ -10,6 +10,7 @@ type CompactPaginationProps = {
   previousLabel: string;
   nextLabel: string;
   ofLabel: string;
+  showPageCount?: boolean;
 };
 
 export function CompactPagination({
@@ -22,6 +23,7 @@ export function CompactPagination({
   previousLabel,
   nextLabel,
   ofLabel,
+  showPageCount = true,
 }: CompactPaginationProps) {
   return (
     <nav
@@ -40,10 +42,12 @@ export function CompactPagination({
       </button>
 
       <div className="min-w-0 text-center">
-        <p className="whitespace-nowrap text-xs font-black text-[#050505]">
-          {currentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')}
-        </p>
-        <p className="mt-0.5 whitespace-nowrap text-[10px] font-bold text-[#71717a]">
+        {showPageCount && (
+          <p className="whitespace-nowrap text-xs font-black text-[#050505]">
+            {currentPage.toLocaleString('en-US')} / {totalPages.toLocaleString('en-US')}
+          </p>
+        )}
+        <p className={`${showPageCount ? 'mt-0.5 text-[10px]' : 'text-xs'} whitespace-nowrap font-bold text-[#71717a]`}>
           {start.toLocaleString('en-US')}-{end.toLocaleString('en-US')} {ofLabel} {total.toLocaleString('en-US')}
         </p>
       </div>

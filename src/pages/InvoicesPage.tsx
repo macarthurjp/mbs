@@ -2153,6 +2153,7 @@ export default function InvoicesPage() {
                 previousLabel={t.previous}
                 nextLabel={t.next}
                 ofLabel={language === 'es' ? 'de' : 'of'}
+                showPageCount={false}
               />
             </div>
           )}

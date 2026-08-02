@@ -1400,7 +1400,7 @@ export default function PurchasesPage() {
 
           {filteredPurchases.length > 0 && (
             <div className="mt-4 border-t border-[#f1ebdf] pt-4">
-              <CompactPagination currentPage={safeCurrentPage} totalPages={totalPages} start={pageStartIndex + 1} end={pageEndIndex} total={filteredPurchases.length} onPageChange={setCurrentPage} previousLabel={t.previous} nextLabel={t.next} ofLabel={t.of} />
+              <CompactPagination currentPage={safeCurrentPage} totalPages={totalPages} start={pageStartIndex + 1} end={pageEndIndex} total={filteredPurchases.length} onPageChange={setCurrentPage} previousLabel={t.previous} nextLabel={t.next} ofLabel={t.of} showPageCount={false} />
             </div>
           )}
         </CardContent>

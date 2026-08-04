@@ -1,4 +1,8 @@
-# Prompt para Replicar Sistema POS Completo
+# Archivo histórico: prompt inicial del sistema
+
+> Este archivo refleja requisitos iniciales y no describe con precisión la aplicación SaaS actual, sus roles, pruebas, facturación ni despliegue. No debe utilizarse como especificación técnica vigente. La referencia canónica es `README.md` y el código probado en `main`.
+
+# Prompt histórico para replicar el sistema POS
 
 ## Instrucciones para la IA
 

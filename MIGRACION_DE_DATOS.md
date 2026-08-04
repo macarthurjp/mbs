@@ -1,4 +1,8 @@
-# 📦 Guía Completa de Migración de Datos
+# Archivo histórico: exportación Supabase → MySQL
+
+> **No ejecutar en producción.** La base de datos vigente es Supabase PostgreSQL. Esta guía documenta una migración antigua y no está sincronizada con el esquema SaaS actual, RLS, Edge Functions ni Stripe.
+
+# Guía histórica de migración de datos
 
 ## Supabase → MySQL en Producción
 

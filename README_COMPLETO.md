@@ -1,4 +1,6 @@
-# Sistema POS Completo
+# MatMax Business Suite — documentación funcional ampliada
+
+> `README.md` es la referencia técnica canónica y actualizada. Este documento conserva explicaciones funcionales más extensas; si existe una contradicción sobre arquitectura, despliegue, versiones o pruebas, prevalece `README.md`.
 
 ## Descripción General
 

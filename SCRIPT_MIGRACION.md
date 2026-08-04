@@ -1,4 +1,8 @@
-# Script de Migración Automatizada a MySQL
+# Archivo histórico: script de migración a MySQL
+
+> **No ejecutar contra producción.** Este flujo pertenece a una arquitectura descartada. Consulta `DESPLIEGUE_COMPLETO.md` para el despliegue vigente con Supabase y Cloudflare Pages.
+
+# Script histórico de migración automatizada a MySQL
 
 Este documento explica cómo usar el script `migrate-to-mysql.sh` para migrar fácilmente tu aplicación de Supabase a MySQL.
 

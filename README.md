@@ -4,7 +4,7 @@ Sistema SaaS de punto de venta para negocios minoristas. Incluye ventas, inventa
 
 ## Estado Técnico
 
-Última verificación local:
+Verificación requerida para cada cambio:
 
 ```bash
 npm run lint
@@ -13,7 +13,9 @@ npm run build
 npm run test:e2e
 ```
 
-Resultado actual: lint, typecheck, build y la suite e2e de Playwright pasan correctamente en local. El proyecto no tiene suite automatizada de unit tests configurada todavía.
+Estado del commit `d896aa7` desplegado en `main`: CI aprobó lint, typecheck, build y **36 pruebas e2e de Playwright**. La ejecución local puede ser inestable con versiones de Node.js fuera del rango soportado; la fuente de verdad es el workflow CI ejecutado con Node.js 20.
+
+El proyecto todavía no tiene una suite independiente de unit tests.
 
 ## Stack
 
@@ -74,7 +76,7 @@ La separación por negocio usa `negocio_id` y debe estar reforzada por política
 - npm
 - Proyecto Supabase configurado
 - Supabase CLI para desplegar migraciones y Edge Functions
-- Cuenta Stripe para suscripciones
+- Cuenta Stripe para suscripciones. Lemon Squeezy continúa documentado únicamente como migración futura y no está activo en el código.
 - Cuenta Resend para correos transaccionales
 
 ## Instalación Local
@@ -88,12 +90,19 @@ Crear un archivo `.env` en la raíz con las variables públicas del frontend:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+VITE_SENTRY_DSN=
 VITE_SAAS_EMAIL_DOMAIN=mbs.app
 VITE_SESSION_TIMEOUT_MINUTES=30
 VITE_DEV_FALLBACK_NEGOCIO_ID=
 VITE_DEV_FALLBACK_USER_ID=
 E2E_OWNER_EMAIL=
 E2E_OWNER_PASSWORD=
+E2E_ADMIN_EMAIL=
+E2E_ADMIN_PASSWORD=
+E2E_SELLER_EMAIL=
+E2E_SELLER_PASSWORD=
+E2E_TENANT_B_OWNER_EMAIL=
+E2E_TENANT_B_OWNER_PASSWORD=
 ```
 
 No guardes service role keys, secretos de Stripe ni llaves de Resend en variables `VITE_*`, porque esas variables se exponen al navegador.
@@ -153,11 +162,11 @@ Qué cubren:
 - `lint`: reglas de ESLint, hooks de React, imports y tipado básico.
 - `typecheck`: validación completa de TypeScript.
 - `build`: compilación de producción con Vite.
-- `test:e2e`: pruebas Playwright de landing, login, dashboard autenticado, recuperación, navegación, flujo básico de venta, aislamiento entre negocios (multi-tenant), permisos por rol y protección contra escalamiento de privilegios.
+- `test:e2e`: 36 pruebas Playwright de landing, login, recuperación, dashboard, navegación, ventas, planes y trials, reportes y devoluciones, contratos de regresión visual, aislamiento multi-tenant, permisos y protección contra escalamiento de privilegios.
 
-Qué no cubren:
+Qué no cubren completamente:
 
-- Flujos completos de factura, cotización, cuentas por cobrar, caja, soporte y administración SaaS.
+- Todos los estados de factura, cotización, cuentas por cobrar, caja, soporte y administración SaaS con datos reales de producción.
 - Webhooks de Stripe, billing portal.
 - Envío real de correos (Resend), backups, alertas de registro.
 - Impresión térmica o WebUSB.
@@ -243,7 +252,8 @@ npm run supabase:deploy:webhook
 ├── supabase/
 │   ├── functions/
 │   └── migrations/
-├── dist/
+├── e2e/
+├── .github/workflows/
 ├── package.json
 ├── vite.config.ts
 ├── tsconfig.app.json
@@ -252,14 +262,15 @@ npm run supabase:deploy:webhook
 
 ## Documentación Relacionada
 
-- `DESPLIEGUE_SUPABASE_SAAS.md`: despliegue SaaS con Supabase.
-- `DESPLIEGUE_COMPLETO.md`: guía completa de despliegue.
-- `GUIA_RAPIDA.md`: guía rápida de uso/despliegue.
+- `GUIA_RAPIDA.md`: instalación, validación y despliegue actual.
+- `DESPLIEGUE_COMPLETO.md`: arquitectura y procedimiento actual de producción.
+- `DESPLIEGUE_SUPABASE_SAAS.md`: migraciones, funciones y secretos de Supabase.
 - `CONFIGURACION_IMPRESORAS.md`: configuración de impresoras.
 - `IMPRESORA_TERMICA.md`: impresión térmica.
 - `GUIA_IMPRESORA_NEXUSPOS.md`: guía para impresora NexusPOS.
 - `GIFT_CARDS_CON_CAJA.md`: gift cards integradas con caja.
-- `MIGRACION_DE_DATOS.md`, `MIGRACION_MYSQL.md`, `README_MIGRACION.md`: documentación de migración.
+- `docs/lemon-squeezy-handoff.md`: plan futuro; Stripe sigue activo.
+- `MIGRACION_DE_DATOS.md`, `MIGRACION_MYSQL.md`, `README_MIGRACION.md` y `SCRIPT_MIGRACION.md`: archivos históricos, no aplicables a producción actual.
 
 ## Flujo Básico de Operación
 

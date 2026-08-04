@@ -1,4 +1,8 @@
-# Guía de Migración a MySQL y Despliegue en Ubuntu
+# Archivo histórico: migración a MySQL y Ubuntu
+
+> **No usar como guía de despliegue.** Producción utiliza Supabase y Cloudflare Pages. El backend MySQL/Nginx/PM2 descrito aquí no es parte del sistema vigente.
+
+# Guía histórica de migración a MySQL y Ubuntu
 
 Esta guía explica cómo migrar la aplicación desde Supabase (PostgreSQL) a MySQL y desplegarla en un servidor Ubuntu en producción.
 

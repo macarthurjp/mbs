@@ -1,4 +1,8 @@
-# 🔄 Migración y Despliegue en Producción
+# Archivo histórico: migración a MySQL
+
+> **No usar para la producción actual.** MatMax continúa operando con Supabase y se despliega en Cloudflare Pages. Este documento se conserva únicamente como referencia de una migración que no forma parte de la arquitectura vigente. Consulta `README.md`, `GUIA_RAPIDA.md` y `DESPLIEGUE_COMPLETO.md`.
+
+# Migración y despliegue histórico
 
 Este proyecto incluye scripts completos para migración a MySQL y despliegue en producción.
 

@@ -901,6 +901,7 @@ function formatStatusLabel(status: string | null | undefined) {
           businessPlan: currentBusiness.plan,
           subscriptionPlan: subscriptionData?.plan,
           subscriptionStatus: subscriptionData?.estado,
+          trialEndsAt: currentBusiness.trial_ends_at,
         }),
         estado:
           normalizeSubscriptionStatus(subscriptionData?.estado) ||

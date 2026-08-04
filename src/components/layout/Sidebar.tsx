@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { getUserRoleFlags } from '../../utils/roles';
+import { formatPlanLabel } from '../../utils/subscriptionPlan';
 import { useNotification } from '../../contexts/NotificationContext';
 import type { AppNotification } from '../../contexts/NotificationContext';
 import { supabase } from '../../lib/supabase';
@@ -379,12 +380,6 @@ function formatTicketTime(value?: string | null) {
     hour: '2-digit',
     minute: '2-digit'
   });
-}
-
-function formatPlanLabel(plan: string | null | undefined) {
-  const normalizedPlan = String(plan || '').trim().toLowerCase();
-  if (!normalizedPlan || normalizedPlan === 'trial' || normalizedPlan === 'basic') return 'Basic';
-  return normalizedPlan.charAt(0).toUpperCase() + normalizedPlan.slice(1);
 }
 
 export default function Sidebar({

@@ -33,16 +33,42 @@ export function isActiveSubscriptionStatus(value: unknown) {
   return ACTIVE_SUBSCRIPTION_STATUSES.has(String(value || '').trim().toLowerCase());
 }
 
+export function isTrialPeriodActive(value: unknown, now = Date.now()) {
+  if (!value) return false;
+
+  const trialEndsAt = new Date(String(value)).getTime();
+  return Number.isFinite(trialEndsAt) && trialEndsAt >= now;
+}
+
+export function formatPlanLabel(value: unknown) {
+  const normalizedValue = String(value || '').trim().toLowerCase();
+
+  if (!normalizedValue || normalizedValue === 'basic') return 'Basic';
+  if (normalizedValue === 'trial') return 'Trial';
+
+  return normalizedValue.charAt(0).toUpperCase() + normalizedValue.slice(1);
+}
+
 export function getEffectivePlan({
   businessPlan,
   subscriptionPlan,
   subscriptionStatus,
+  trialEndsAt,
 }: {
   businessPlan?: unknown;
   subscriptionPlan?: unknown;
   subscriptionStatus?: unknown;
+  trialEndsAt?: unknown;
 }) {
   const normalizedSubscriptionPlan = normalizePlan(subscriptionPlan, 'trial');
+  const normalizedBusinessPlan = normalizePlan(businessPlan, 'basic');
+
+  if (
+    isTrialPeriodActive(trialEndsAt) &&
+    (normalizedSubscriptionPlan === 'trial' || normalizedBusinessPlan === 'trial')
+  ) {
+    return 'trial';
+  }
 
   if (
     normalizedSubscriptionPlan !== 'trial' &&
@@ -51,5 +77,5 @@ export function getEffectivePlan({
     return normalizedSubscriptionPlan;
   }
 
-  return normalizePlan(businessPlan, 'basic');
+  return normalizedBusinessPlan;
 }

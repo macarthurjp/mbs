@@ -541,7 +541,7 @@ function AppContent() {
         const [businessResult, subscriptionResult] = await Promise.all([
           supabase
             .from('negocios')
-            .select('nombre, plan')
+            .select('nombre, plan, trial_ends_at')
             .eq('id', resolvedNegocioId)
             .maybeSingle(),
           supabase
@@ -571,6 +571,7 @@ function AppContent() {
             businessPlan: data?.plan,
             subscriptionPlan: subscription?.plan,
             subscriptionStatus: subscription?.estado,
+            trialEndsAt: data?.trial_ends_at,
           })
         );
 

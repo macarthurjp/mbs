@@ -566,14 +566,12 @@ function AppContent() {
 
         const data = businessResult.data;
         const subscription = subscriptionResult.data;
-        const currentPlan = normalizePlanSlug(
-          getEffectivePlan({
-            businessPlan: data?.plan,
-            subscriptionPlan: subscription?.plan,
-            subscriptionStatus: subscription?.estado,
-            trialEndsAt: data?.trial_ends_at,
-          })
-        );
+        const currentPlan = getEffectivePlan({
+          businessPlan: data?.plan,
+          subscriptionPlan: subscription?.plan,
+          subscriptionStatus: subscription?.estado,
+          trialEndsAt: data?.trial_ends_at,
+        });
 
         setBusinessSummary({
           name: String(data?.nombre || 'MatMax Business Suite'),

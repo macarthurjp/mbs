@@ -454,7 +454,7 @@ export default function ReportsPage() {
       productosBajoStock: productos.filter((producto) => Number(producto.stock || 0) <= Number(producto.minimo || 0)).length,
       clientesConDeuda: clientes.filter((cliente) => Number(cliente.saldo || 0) > 0).length
     };
-  }, [activeVentas, cancelledVentas, ventaItems, productos, clientes, pagos, productCosts, saleReturns]);
+  }, [activeVentas, activeVentaIds, cancelledVentas, ventaItems, productos, clientes, pagos, productCosts, saleReturns]);
 
   const productosMasVendidos = useMemo(() => {
     const grouped = new Map<number, { nombre: string; cantidad: number; total: number }>();

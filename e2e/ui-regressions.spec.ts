@@ -35,15 +35,18 @@ test.describe('UI regression contracts', () => {
     const hasCenteredDateRule = await page.evaluate(() => {
       function containsCenteredRule(rules: CSSRuleList): boolean {
         return Array.from(rules).some((rule) => {
+          const cssRule = rule as CSSStyleRule;
+          if (cssRule.selectorText?.includes('input[type=date]::-webkit-datetime-edit')) {
+            return cssRule.style.alignItems === 'center';
+          }
+
           if ('cssRules' in rule) {
             return containsCenteredRule(
               (rule as CSSRule & { cssRules: CSSRuleList }).cssRules,
             );
           }
 
-          const cssRule = rule as CSSStyleRule;
-          return cssRule.selectorText?.includes('input[type=date]::-webkit-datetime-edit')
-            && cssRule.style.alignItems === 'center';
+          return false;
         });
       }
 

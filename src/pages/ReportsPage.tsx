@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getUserRoleFlags } from '../utils/roles';
 import { formatPhone } from '../utils/formatContact';
+import { calculateEstimatedProfit } from '../utils/reportProfit';
 
 type Venta = {
   id: number;
@@ -429,12 +430,13 @@ export default function ReportsPage() {
 
     const vendedorDestacado = Array.from(vendedorStats.values()).sort((a, b) => b.total - a.total)[0] || null;
 
-    const gananciaEstimada = ventaItems.filter((item) => !isCancelledItem(item)).reduce((sum, item) => {
-      const costo = productCosts.get(item.producto_id || -1) ?? 0;
-      const precio = Number(item.precio || 0);
-      const cantidad = Number(item.cantidad || 0);
-      return sum + (precio - costo) * cantidad;
-    }, 0);
+    const gananciaEstimada = calculateEstimatedProfit({
+      saleItems: ventaItems.filter((item) => !isCancelledItem(item)),
+      activeSaleIds: activeVentaIds,
+      productCosts,
+      saleDiscountTotal: totalDescuentos,
+      saleReturns: activeReturns
+    });
 
     return {
       totalVentas,

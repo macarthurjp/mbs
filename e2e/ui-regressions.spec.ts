@@ -36,7 +36,7 @@ test.describe('UI regression contracts', () => {
       function containsCenteredRule(rules: CSSRuleList): boolean {
         return Array.from(rules).some((rule) => {
           const cssRule = rule as CSSStyleRule;
-          if (cssRule.selectorText?.includes('input[type=date]::-webkit-datetime-edit')) {
+          if (cssRule.selectorText?.includes('::-webkit-datetime-edit')) {
             return cssRule.style.alignItems === 'center';
           }
 

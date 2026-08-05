@@ -196,6 +196,7 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
           businessPlan: data?.plan,
           subscriptionPlan: data?.subscription_plan,
           subscriptionStatus: data?.subscription_estado,
+          trialEndsAt: data?.trial_ends_at,
         });
         const planMatches =
           !normalizedCheckoutPlan ||
@@ -231,6 +232,7 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
         businessPlan: currentBusiness.plan,
         subscriptionPlan: currentBusiness.subscription_plan,
         subscriptionStatus: currentBusiness.subscription_estado,
+        trialEndsAt: currentBusiness.trial_ends_at,
       });
       const effectiveEstado =
         normalizeSubscriptionStatus(currentBusiness.subscription_estado) ||

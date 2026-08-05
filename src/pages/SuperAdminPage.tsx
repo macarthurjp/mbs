@@ -254,6 +254,7 @@ export default function SuperAdminPage() {
           businessPlan: business.plan,
           subscriptionPlan: businessSubscription?.plan,
           subscriptionStatus: businessSubscription?.estado,
+          trialEndsAt: business.trial_ends_at,
         }),
         estado:
           normalizeSubscriptionStatus(businessSubscription?.estado) ||

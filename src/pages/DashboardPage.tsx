@@ -382,6 +382,7 @@ export function DashboardPage() {
       businessPlan: business.plan,
       subscriptionPlan: subscription?.plan,
       subscriptionStatus: subscription?.estado,
+      trialEndsAt: business.trial_ends_at,
     });
   }, [platformSubscriptions]);
 
